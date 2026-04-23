@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://api.ticketroko.retailian.in/api",
+  baseURL: "/api", // ✅ remove the full domain
 });
 
 // attach token
