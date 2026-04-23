@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://api.ticketroko.retailian.in/api",
+  baseURL: "https://api.ticketroko.retailian.in/api",
 });
 
 // attach token
