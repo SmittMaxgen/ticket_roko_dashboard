@@ -241,7 +241,7 @@ export default function Events() {
                   size="small"
                   onClick={() => approve(row.id)}
                   sx={{ color: "#22c55e" }}
-                >
+                > 
                   {/* <CheckCircleOutlineIcon fontSize="small" /> */}
                 </IconButton>
               </Tooltip>

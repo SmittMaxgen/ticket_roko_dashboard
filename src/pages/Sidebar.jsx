@@ -124,7 +124,7 @@ export default function Sidebar() {
           return (
             <ListItem key={item.path} disablePadding sx={{ mb: 0.5 }}>
               <ListItemButton
-                disabled={item.path === "/" ? false : true}
+                // disabled={item.path === "/" ? false : true}
                 onClick={() => navigate(item.path)}
                 sx={{
                   borderRadius: "8px",
