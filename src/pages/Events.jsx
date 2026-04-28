@@ -66,12 +66,18 @@ const STATUS_COLORS = {
 };
 
 const EMPTY_FORM = {
+  hall_id: "",
+  category_id: "",
   title: "",
+  description: "",
+  event_date: "",
+  start_time: "",
+  end_time: "",
   city: "",
   address: "",
-  description: "",
   ticket_price: 0,
   total_tickets: 0,
+  is_free: false,
   status: "draft",
 };
 
@@ -178,6 +184,23 @@ export default function Events() {
   }, [rows]);
 
   const handleSave = async () => {
+    if (
+      !form.hall_id ||
+      !form.category_id ||
+      !form.title ||
+      !form.description ||
+      !form.event_date ||
+      !form.start_time ||
+      !form.end_time ||
+      !form.city ||
+      !form.address
+    ) {
+      enqueueSnackbar("All fields are required", {
+        variant: "error",
+      });
+      return;
+    }
+
     let result;
 
     if (editing) {
@@ -596,10 +619,73 @@ export default function Events() {
         <DialogContent>
           <Stack spacing={2} mt={1}>
             <TextField
+              label="Hall ID"
+              type="number"
+              value={form.hall_id}
+              onChange={(e) => setForm({ ...form, hall_id: e.target.value })}
+              fullWidth
+              required
+            />
+
+            <TextField
+              label="Category ID"
+              type="number"
+              value={form.category_id}
+              onChange={(e) =>
+                setForm({ ...form, category_id: e.target.value })
+              }
+              fullWidth
+              required
+            />
+
+            <TextField
               label="Title"
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
               fullWidth
+              required
+            />
+
+            <TextField
+              label="Description"
+              multiline
+              rows={4}
+              value={form.description}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
+              fullWidth
+              required
+            />
+
+            <TextField
+              label="Event Date"
+              type="date"
+              InputLabelProps={{ shrink: true }}
+              value={form.event_date}
+              onChange={(e) => setForm({ ...form, event_date: e.target.value })}
+              fullWidth
+              required
+            />
+
+            <TextField
+              label="Start Time"
+              type="time"
+              InputLabelProps={{ shrink: true }}
+              value={form.start_time}
+              onChange={(e) => setForm({ ...form, start_time: e.target.value })}
+              fullWidth
+              required
+            />
+
+            <TextField
+              label="End Time"
+              type="time"
+              InputLabelProps={{ shrink: true }}
+              value={form.end_time}
+              onChange={(e) => setForm({ ...form, end_time: e.target.value })}
+              fullWidth
+              required
             />
 
             <TextField
@@ -607,6 +693,7 @@ export default function Events() {
               value={form.city}
               onChange={(e) => setForm({ ...form, city: e.target.value })}
               fullWidth
+              required
             />
 
             <TextField
@@ -614,6 +701,7 @@ export default function Events() {
               value={form.address}
               onChange={(e) => setForm({ ...form, address: e.target.value })}
               fullWidth
+              required
             />
 
             <TextField
@@ -627,6 +715,7 @@ export default function Events() {
                 })
               }
               fullWidth
+              required
             />
 
             <TextField
@@ -640,20 +729,7 @@ export default function Events() {
                 })
               }
               fullWidth
-            />
-
-            <TextField
-              label="Description"
-              multiline
-              rows={4}
-              value={form.description}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  description: e.target.value,
-                })
-              }
-              fullWidth
+              required
             />
           </Stack>
         </DialogContent>
