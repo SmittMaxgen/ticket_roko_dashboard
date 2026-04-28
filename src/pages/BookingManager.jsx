@@ -19,7 +19,7 @@ export default function BookingManager({ eventId }) {
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [creating, setCreating] = useState(false);
 
-  const API = "http://localhost:4000/api";
+  const API = "https://ticket-roko-dashboard.vercel.app/api";
 
   // --------------------------------------------------
   // LOAD DATA
