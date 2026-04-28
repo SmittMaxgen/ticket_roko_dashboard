@@ -5,6 +5,7 @@ import {
   fetchBookingByIdThunk,
   cancelBookingThunk,
   fetchBookingStatsThunk,
+  createBookingThunk,
 } from "./bookingThunks";
 
 const bookingSlice = createSlice({
@@ -39,6 +40,25 @@ const bookingSlice = createSlice({
       })
       .addCase(fetchBookingsThunk.rejected, (state, action) => {
         state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(createBookingThunk.pending, (state) => {
+        state.actionLoading = true;
+        state.error = null;
+      })
+
+      .addCase(createBookingThunk.fulfilled, (state, action) => {
+        state.actionLoading = false;
+
+        // insert new booking at top (instant UI update)
+        if (action.payload) {
+          state.list.unshift(action.payload);
+          state.total += 1;
+        }
+      })
+
+      .addCase(createBookingThunk.rejected, (state, action) => {
+        state.actionLoading = false;
         state.error = action.payload;
       })
 

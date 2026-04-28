@@ -30,6 +30,9 @@ import { store } from "./app/store";
 import { theme } from "./theme/theme";
 import ProtectedRoute from "./routes/ProtectedRoutes";
 import Layout from "./Layout/Layout";
+import HallDesk from "./pages/HallDesk";
+import BookingManager from "./pages/BookingManager";
+// import HallCreate from "./pages/HallCreate";
 
 // ── Lazy pages ────────────────────────────────────────────
 const Login = lazy(() => import("./pages/Login"));
@@ -37,7 +40,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Users = lazy(() => import("./pages/Users"));
 const Events = lazy(() => import("./pages/Events"));
 const Bookings = lazy(() => import("./pages/Bookings"));
-const Halls = lazy(() => import("./pages/Hall"));
+const HallCreate = lazy(() => import("./pages/HallCreate"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Settings = lazy(() => import("./pages/Settings"));
 
@@ -149,18 +152,25 @@ function AppRoutes() {
 
           {/* Events — any admin */}
           <Route path="events" element={<Events />} />
+          <Route path="/events/:id" element={<BookingManager />} />
 
           {/* Bookings — any admin */}
           <Route path="bookings" element={<Bookings />} />
 
           {/* Hall Desk — any admin */}
-          <Route path="halls" element={<Halls />} />
+          {/* <Route path="halls" element={<Halls />} /> */}
 
           {/* Analytics — any admin */}
           <Route path="analytics" element={<Analytics />} />
 
           {/* Settings — self-service, any logged-in user */}
           <Route path="settings" element={<Settings />} />
+          <Route path="hall" element={<HallCreate />} />
+          <Route path="/halls-desk" element={<HallDesk />} />
+          <Route
+            path="/hall-desk/:id"
+            element={<HallCreate is_edit={true} />}
+          />
 
           {/* Categories — placeholder (swap for Categories page when ready) */}
           <Route path="categories" element={<Dashboard />} />

@@ -2,6 +2,21 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../api/axios";
 
+export const createBookingThunk = createAsyncThunk(
+  "bookings/create",
+  async (payload, { rejectWithValue }) => {
+    try {
+      // payload = { event_id, seat_ids }
+      const { data } = await api.post("/bookings/create", payload);
+      return data.data; // newly created booking
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to create booking",
+      );
+    }
+  },
+);
+
 export const fetchBookingsThunk = createAsyncThunk(
   "bookings/fetchAll",
   async (params = {}, { rejectWithValue }) => {

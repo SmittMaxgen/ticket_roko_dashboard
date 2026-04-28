@@ -24,27 +24,97 @@ import CategoryIcon from "@mui/icons-material/Category";
 
 import { selectUser } from "../features/auth/authSelectors";
 import { selectPendingEventCount } from "../features/dashboard/dashboardSelectors";
+import HallCreate from "./HallCreate";
 
 export const DRAWER_W = 240;
 
+// const NAV = [
+//   { label: "Dashboard", icon: <DashboardIcon />, path: "/" },
+//   { label: "Users", icon: <PeopleIcon />, path: "/users" },
+//   {
+//     label: "Events",
+//     icon: <EventIcon />,
+//     path: "/events",
+//     badgeKey: "pendingEvents",
+//   },
+//   { label: "Bookings", icon: <ConfirmationIcon />, path: "/bookings" },
+//   { label: "Hall Desk", icon: <MeetingRoomIcon />, path: "/halls-desk" },
+//   { label: "Hall Create", icon: <DashboardIcon />, path: "/hall" },
+//   { label: "Analytics", icon: <BarChartIcon />, path: "/analytics" },
+//   { label: "Categories", icon: <CategoryIcon />, path: "/categories" },
+//   { label: "Settings", icon: <SettingsIcon />, path: "/settings" },
+// ];
+
 const NAV = [
-  { label: "Dashboard", icon: <DashboardIcon />, path: "/" },
-  { label: "Users", icon: <PeopleIcon />, path: "/users" },
+  {
+    label: "Dashboard",
+    icon: <DashboardIcon />,
+    path: "/",
+    roles: ["super_admin", "admin", "user"],
+  },
+
+  {
+    label: "Users",
+    icon: <PeopleIcon />,
+    path: "/users",
+    roles: ["super_admin"],
+  },
+
   {
     label: "Events",
     icon: <EventIcon />,
     path: "/events",
-    badgeKey: "pendingEvents",
+    roles: ["super_admin", "admin", "user"],
   },
-  { label: "Bookings", icon: <ConfirmationIcon />, path: "/bookings" },
-  { label: "Hall Desk", icon: <MeetingRoomIcon />, path: "/halls" },
-  { label: "Analytics", icon: <BarChartIcon />, path: "/analytics" },
-  { label: "Categories", icon: <CategoryIcon />, path: "/categories" },
-  { label: "Settings", icon: <SettingsIcon />, path: "/settings" },
+
+  {
+    label: "Bookings",
+    icon: <ConfirmationIcon />,
+    path: "/bookings",
+    roles: ["super_admin", "admin"],
+  },
+
+  {
+    label: "Hall Desk",
+    icon: <MeetingRoomIcon />,
+    path: "/halls-desk",
+    roles: ["super_admin", "admin"],
+  },
+
+  {
+    label: "Hall Create",
+    icon: <DashboardIcon />,
+    path: "/hall",
+    roles: ["super_admin"],
+  },
+
+  {
+    label: "Analytics",
+    icon: <BarChartIcon />,
+    path: "/analytics",
+    roles: ["super_admin"],
+  },
+
+  {
+    label: "Categories",
+    icon: <CategoryIcon />,
+    path: "/categories",
+    roles: ["super_admin", "admin"],
+  },
+
+  {
+    label: "Settings",
+    icon: <SettingsIcon />,
+    path: "/settings",
+    roles: ["super_admin", "admin", "user"],
+  },
 ];
 
 export default function Sidebar() {
   const user = useSelector(selectUser);
+  const userRole = user?.role || "user";
+
+  const filteredNav = NAV.filter((item) => item.roles.includes(userRole));
   const pending = useSelector(selectPendingEventCount);
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -115,7 +185,7 @@ export default function Sidebar() {
 
       {/* Nav items */}
       <List sx={{ px: 1.5, flex: 1 }}>
-        {NAV.map((item) => {
+        {filteredNav.map((item) => {
           const active =
             pathname === item.path ||
             (item.path !== "/" && pathname.startsWith(item.path));

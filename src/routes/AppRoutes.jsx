@@ -40,7 +40,7 @@ export default function AppRoutes() {
       />
 
       <Route
-        path="/halls/create"
+        path="/hall/:id"
         element={
           <ProtectedRoute>
             <HallCreate />

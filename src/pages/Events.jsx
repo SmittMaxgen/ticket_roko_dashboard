@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Card,
@@ -12,133 +12,239 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
-  InputAdornment,
-  Tab,
   Tabs,
-  Tooltip,
+  Tab,
   Grid,
+  Tooltip,
+  Stack,
+  Divider,
+  InputAdornment,
+  CircularProgress,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
+
 import AddIcon from "@mui/icons-material/Add";
-// import CheckIcon from "@mui/icons-material/CheckCircleOutline";
-// import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
-import CancelIcon from "@mui/icons-material/CancelOutlined";
-import EditIcon from "@mui/icons-material/EditOutlined";
-import DeleteIcon from "@mui/icons-material/DeleteOutlined";
 import SearchIcon from "@mui/icons-material/Search";
-import api from "../api/axios";
+// import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+// import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EventAvailableIcon from "@mui/icons-material/EventAvailable";
+import PendingActionsIcon from "@mui/icons-material/PendingActions";
+import BlockIcon from "@mui/icons-material/Block";
+import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
+
+import { useDispatch, useSelector } from "react-redux";
 import { useSnackbar } from "notistack";
+
+import {
+  fetchEventsThunk,
+  createEventThunk,
+  updateEventThunk,
+  approveEventThunk,
+  rejectEventThunk,
+  deleteEventThunk,
+} from "../features/events/eventThunks";
+
+import {
+  selectEventList,
+  selectEventTotal,
+  selectEventLoading,
+  selectEventActionLoading,
+} from "../features/events/eventSelectors";
+import { useNavigate } from "react-router-dom";
 
 const STATUS_COLORS = {
   approved: "success",
   pending_approval: "warning",
   rejected: "error",
   cancelled: "default",
-  draft: "default",
   completed: "info",
+  draft: "default",
 };
 
 const EMPTY_FORM = {
   title: "",
-  description: "",
-  event_date: "",
-  start_time: "",
-  end_time: "",
   city: "",
   address: "",
+  description: "",
   ticket_price: 0,
   total_tickets: 0,
-  is_free: 0,
-  category_id: "",
-  hall_id: "",
+  status: "draft",
 };
 
+function StatCard({ title, value, icon, color }) {
+  return (
+    <Card
+      sx={{
+        background:
+          "linear-gradient(145deg, rgba(30,41,59,.95), rgba(15,23,42,.95))",
+        border: "1px solid #1e293b",
+        borderRadius: 4,
+        boxShadow: "0 10px 35px rgba(0,0,0,.28)",
+      }}
+    >
+      <CardContent>
+        <Stack
+          direction="row"
+          justifyContent="space-between"
+          alignItems="center"
+        >
+          <Box>
+            <Typography sx={{ color: "#94a3b8", fontSize: 12 }}>
+              {title}
+            </Typography>
+            <Typography
+              sx={{
+                color: "#fff",
+                fontWeight: 800,
+                fontSize: 28,
+                mt: 0.5,
+              }}
+            >
+              {value}
+            </Typography>
+          </Box>
+
+          <Box
+            sx={{
+              width: 46,
+              height: 46,
+              borderRadius: 3,
+              background: `${color}22`,
+              color,
+              display: "grid",
+              placeItems: "center",
+            }}
+          >
+            {icon}
+          </Box>
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Events() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
-  const [rows, setRows] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [tab, setTab] = useState("all");
-  const [search, setSearch] = useState("");
+
+  const rows = useSelector(selectEventList);
+  const total = useSelector(selectEventTotal);
+  const loading = useSelector(selectEventLoading);
+  const actionLoading = useSelector(selectEventActionLoading);
+
   const [page, setPage] = useState(0);
+  const [search, setSearch] = useState("");
+  const [tab, setTab] = useState("all");
+
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState(EMPTY_FORM);
+
   const [rejectDlg, setRejectDlg] = useState(null);
   const [rejectNote, setRejectNote] = useState("");
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [editing, setEditing] = useState(null);
-  const [categories, setCategories] = useState([]);
-  const [halls, setHalls] = useState([]);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = { page: page + 1, limit: 20, search };
-      if (tab !== "all") params.status = tab;
-      const { data } = await api.get("/events", { params });
-      setRows(data.data);
-      setTotal(data.total);
-    } catch {
-      enqueueSnackbar("Failed to load events", { variant: "error" });
-    } finally {
-      setLoading(false);
-    }
+  const load = () => {
+    const params = {
+      page: page + 1,
+      limit: 20,
+      search,
+    };
+
+    if (tab !== "all") params.status = tab;
+
+    dispatch(fetchEventsThunk(params));
+  };
+
+  useEffect(() => {
+    load();
   }, [page, search, tab]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  const stats = useMemo(() => {
+    const approved = rows.filter((x) => x.status === "approved").length;
+    const pending = rows.filter((x) => x.status === "pending_approval").length;
+    const rejected = rows.filter((x) => x.status === "rejected").length;
 
-  useEffect(() => {
-    api
-      .get("/categories")
-      .then((r) => setCategories(r.data.data))
-      .catch(() => {});
-    api
-      .get("/halls")
-      .then((r) => setHalls(r.data.data))
-      .catch(() => {});
-  }, []);
+    const revenue = rows.reduce(
+      (a, b) => a + Number(b.ticket_price || 0) * Number(b.sold_tickets || 0),
+      0,
+    );
+
+    return { approved, pending, rejected, revenue };
+  }, [rows]);
+
+  const handleSave = async () => {
+    let result;
+
+    if (editing) {
+      result = await dispatch(
+        updateEventThunk({
+          id: editing,
+          ...form,
+        }),
+      );
+    } else {
+      result = await dispatch(createEventThunk(form));
+    }
+
+    if (result.meta.requestStatus === "fulfilled") {
+      enqueueSnackbar(editing ? "Event updated" : "Event created", {
+        variant: "success",
+      });
+      setOpen(false);
+      setEditing(null);
+      setForm(EMPTY_FORM);
+      load();
+    } else {
+      enqueueSnackbar("Action failed", {
+        variant: "error",
+      });
+    }
+  };
 
   const approve = async (id) => {
-    await api.patch(`/events/${id}/approve`);
-    enqueueSnackbar("Event approved & published!", { variant: "success" });
-    load();
+    const r = await dispatch(approveEventThunk(id));
+
+    if (r.meta.requestStatus === "fulfilled") {
+      enqueueSnackbar("Event approved", {
+        variant: "success",
+      });
+      load();
+    }
   };
 
   const reject = async () => {
-    await api.patch(`/events/${rejectDlg}/reject`, { reason: rejectNote });
-    enqueueSnackbar("Event rejected", { variant: "warning" });
-    setRejectDlg(null);
-    setRejectNote("");
-    load();
-  };
+    const r = await dispatch(
+      rejectEventThunk({
+        id: rejectDlg,
+        reason: rejectNote,
+      }),
+    );
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this event?")) return;
-    await api.delete(`/events/${id}`);
-    enqueueSnackbar("Event deleted", { variant: "info" });
-    load();
-  };
-
-  const handleSave = async () => {
-    try {
-      if (editing) {
-        await api.put(`/events/${editing}`, form);
-        enqueueSnackbar("Event updated", { variant: "success" });
-      } else {
-        await api.post("/events", form);
-        enqueueSnackbar("Event created", { variant: "success" });
-      }
-      setOpen(false);
-      load();
-    } catch (err) {
-      enqueueSnackbar(err.response?.data?.message || "Error", {
-        variant: "error",
+    if (r.meta.requestStatus === "fulfilled") {
+      enqueueSnackbar("Event rejected", {
+        variant: "warning",
       });
+      setRejectDlg(null);
+      setRejectNote("");
+      load();
+    }
+  };
+
+  const remove = async (id) => {
+    if (!window.confirm("Delete event?")) return;
+
+    const r = await dispatch(deleteEventThunk(id));
+
+    if (r.meta.requestStatus === "fulfilled") {
+      enqueueSnackbar("Deleted", {
+        variant: "info",
+      });
+      load();
     }
   };
 
@@ -146,94 +252,86 @@ export default function Events() {
     {
       field: "title",
       headerName: "Event",
-      flex: 2,
-      minWidth: 200,
+      flex: 1.8,
+      minWidth: 230,
       renderCell: ({ row }) => (
-        <Box sx={{ py: 0.5 }}>
-          <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#F8FAFC" }}>
+        <Box py={0.7}>
+          <Typography
+            sx={{
+              color: "#fff",
+              fontWeight: 700,
+              fontSize: 13,
+            }}
+          >
             {row.title}
           </Typography>
-          <Typography sx={{ fontSize: 11, color: "#64748B" }}>
-            {row.organizer_name} · {row.city || "—"}
+
+          <Typography
+            sx={{
+              color: "#64748b",
+              fontSize: 11,
+            }}
+          >
+            {row.organizer_name || "Organizer"} • {row.city || "—"}
           </Typography>
         </Box>
       ),
     },
-    {
-      field: "category_name",
-      headerName: "Category",
-      width: 120,
-      renderCell: ({ value }) => (
-        <Chip
-          label={value || "—"}
-          size="small"
-          sx={{
-            fontSize: 10,
-            height: 20,
-            background: "#334155",
-            color: "#94A3B8",
-          }}
-        />
-      ),
-    },
-    {
-      field: "event_date",
-      headerName: "Date",
-      width: 110,
-      renderCell: ({ value }) => (
-        <Typography sx={{ fontSize: 12, color: "#94A3B8" }}>
-          {value ? new Date(value).toLocaleDateString("en-IN") : "—"}
-        </Typography>
-      ),
-    },
+
     {
       field: "ticket_price",
       headerName: "Price",
-      width: 100,
+      width: 110,
       renderCell: ({ row }) => (
         <Typography
           sx={{
-            fontSize: 12,
             color: row.is_free ? "#22c55e" : "#f59e0b",
-            fontWeight: 600,
+            fontWeight: 700,
+            fontSize: 12,
           }}
         >
           {row.is_free
             ? "FREE"
-            : `₹${Number(row.ticket_price).toLocaleString("en-IN")}`}
+            : `₹${Number(row.ticket_price || 0).toLocaleString("en-IN")}`}
         </Typography>
       ),
     },
+
     {
       field: "sold_tickets",
       headerName: "Sold",
       width: 100,
       renderCell: ({ row }) => (
-        <Typography sx={{ fontSize: 12, color: "#94A3B8" }}>
-          {row.sold_tickets}/{row.total_tickets}
+        <Typography sx={{ color: "#94a3b8", fontSize: 12 }}>
+          {row.sold_tickets || 0}/{row.total_tickets || 0}
         </Typography>
       ),
     },
+
     {
       field: "status",
       headerName: "Status",
       width: 150,
       renderCell: ({ value }) => (
         <Chip
-          label={value?.replace("_", " ")}
           size="small"
+          label={(value || "").replace("_", " ")}
           color={STATUS_COLORS[value] || "default"}
-          sx={{ fontSize: 10, height: 20, textTransform: "capitalize" }}
+          sx={{
+            textTransform: "capitalize",
+            fontSize: 11,
+          }}
         />
       ),
     },
+
     {
       field: "actions",
       headerName: "Actions",
-      width: 140,
+      width: 180,
       sortable: false,
       renderCell: ({ row }) => (
-        <Box sx={{ display: "flex", gap: 0.3 }}>
+        <Stack direction="row" spacing={0.3}>
           {row.status === "pending_approval" && (
             <>
               <Tooltip title="Approve">
@@ -241,352 +339,379 @@ export default function Events() {
                   size="small"
                   onClick={() => approve(row.id)}
                   sx={{ color: "#22c55e" }}
-                > 
-                  {/* <CheckCircleOutlineIcon fontSize="small" /> */}
+                >
+                  <CheckCircleIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
+
               <Tooltip title="Reject">
                 <IconButton
                   size="small"
                   onClick={() => setRejectDlg(row.id)}
                   sx={{ color: "#ef4444" }}
                 >
-                  <CancelIcon fontSize="small" />
+                  <CancelOutlinedIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
             </>
           )}
+
           <Tooltip title="Edit">
             <IconButton
               size="small"
+              // onClick={() => handleNavigateToEventHall(row)}
+
               onClick={() => {
-                setForm({ ...row });
-                setEditing(row.id);
+                // setEditing(row.id);
+                handleNavigateToEventHall(row);
+                setForm({
+                  title: row.title || "",
+                  city: row.city || "",
+                  address: row.address || "",
+                  description: row.description || "",
+                  ticket_price: row.ticket_price || 0,
+                  total_tickets: row.total_tickets || 0,
+                  status: row.status || "draft",
+                });
                 setOpen(true);
               }}
-              sx={{ color: "#64748B", "&:hover": { color: "#2563EB" } }}
+              sx={{ color: "#60a5fa" }}
             >
-              <EditIcon fontSize="small" />
+              <EditOutlinedIcon
+                // onClick={() => handleNavigateToEventHall(row)}
+                fontSize="small"
+              />
             </IconButton>
           </Tooltip>
+
           <Tooltip title="Delete">
             <IconButton
               size="small"
-              onClick={() => handleDelete(row.id)}
-              sx={{ color: "#64748B", "&:hover": { color: "#ef4444" } }}
+              onClick={() => remove(row.id)}
+              sx={{ color: "#f87171" }}
             >
               <DeleteIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-        </Box>
+        </Stack>
       ),
     },
   ];
 
+  const handleNavigateToEventHall = (row) => {
+    console.log("row:::>>>>", row);
+    navigate(`/events/${row?.id}`);
+  };
   return (
-    <Box>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 3,
-        }}
+    <Box sx={{ p: 3, background: "#020617", minHeight: "100vh" }}>
+      {/* Header */}
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
       >
         <Box>
-          <Typography variant="h5" sx={{ color: "#F8FAFC" }}>
-            Events
+          <Typography
+            sx={{
+              color: "#fff",
+              fontSize: 30,
+              fontWeight: 800,
+            }}
+          >
+            Events Management
           </Typography>
-          <Typography sx={{ color: "#64748B", fontSize: 13 }}>
-            Approve, manage and monitor all events
+
+          <Typography sx={{ color: "#64748b", mt: 0.5 }}>
+            Premium dashboard to manage events, approvals & bookings
           </Typography>
         </Box>
+
         <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => {
-            setForm(EMPTY_FORM);
             setEditing(null);
+            setForm(EMPTY_FORM);
             setOpen(true);
+          }}
+          sx={{
+            borderRadius: 3,
+            px: 2.5,
+            py: 1.2,
+            fontWeight: 700,
           }}
         >
           Add Event
         </Button>
-      </Box>
+      </Stack>
 
-      <Card sx={{ background: "#1E293B" }}>
-        <CardContent sx={{ pb: "0 !important" }}>
-          <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+      {/* Stats */}
+      <Grid container spacing={2} mb={3}>
+        <Grid item xs={12} md={3}>
+          <StatCard
+            title="Approved"
+            value={stats.approved}
+            color="#22c55e"
+            icon={<EventAvailableIcon />}
+          />
+        </Grid>
+
+        <Grid item xs={12} md={3}>
+          <StatCard
+            title="Pending"
+            value={stats.pending}
+            color="#f59e0b"
+            icon={<PendingActionsIcon />}
+          />
+        </Grid>
+
+        <Grid item xs={12} md={3}>
+          <StatCard
+            title="Rejected"
+            value={stats.rejected}
+            color="#ef4444"
+            icon={<BlockIcon />}
+          />
+        </Grid>
+
+        <Grid item xs={12} md={3}>
+          <StatCard
+            title="Revenue"
+            value={`₹${stats.revenue.toLocaleString("en-IN")}`}
+            color="#3b82f6"
+            icon={<CurrencyRupeeIcon />}
+          />
+        </Grid>
+      </Grid>
+
+      {/* Main Card */}
+      <Card
+        sx={{
+          background:
+            "linear-gradient(145deg, rgba(30,41,59,.96), rgba(15,23,42,.96))",
+          border: "1px solid #1e293b",
+          borderRadius: 4,
+        }}
+      >
+        <CardContent>
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            justifyContent="space-between"
+            gap={2}
+            mb={2}
+          >
             <TextField
               size="small"
-              placeholder="Search events…"
+              placeholder="Search events..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              sx={{ width: 280 }}
+              sx={{ width: 320 }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon sx={{ color: "#64748B", fontSize: 18 }} />
+                    <SearchIcon sx={{ color: "#64748b" }} />
                   </InputAdornment>
                 ),
               }}
             />
-          </Box>
-          <Tabs
-            value={tab}
-            onChange={(_, v) => setTab(v)}
-            sx={{
-              mb: 1,
-              "& .MuiTab-root": {
-                fontSize: 12,
-                minHeight: 40,
-                color: "#64748B",
-              },
-              "& .Mui-selected": { color: "#2563EB !important" },
-              "& .MuiTabs-indicator": { background: "#2563EB" },
+
+            <Tabs
+              value={tab}
+              onChange={(_, v) => setTab(v)}
+              sx={{
+                "& .MuiTab-root": {
+                  color: "#64748b",
+                  textTransform: "capitalize",
+                },
+                "& .Mui-selected": {
+                  color: "#3b82f6 !important",
+                },
+              }}
+            >
+              {[
+                "all",
+                "pending_approval",
+                "approved",
+                "rejected",
+                "cancelled",
+              ].map((x) => (
+                <Tab key={x} value={x} label={x.replace("_", " ")} />
+              ))}
+            </Tabs>
+          </Stack>
+
+          <Divider sx={{ borderColor: "#1e293b", mb: 2 }} />
+
+          <DataGrid
+            rows={rows}
+            columns={columns}
+            rowCount={total}
+            loading={loading}
+            autoHeight
+            paginationMode="server"
+            pageSizeOptions={[20]}
+            paginationModel={{
+              page,
+              pageSize: 20,
             }}
-          >
-            {[
-              "all",
-              "pending_approval",
-              "approved",
-              "rejected",
-              "cancelled",
-            ].map((t) => (
-              <Tab
-                key={t}
-                label={t.replace("_", " ")}
-                value={t}
-                sx={{ textTransform: "capitalize" }}
-              />
-            ))}
-          </Tabs>
+            onPaginationModelChange={(m) => setPage(m.page)}
+            disableRowSelectionOnClick
+            sx={{
+              border: "none",
+              color: "#fff",
+              "& .MuiDataGrid-columnHeaders": {
+                background: "#0f172a",
+                borderBottom: "1px solid #1e293b",
+              },
+              "& .MuiDataGrid-cell": {
+                borderBottom: "1px solid rgba(30,41,59,.5)",
+              },
+              "& .MuiDataGrid-footerContainer": {
+                borderTop: "1px solid #1e293b",
+              },
+            }}
+          />
         </CardContent>
-        <DataGrid
-          rows={rows}
-          columns={columns}
-          loading={loading}
-          rowCount={total}
-          paginationMode="server"
-          paginationModel={{ page, pageSize: 20 }}
-          onPaginationModelChange={(m) => setPage(m.page)}
-          autoHeight
-          disableRowSelectionOnClick
-          sx={{ border: "none" }}
-        />
       </Card>
 
-      {/* Add/Edit Dialog */}
+      {/* Add / Edit */}
       <Dialog
         open={open}
         onClose={() => setOpen(false)}
-        maxWidth="md"
         fullWidth
+        maxWidth="sm"
         PaperProps={{
-          sx: { background: "#1E293B", border: "1px solid #334155" },
+          sx: {
+            background: "#0f172a",
+            border: "1px solid #1e293b",
+            borderRadius: 4,
+          },
         }}
       >
-        <DialogTitle sx={{ fontSize: 16, fontWeight: 700, color: "#F8FAFC" }}>
+        <DialogTitle sx={{ color: "#fff", fontWeight: 800 }}>
           {editing ? "Edit Event" : "Create Event"}
         </DialogTitle>
+
         <DialogContent>
-          <Grid container spacing={2} sx={{ pt: 1 }}>
-            <Grid item xs={12}>
-              <TextField
-                label="Event Title"
-                size="small"
-                value={form.title}
-                onChange={(e) => setForm({ ...form, title: e.target.value })}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Event Date"
-                type="date"
-                size="small"
-                value={form.event_date?.slice(0, 10) || ""}
-                onChange={(e) =>
-                  setForm({ ...form, event_date: e.target.value })
-                }
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <TextField
-                label="Start Time"
-                type="time"
-                size="small"
-                value={form.start_time || ""}
-                onChange={(e) =>
-                  setForm({ ...form, start_time: e.target.value })
-                }
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={3}>
-              <TextField
-                label="End Time"
-                type="time"
-                size="small"
-                value={form.end_time || ""}
-                onChange={(e) => setForm({ ...form, end_time: e.target.value })}
-                fullWidth
-                InputLabelProps={{ shrink: true }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl size="small" fullWidth>
-                <InputLabel>Category</InputLabel>
-                <Select
-                  label="Category"
-                  value={form.category_id || ""}
-                  onChange={(e) =>
-                    setForm({ ...form, category_id: e.target.value })
-                  }
-                >
-                  {categories.map((c) => (
-                    <MenuItem key={c.id} value={c.id}>
-                      {c.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl size="small" fullWidth>
-                <InputLabel>Hall</InputLabel>
-                <Select
-                  label="Hall"
-                  value={form.hall_id || ""}
-                  onChange={(e) =>
-                    setForm({ ...form, hall_id: e.target.value })
-                  }
-                >
-                  <MenuItem value="">None</MenuItem>
-                  {halls.map((h) => (
-                    <MenuItem key={h.id} value={h.id}>
-                      {h.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                label="Ticket Price (₹)"
-                type="number"
-                size="small"
-                value={form.ticket_price}
-                onChange={(e) =>
-                  setForm({ ...form, ticket_price: e.target.value })
-                }
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                label="Total Tickets"
-                type="number"
-                size="small"
-                value={form.total_tickets}
-                onChange={(e) =>
-                  setForm({ ...form, total_tickets: e.target.value })
-                }
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <FormControl size="small" fullWidth>
-                <InputLabel>Is Free?</InputLabel>
-                <Select
-                  label="Is Free?"
-                  value={form.is_free}
-                  onChange={(e) =>
-                    setForm({ ...form, is_free: e.target.value })
-                  }
-                >
-                  <MenuItem value={0}>Paid</MenuItem>
-                  <MenuItem value={1}>Free</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="City"
-                size="small"
-                value={form.city || ""}
-                onChange={(e) => setForm({ ...form, city: e.target.value })}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Address"
-                size="small"
-                value={form.address || ""}
-                onChange={(e) => setForm({ ...form, address: e.target.value })}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Description"
-                multiline
-                rows={3}
-                size="small"
-                value={form.description || ""}
-                onChange={(e) =>
-                  setForm({ ...form, description: e.target.value })
-                }
-                fullWidth
-              />
-            </Grid>
-          </Grid>
+          <Stack spacing={2} mt={1}>
+            <TextField
+              label="Title"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              fullWidth
+            />
+
+            <TextField
+              label="City"
+              value={form.city}
+              onChange={(e) => setForm({ ...form, city: e.target.value })}
+              fullWidth
+            />
+
+            <TextField
+              label="Address"
+              value={form.address}
+              onChange={(e) => setForm({ ...form, address: e.target.value })}
+              fullWidth
+            />
+
+            <TextField
+              label="Ticket Price"
+              type="number"
+              value={form.ticket_price}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  ticket_price: e.target.value,
+                })
+              }
+              fullWidth
+            />
+
+            <TextField
+              label="Total Tickets"
+              type="number"
+              value={form.total_tickets}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  total_tickets: e.target.value,
+                })
+              }
+              fullWidth
+            />
+
+            <TextField
+              label="Description"
+              multiline
+              rows={4}
+              value={form.description}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  description: e.target.value,
+                })
+              }
+              fullWidth
+            />
+          </Stack>
         </DialogContent>
-        <DialogActions sx={{ p: "16px 24px", gap: 1 }}>
-          <Button onClick={() => setOpen(false)} sx={{ color: "#64748B" }}>
-            Cancel
-          </Button>
-          <Button variant="contained" onClick={handleSave}>
-            {editing ? "Update" : "Create"}
+
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setOpen(false)}>Cancel</Button>
+
+          <Button
+            variant="contained"
+            onClick={handleSave}
+            disabled={actionLoading}
+          >
+            {actionLoading ? (
+              <CircularProgress size={18} />
+            ) : editing ? (
+              "Update"
+            ) : (
+              "Create"
+            )}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Reject Dialog */}
+      {/* Reject */}
       <Dialog
         open={!!rejectDlg}
         onClose={() => setRejectDlg(null)}
-        maxWidth="sm"
         fullWidth
+        maxWidth="sm"
         PaperProps={{
-          sx: { background: "#1E293B", border: "1px solid #334155" },
+          sx: {
+            background: "#0f172a",
+            border: "1px solid #1e293b",
+            borderRadius: 4,
+          },
         }}
       >
-        <DialogTitle sx={{ color: "#F8FAFC", fontWeight: 700 }}>
+        <DialogTitle sx={{ color: "#fff", fontWeight: 800 }}>
           Reject Event
         </DialogTitle>
+
         <DialogContent>
           <TextField
-            label="Reason for rejection"
+            label="Reason"
             multiline
-            rows={3}
+            rows={4}
             fullWidth
-            size="small"
+            sx={{ mt: 1 }}
             value={rejectNote}
             onChange={(e) => setRejectNote(e.target.value)}
-            sx={{ mt: 1 }}
           />
         </DialogContent>
-        <DialogActions sx={{ p: "16px 24px" }}>
-          <Button onClick={() => setRejectDlg(null)} sx={{ color: "#64748B" }}>
-            Cancel
-          </Button>
+
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setRejectDlg(null)}>Cancel</Button>
+
           <Button variant="contained" color="error" onClick={reject}>
-            Reject Event
+            Reject
           </Button>
         </DialogActions>
       </Dialog>

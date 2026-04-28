@@ -23,10 +23,11 @@ import {
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import AddIcon from "@mui/icons-material/Add";
+import { useNavigate } from "react-router-dom";
 
-const Hall = () => {
+const HallDesk = () => {
   const dispatch = useDispatch();
-
+  const navigate = useNavigate();
   const halls = useSelector(selectHallList);
   const loading = useSelector(selectHallLoading);
   const actionLoading = useSelector(selectHallActionLoading);
@@ -40,6 +41,10 @@ const Hall = () => {
     if (window.confirm("Are you sure you want to delete this hall?")) {
       dispatch(deleteHallThunk(id));
     }
+  };
+
+  const handleNavigate = (hall) => {
+    navigate(`/hall-desk/${hall?.id || null}`);
   };
 
   return (
@@ -100,7 +105,10 @@ const Hall = () => {
                     </Box>
 
                     <Stack direction="row" spacing={1}>
-                      <IconButton color="primary">
+                      <IconButton
+                        onClick={() => handleNavigate(hall)}
+                        color="primary"
+                      >
                         <EditIcon />
                       </IconButton>
 
@@ -123,4 +131,4 @@ const Hall = () => {
   );
 };
 
-export default Hall;
+export default HallDesk;
