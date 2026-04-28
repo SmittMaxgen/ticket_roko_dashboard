@@ -187,17 +187,20 @@ export default function Events() {
     if (
       !form.hall_id ||
       !form.category_id ||
-      !form.title ||
-      !form.description ||
+      !form.title.trim() ||
+      !form.description.trim() ||
       !form.event_date ||
       !form.start_time ||
       !form.end_time ||
-      !form.city ||
-      !form.address
+      !form.city.trim() ||
+      !form.address.trim() ||
+      Number(form.ticket_price) <= 0 ||
+      Number(form.total_tickets) <= 0
     ) {
-      enqueueSnackbar("All fields are required", {
-        variant: "error",
-      });
+      enqueueSnackbar(
+        "All fields required. Price & Total Tickets must be greater than 0",
+        { variant: "error" },
+      );
       return;
     }
 
@@ -708,6 +711,7 @@ export default function Events() {
               label="Ticket Price"
               type="number"
               value={form.ticket_price}
+              inputProps={{ min: 1 }}
               onChange={(e) =>
                 setForm({
                   ...form,
@@ -722,6 +726,7 @@ export default function Events() {
               label="Total Tickets"
               type="number"
               value={form.total_tickets}
+              inputProps={{ min: 1 }}
               onChange={(e) =>
                 setForm({
                   ...form,
