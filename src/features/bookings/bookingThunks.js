@@ -72,3 +72,17 @@ export const fetchBookingStatsThunk = createAsyncThunk(
     }
   },
 );
+
+export const fetchBookingLayoutThunk = createAsyncThunk(
+  "bookings/fetchLayout",
+  async (eventId, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get(`/events/${eventId}/booking-layout`);
+      return data.data;
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to fetch layout",
+      );
+    }
+  },
+);

@@ -30,11 +30,15 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 // import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+// import TheaterComedyIcon from "@mui/icons-material/TheaterComedy";
+import StadiumIcon from "@mui/icons-material/Stadium";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EventAvailableIcon from "@mui/icons-material/EventAvailable";
 import PendingActionsIcon from "@mui/icons-material/PendingActions";
 import BlockIcon from "@mui/icons-material/Block";
 import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
+
+import CommonDropDown from "../commonComponents/CommonDropDown";
 
 import { useDispatch, useSelector } from "react-redux";
 import { useSnackbar } from "notistack";
@@ -49,12 +53,24 @@ import {
 } from "../features/events/eventThunks";
 
 import {
+  selectHallList,
+  selectHallLoading,
+  selectHallError,
+  selectHallActionLoading,
+} from "../features/halls/hallSelectors";
+
+import { fetchCategories } from "../features/categories/categoryThunks";
+
+import { selectCategories } from "../features/categories/categorySelectors";
+
+import {
   selectEventList,
   selectEventTotal,
   selectEventLoading,
   selectEventActionLoading,
 } from "../features/events/eventSelectors";
 import { useNavigate } from "react-router-dom";
+import { fetchHallsThunk } from "../features/halls/hallThunks";
 
 const STATUS_COLORS = {
   approved: "success",
@@ -154,6 +170,9 @@ export default function Events() {
   const [rejectDlg, setRejectDlg] = useState(null);
   const [rejectNote, setRejectNote] = useState("");
 
+  const hallList = useSelector(selectHallList);
+  const categoryList = useSelector(selectCategories);
+
   const load = () => {
     const params = {
       page: page + 1,
@@ -170,6 +189,10 @@ export default function Events() {
     load();
   }, [page, search, tab]);
 
+  useEffect(() => {
+    dispatch(fetchHallsThunk());
+    dispatch(fetchCategories());
+  }, [dispatch]);
   const stats = useMemo(() => {
     const approved = rows.filter((x) => x.status === "approved").length;
     const pending = rows.filter((x) => x.status === "pending_approval").length;
@@ -390,6 +413,33 @@ export default function Events() {
               onClick={() => {
                 // setEditing(row.id);
                 handleNavigateToEventHall(row);
+                // setForm({
+                //   title: row.title || "",
+                //   city: row.city || "",
+                //   address: row.address || "",
+                //   description: row.description || "",
+                //   ticket_price: row.ticket_price || 0,
+                //   total_tickets: row.total_tickets || 0,
+                //   status: row.status || "draft",
+                // });
+                // setOpen(true);
+              }}
+              sx={{ color: "#60a5fa" }}
+            >
+              <StadiumIcon
+                // onClick={() => handleNavigateToEventHall(row)}
+                fontSize="small"
+              />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Edit">
+            <IconButton
+              size="small"
+              // onClick={() => handleNavigateToEventHall(row)}
+
+              onClick={() => {
+                // setEditing(row.id);
+                // handleNavigateToEventHall(row);
                 setForm({
                   title: row.title || "",
                   city: row.city || "",
@@ -621,23 +671,22 @@ export default function Events() {
 
         <DialogContent>
           <Stack spacing={2} mt={1}>
-            <TextField
-              label="Hall ID"
-              type="number"
+            <CommonDropDown
+              label="Select Hall"
               value={form.hall_id}
+              options={hallList}
               onChange={(e) => setForm({ ...form, hall_id: e.target.value })}
-              fullWidth
               required
             />
 
-            <TextField
-              label="Category ID"
-              type="number"
+            <CommonDropDown
+              label="Select Category "
+              // type="number"
+              options={categoryList}
               value={form.category_id}
               onChange={(e) =>
                 setForm({ ...form, category_id: e.target.value })
               }
-              fullWidth
               required
             />
 

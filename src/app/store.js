@@ -7,6 +7,7 @@ import hallReducer from "../features/halls/hallSlice";
 import userReducer from "../features/users/userSlice";
 import bookingReducer from "../features/bookings/bookingSlice";
 import dashboardReducer from "../features/dashboard/dashboardSlice";
+import categoryReducer from "../features/categories/categorySlice";
 
 export const store = configureStore({
   reducer: {
@@ -16,5 +17,6 @@ export const store = configureStore({
     users: userReducer,
     bookings: bookingReducer,
     dashboard: dashboardReducer,
+    category: categoryReducer,
   },
 });

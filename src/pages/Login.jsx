@@ -1,5 +1,5 @@
 // src/pages/Login.jsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import {
@@ -59,7 +59,9 @@ export default function Login() {
   };
 
   const error = localError || apiError;
-
+  useEffect(() => {
+    console.log("token");
+  }, []);
   return (
     <Box
       sx={{

@@ -6,6 +6,7 @@ import {
   cancelBookingThunk,
   fetchBookingStatsThunk,
   createBookingThunk,
+  fetchBookingLayoutThunk,
 } from "./bookingThunks";
 
 const bookingSlice = createSlice({
@@ -15,6 +16,7 @@ const bookingSlice = createSlice({
     current: null,
     total: 0,
     stats: null,
+    layout: null,
     loading: false,
     actionLoading: false,
     error: null,
@@ -93,6 +95,9 @@ const bookingSlice = createSlice({
 
       .addCase(fetchBookingStatsThunk.fulfilled, (state, action) => {
         state.stats = action.payload;
+      })
+      .addCase(fetchBookingLayoutThunk.fulfilled, (state, action) => {
+        state.layout = action.payload;
       });
   },
 });

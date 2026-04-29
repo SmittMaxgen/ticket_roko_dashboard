@@ -1,15 +1,29 @@
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import { createBookingThunk } from "../features/bookings/bookingThunks";
+import {
+  fetchBookingsThunk,
+  fetchBookingByIdThunk,
+  cancelBookingThunk,
+  fetchBookingStatsThunk,
+  createBookingThunk,
+  fetchBookingLayoutThunk,
+} from "../features/bookings/bookingThunks";
+
+import {
+  selectBookingLayout,
+  selectBookingList,
+  selectBookingLoading,
+  selectIsBookingCreating,
+} from "../features/bookings/bookingSelectors";
+
 import { useSelector, useDispatch } from "react-redux";
 import { useParams } from "react-router-dom";
 
 export default function BookingManager({ eventId }) {
   const dispatch = useDispatch();
   const { id } = useParams();
-  const [loading, setLoading] = useState(true);
-  const [bookings, setBookings] = useState([]);
-  const [layout, setLayout] = useState(null);
+
+  // const [layout, setLayout] = useState(null);
 
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
@@ -17,7 +31,12 @@ export default function BookingManager({ eventId }) {
 
   // ✅ NEW STATE (seat booking)
   const [selectedSeats, setSelectedSeats] = useState([]);
-  const [creating, setCreating] = useState(false);
+  // const [creating, setCreating] = useState(false);
+  const layout = useSelector(selectBookingLayout);
+
+  const bookings = useSelector(selectBookingList);
+  const loading = useSelector(selectBookingLoading);
+  const creating = useSelector(selectIsBookingCreating);
 
   const API = "https://ticket-roko-dashboard.vercel.app/api";
 
@@ -27,25 +46,16 @@ export default function BookingManager({ eventId }) {
   useEffect(() => {
     loadAll();
   }, [eventId, id]);
-
   const loadAll = async () => {
     try {
-      setLoading(true);
-
-      const [bookRes, layoutRes] = await Promise.all([
-        axios.get(`${API}/events/${eventId || id}/bookings`),
-        axios.get(`${API}/events/${eventId || id}/booking-layout`),
+      await Promise.all([
+        dispatch(fetchBookingsThunk({ event_id: eventId || id })),
+        dispatch(fetchBookingLayoutThunk(eventId || id)),
       ]);
-
-      setBookings(bookRes?.data?.data || []);
-      setLayout(layoutRes?.data?.data || null);
     } catch (err) {
       console.error(err);
-    } finally {
-      setLoading(false);
     }
   };
-
   // --------------------------------------------------
   // TOGGLE SEAT (NEW)
   // --------------------------------------------------
@@ -135,10 +145,10 @@ export default function BookingManager({ eventId }) {
   // --------------------------------------------------
   const cancelBooking = async (id) => {
     try {
-      await axios.put(`${API}/bookings/${id}/cancel`);
-      await loadAll();
+      await dispatch(cancelBookingThunk(id)).unwrap();
+      await dispatch(fetchBookingLayoutThunk(eventId || id));
     } catch (err) {
-      alert("Cancel failed");
+      alert(err || "Cancel failed");
     }
   };
 
