@@ -46,6 +46,9 @@ const HallDesk = () => {
   const handleNavigate = (hall) => {
     navigate(`/hall-desk/${hall?.id || null}`);
   };
+  const handleAddHall = () => {
+    navigate(`/hall`);
+  };
 
   return (
     <Box p={3}>
@@ -60,7 +63,11 @@ const HallDesk = () => {
           Halls Management
         </Typography>
 
-        <Button variant="contained" startIcon={<AddIcon />}>
+        <Button
+          variant="contained"
+          onClick={() => handleAddHall()}
+          startIcon={<AddIcon />}
+        >
           Add Hall
         </Button>
       </Stack>
