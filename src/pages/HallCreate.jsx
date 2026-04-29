@@ -42,6 +42,7 @@ import {
 } from "../features/hallSeat/seatSelectors";
 import { useParams } from "react-router-dom";
 import BookingManager from "./BookingManager";
+import { clearCurrentHall } from "../features/halls/hallSlice";
 
 // ─────────────────────────────────────────────────────────────
 // CONSTANTS
@@ -306,9 +307,9 @@ function BookingView({ hallId }) {
   // Load Hall
   // ─────────────────────────────────────────────
   useEffect(() => {
+    dispatch(clearCurrentHall()); // clear old hall first
     dispatch(fetchHallByIdThunk({ id: hallId || id }));
-  }, [hallId, id]);
-
+  }, [dispatch, hallId, id]);
   useEffect(() => {
     if (hall?.seats) {
       setLocalSeats(hall.seats.map((s) => ({ ...s })));
@@ -986,7 +987,7 @@ function BookingView({ hallId }) {
   }
 }
 
-function DrawMode({ hallId, is_edit = false }) {
+function DrawMode({ hallId, is_edit = false, is_add = false }) {
   const dispatch = useDispatch();
   const { enqueueSnackbar } = useSnackbar();
 
@@ -1096,11 +1097,25 @@ function DrawMode({ hallId, is_edit = false }) {
   // ---------------------------------------------------
   // LOAD EDIT
   // ---------------------------------------------------
+  // useEffect(() => {
+  //   if (is_edit && hallId) {
+  //     dispatch(fetchHallByIdThunk({ id: hallId }));
+  //   }
+  // }, [hallId, is_edit]);
+
   useEffect(() => {
+    dispatch(clearCurrentHall());
+
     if (is_edit && hallId) {
       dispatch(fetchHallByIdThunk({ id: hallId }));
     }
-  }, [hallId, is_edit]);
+
+    if (is_add) {
+      setPlacedRows([]);
+      setPlacedSeats([]);
+      setLoadedEdit(false);
+    }
+  }, [dispatch, hallId, is_edit, is_add]);
 
   useEffect(() => {
     if (!is_edit || !hall?.seats || loadedEdit) return;
@@ -1684,10 +1699,19 @@ function DrawMode({ hallId, is_edit = false }) {
   );
 }
 
-export default function HallCreate({ hallId, is_edit = false }) {
+export default function HallCreate({
+  hallId,
+  is_edit = false,
+  is_add = false,
+}) {
   const { id } = useParams();
 
   const [mode, setMode] = useState(0);
+  useEffect(() => {
+    if (is_add || is_edit) {
+      setMode(1); // Auto activate Admin: Draw Mode
+    }
+  }, [is_add, is_edit]);
 
   return (
     <div
@@ -1772,9 +1796,53 @@ export default function HallCreate({ hallId, is_edit = false }) {
             marginLeft: 18,
           }}
         >
-          {MODES.map((m, i) => {
+          {/* {MODES.map((m, i) => {
+            // if (is_edit && (i === 0 || i === 2)) return null;
+            const showOnlyDrawMode = is_add || is_edit;
+
+            if (showOnlyDrawMode && i !== 1) return null;
+
             const active = mode === i;
 
+            return (
+              <button
+                key={i}
+                onClick={() => setMode(i)}
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: 12,
+                  border: active
+                    ? "1px solid #2563EB55"
+                    : "1px solid transparent",
+                  background: active
+                    ? "linear-gradient(135deg,#1D4ED8,#2563EB)"
+                    : "transparent",
+                  color: active ? "#fff" : "#94A3B8",
+                  cursor: "pointer",
+                  fontWeight: active ? 700 : 600,
+                  fontSize: 13,
+                  transition: "all .2s ease",
+                  boxShadow: active
+                    ? "0 10px 20px rgba(37,99,235,.25)"
+                    : "none",
+                }}
+              >
+                {i === 0 && "🎟 "}
+                {i === 1 && "🛠 "}
+                {i === 2 && "📊 "}
+                {m}
+              </button>
+            );
+          })} */}
+
+          {MODES.map((m, i) => {
+            const showOnlyDrawMode = is_add || is_edit;
+
+            // Hide other tabs when add/edit mode
+            if (showOnlyDrawMode && i !== 1) return null;
+
+            // Force Draw Mode active when add/edit
+            const active = showOnlyDrawMode ? i === 1 : mode === i;
             return (
               <button
                 key={i}
@@ -1886,7 +1954,9 @@ export default function HallCreate({ hallId, is_edit = false }) {
         {mode === 0 && <BookingView hallId={hallId} />}
 
         {/* MODE 1 */}
-        {mode === 1 && <DrawMode hallId={hallId} is_edit={is_edit} />}
+        {mode === 1 && (
+          <DrawMode hallId={hallId} is_edit={is_edit} is_add={is_add} />
+        )}
 
         {/* MODE 2 */}
         {mode === 2 && <BookingManager eventId={id} />}

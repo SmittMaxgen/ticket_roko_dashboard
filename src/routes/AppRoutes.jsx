@@ -7,7 +7,7 @@ import Register from "../pages/auth/Register";
 import AdminDashboard from "../pages/Dashboard";
 
 import HallList from "../pages/halls/HallList";
-import HallCreate from "../pages/halls/HallCreate";
+import HallCreate from "../pages/HallCreate";
 import HallDetails from "../pages/halls/HallDetails";
 
 import ProtectedRoute from "./ProtectedRoute";

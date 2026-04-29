@@ -44,6 +44,7 @@ const hallSlice = createSlice({
       // ── fetch single ──────────────────────────────
       .addCase(fetchHallByIdThunk.pending, (state) => {
         state.loading = true;
+        state.currentHall = null; // important
       })
       .addCase(fetchHallByIdThunk.fulfilled, (state, action) => {
         state.loading = false;

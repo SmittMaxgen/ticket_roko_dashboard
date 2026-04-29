@@ -186,9 +186,13 @@ export default function Sidebar() {
       {/* Nav items */}
       <List sx={{ px: 1.5, flex: 1 }}>
         {filteredNav.map((item) => {
+          // const active =
+          //   pathname === item.path ||
+          //   (item.path !== "/" && pathname.startsWith(item.path));
           const active =
             pathname === item.path ||
-            (item.path !== "/" && pathname.startsWith(item.path));
+            (item.path !== "/" &&
+              (pathname.startsWith(item.path + "/") || pathname === item.path));
           const badge = getBadge(item.badgeKey);
 
           return (

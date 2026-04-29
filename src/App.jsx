@@ -165,11 +165,14 @@ function AppRoutes() {
 
           {/* Settings — self-service, any logged-in user */}
           <Route path="settings" element={<Settings />} />
-          <Route path="hall" element={<HallCreate />} />
+          <Route
+            path="hall"
+            element={<HallCreate is_add={true} is_edit={false} />}
+          />
           <Route path="/halls-desk" element={<HallDesk />} />
           <Route
             path="/hall-desk/:id"
-            element={<HallCreate is_edit={true} />}
+            element={<HallCreate is_edit={true} is_add={false} />}
           />
 
           {/* Categories — placeholder (swap for Categories page when ready) */}
