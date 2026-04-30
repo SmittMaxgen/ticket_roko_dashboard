@@ -387,7 +387,7 @@ function AppRoutes() {
           />
 
           {/* Events */}
-          <Route path="events" element={<Events />} />
+          <Route path="events" element={<Events user={user} />} />
           <Route path="events/:id" element={<BookingManager />} />
 
           {/* Admin Bookings */}

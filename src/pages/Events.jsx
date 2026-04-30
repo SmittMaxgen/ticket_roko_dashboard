@@ -150,7 +150,8 @@ function StatCard({ title, value, icon, color }) {
   );
 }
 
-export default function Events() {
+export default function Events({ user }) {
+  console.log("user:::::>>>>>", user);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
@@ -482,6 +483,7 @@ export default function Events() {
   return (
     <Box sx={{ minHeight: "100vh" }}>
       {/* Header */}
+      {/* {(user.role === "super_admin" || user.role === "admin") && ( */}
       <Stack
         style={{ display: "flex", justifyContent: "space-between" }}
         direction="row"
@@ -497,65 +499,74 @@ export default function Events() {
               fontWeight: 800,
             }}
           >
-            Events Management
+            {user.role === "super_admin" || user.role === "admin"
+              ? "Events Management"
+              : "All Events"}
           </Typography>
 
           <Typography sx={{ color: "#64748b", mt: 0.5 }}>
-            Premium dashboard to manage events, approvals & bookings
+            {user.role === "super_admin" || user.role === "admin"
+              ? "Premium dashboard to manage events, approvals & bookings"
+              : "Our All Events You can Book Your Seat for Listed Events !"}
           </Typography>
         </Box>
-
-        <CommonButton
-          startIcon={<AddIcon />}
-          onClick={() => {
-            setEditing(null);
-            setForm(EMPTY_FORM);
-            setOpen(true);
-          }}
-        >
-          Add Event
-        </CommonButton>
+        {(user.role === "super_admin" || user.role === "admin") && (
+          <CommonButton
+            startIcon={<AddIcon />}
+            onClick={() => {
+              setEditing(null);
+              setForm(EMPTY_FORM);
+              setOpen(true);
+            }}
+          >
+            Add Event
+          </CommonButton>
+        )}
       </Stack>
+      {/* )} */}
 
       {/* Stats */}
-      <Grid container spacing={2} mb={3} sx={{ marginTop: "15px" }}>
-        <Grid item xs={12} md={3}>
-          <StatCard
-            title="Approved"
-            value={stats.approved}
-            color="#22c55e"
-            icon={<EventAvailableIcon />}
-          />
-        </Grid>
+      {user.role === "super_admin" || user.role === "admin" ? (
+        <Grid container spacing={2} mb={3} sx={{ marginTop: "15px" }}>
+          <Grid item xs={12} md={3}>
+            <StatCard
+              title="Approved"
+              value={stats.approved}
+              color="#22c55e"
+              icon={<EventAvailableIcon />}
+            />
+          </Grid>
 
-        <Grid item xs={12} md={3}>
-          <StatCard
-            title="Pending"
-            value={stats.pending}
-            color="#f59e0b"
-            icon={<PendingActionsIcon />}
-          />
-        </Grid>
+          <Grid item xs={12} md={3}>
+            <StatCard
+              title="Pending"
+              value={stats.pending}
+              color="#f59e0b"
+              icon={<PendingActionsIcon />}
+            />
+          </Grid>
 
-        <Grid item xs={12} md={3}>
-          <StatCard
-            title="Rejected"
-            value={stats.rejected}
-            color="#ef4444"
-            icon={<BlockIcon />}
-          />
-        </Grid>
+          <Grid item xs={12} md={3}>
+            <StatCard
+              title="Rejected"
+              value={stats.rejected}
+              color="#ef4444"
+              icon={<BlockIcon />}
+            />
+          </Grid>
 
-        <Grid item xs={12} md={3}>
-          <StatCard
-            title="Revenue"
-            value={`₹${stats.revenue.toLocaleString("en-IN")}`}
-            color="#3b82f6"
-            icon={<CurrencyRupeeIcon />}
-          />
+          <Grid item xs={12} md={3}>
+            <StatCard
+              title="Revenue"
+              value={`₹${stats.revenue.toLocaleString("en-IN")}`}
+              color="#3b82f6"
+              icon={<CurrencyRupeeIcon />}
+            />
+          </Grid>
         </Grid>
-      </Grid>
-
+      ) : (
+        <></>
+      )}
       {/* Main Card */}
       <Card
         sx={{
