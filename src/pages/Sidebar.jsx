@@ -71,7 +71,7 @@ const NAV = [
     label: "Bookings",
     icon: <ConfirmationIcon />,
     path: "/bookings",
-    roles: ["super_admin", "admin"],
+    roles: ["super_admin", "admin", "user"],
   },
 
   {

@@ -31,6 +31,20 @@ export const fetchBookingsThunk = createAsyncThunk(
   },
 );
 
+export const fetchUserBookingsThunk = createAsyncThunk(
+  "bookings/fetchUserBookings",
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get("/bookings/my-bookings", { params });
+      return { data: data.data, total: data.total };
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to fetch bookings",
+      );
+    }
+  },
+);
+
 export const fetchBookingByIdThunk = createAsyncThunk(
   "bookings/fetchById",
   async (id, { rejectWithValue }) => {

@@ -7,6 +7,7 @@ import {
   fetchBookingStatsThunk,
   createBookingThunk,
   fetchBookingLayoutThunk,
+  fetchUserBookingsThunk,
 } from "./bookingThunks";
 
 const bookingSlice = createSlice({
@@ -48,7 +49,21 @@ const bookingSlice = createSlice({
         state.actionLoading = true;
         state.error = null;
       })
+      .addCase(fetchUserBookingsThunk.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
 
+      .addCase(fetchUserBookingsThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.list = action.payload.data; // 🔥 same list
+        state.total = action.payload.total;
+      })
+
+      .addCase(fetchUserBookingsThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
       .addCase(createBookingThunk.fulfilled, (state, action) => {
         state.actionLoading = false;
 

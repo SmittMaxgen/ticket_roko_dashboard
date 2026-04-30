@@ -1716,6 +1716,7 @@ export default function HallCreate({
   return (
     <div
       style={{
+        padding: "0",
         height: "100vh",
         display: "flex",
         flexDirection: "column",

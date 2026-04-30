@@ -105,7 +105,7 @@ function StatCard({ title, value, icon, color }) {
         background:
           "linear-gradient(145deg, rgba(30,41,59,.95), rgba(15,23,42,.95))",
         border: "1px solid #1e293b",
-        borderRadius: 4,
+        // borderRadius: 4,
         boxShadow: "0 10px 35px rgba(0,0,0,.28)",
       }}
     >
@@ -563,7 +563,6 @@ export default function Events() {
           background:
             "linear-gradient(145deg, rgba(30,41,59,.96), rgba(15,23,42,.96))",
           border: "1px solid #1e293b",
-          borderRadius: 4,
         }}
       >
         <CardContent>
