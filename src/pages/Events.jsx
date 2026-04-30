@@ -39,6 +39,7 @@ import BlockIcon from "@mui/icons-material/Block";
 import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
 
 import CommonDropDown from "../commonComponents/CommonDropDown";
+import CommonButton from "../commonComponents/CommonButton";
 
 import { useDispatch, useSelector } from "react-redux";
 import { useSnackbar } from "notistack";
@@ -479,9 +480,10 @@ export default function Events() {
     navigate(`/events/${row?.id}`);
   };
   return (
-    <Box sx={{ p: 3, background: "#020617", minHeight: "100vh" }}>
+    <Box sx={{ minHeight: "100vh" }}>
       {/* Header */}
       <Stack
+        style={{ display: "flex", justifyContent: "space-between" }}
         direction="row"
         justifyContent="space-between"
         alignItems="center"
@@ -491,7 +493,7 @@ export default function Events() {
           <Typography
             sx={{
               color: "#fff",
-              fontSize: 30,
+              fontSize: 25,
               fontWeight: 800,
             }}
           >
@@ -503,27 +505,20 @@ export default function Events() {
           </Typography>
         </Box>
 
-        <Button
-          variant="contained"
+        <CommonButton
           startIcon={<AddIcon />}
           onClick={() => {
             setEditing(null);
             setForm(EMPTY_FORM);
             setOpen(true);
           }}
-          sx={{
-            borderRadius: 3,
-            px: 2.5,
-            py: 1.2,
-            fontWeight: 700,
-          }}
         >
           Add Event
-        </Button>
+        </CommonButton>
       </Stack>
 
       {/* Stats */}
-      <Grid container spacing={2} mb={3}>
+      <Grid container spacing={2} mb={3} sx={{ marginTop: "15px" }}>
         <Grid item xs={12} md={3}>
           <StatCard
             title="Approved"
@@ -564,6 +559,7 @@ export default function Events() {
       {/* Main Card */}
       <Card
         sx={{
+          marginTop: "15px",
           background:
             "linear-gradient(145deg, rgba(30,41,59,.96), rgba(15,23,42,.96))",
           border: "1px solid #1e293b",
@@ -620,6 +616,7 @@ export default function Events() {
           <Divider sx={{ borderColor: "#1e293b", mb: 2 }} />
 
           <DataGrid
+            style={{ width: "100%" }}
             rows={rows}
             columns={columns}
             rowCount={total}

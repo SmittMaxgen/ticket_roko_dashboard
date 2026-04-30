@@ -31,6 +31,8 @@ import VerifiedIcon from "@mui/icons-material/VerifiedUser";
 import api from "../api/axios";
 import { useSnackbar } from "notistack";
 
+import CommonButton from "../commonComponents/CommonButton";
+
 const roleColor = {
   super_admin: "error",
   admin: "warning",
@@ -272,16 +274,25 @@ export default function Users() {
         }}
       >
         <Box>
-          <Typography variant="h5" sx={{ color: "#F8FAFC" }}>
+          {/* <Typography variant="h5" sx={{ color: "#F8FAFC" }}>
+            Users
+          </Typography> */}
+          <Typography
+            sx={{
+              color: "#fff",
+              fontSize: 25,
+              fontWeight: 800,
+            }}
+          >
             Users
           </Typography>
           <Typography sx={{ color: "#64748B", fontSize: 13 }}>
             Manage users, organizers & KYC verification
           </Typography>
         </Box>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={openAdd}>
+        <CommonButton startIcon={<AddIcon />} onClick={openAdd}>
           Add User
-        </Button>
+        </CommonButton>
       </Box>
 
       <Card sx={{ background: "#1E293B" }}>

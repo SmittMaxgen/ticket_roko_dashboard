@@ -570,7 +570,16 @@ export default function Bookings() {
     <Box>
       {/* HEADER */}
       <Box sx={{ mb: 3 }}>
-        <Typography variant="h5" sx={{ color: "#fff", fontWeight: 800 }}>
+        {/* <Typography variant="h5" sx={{ color: "#fff", fontWeight: 800 }}>
+          Bookings
+        </Typography> */}
+        <Typography
+          sx={{
+            color: "#fff",
+            fontSize: 25,
+            fontWeight: 800,
+          }}
+        >
           Bookings
         </Typography>
 
@@ -620,6 +629,7 @@ export default function Bookings() {
 
           {/* TABLE */}
           <DataGrid
+            style={{ width: "auto" }}
             rows={rows}
             columns={columns}
             loading={loading}

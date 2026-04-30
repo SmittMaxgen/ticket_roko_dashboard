@@ -24,6 +24,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import AddIcon from "@mui/icons-material/Add";
 import { useNavigate } from "react-router-dom";
+import CommonButton from "../commonComponents/CommonButton";
 
 const HallDesk = () => {
   const dispatch = useDispatch();
@@ -51,25 +52,35 @@ const HallDesk = () => {
   };
 
   return (
-    <Box p={3}>
+    <Box>
       {/* Header */}
       <Stack
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          marginBottom: "15px",
+        }}
         direction="row"
         justifyContent="space-between"
         alignItems="center"
-        mb={3}
       >
-        <Typography variant="h5" fontWeight="bold">
-          Halls Management
+        <Typography
+          sx={{
+            color: "#fff",
+            fontSize: 25,
+            fontWeight: 800,
+          }}
+        >
+          Bookings
         </Typography>
 
-        <Button
+        <CommonButton
           variant="contained"
           onClick={() => handleAddHall()}
           startIcon={<AddIcon />}
         >
           Add Hall
-        </Button>
+        </CommonButton>
       </Stack>
 
       {/* Error */}

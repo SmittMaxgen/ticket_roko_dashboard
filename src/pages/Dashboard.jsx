@@ -3831,9 +3831,17 @@ export default function Dashboard() {
           <Box
             sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 0.5 }}
           >
-            <Typography
+            {/* <Typography
               variant="h5"
               sx={{ color: "#F8FAFC", fontWeight: 800, letterSpacing: -0.5 }}
+            >
+            </Typography> */}
+            <Typography
+              sx={{
+                color: "#fff",
+                fontSize: 25,
+                fontWeight: 800,
+              }}
             >
               {greeting()}, {user?.name?.split(" ")[0]} 👋
             </Typography>
