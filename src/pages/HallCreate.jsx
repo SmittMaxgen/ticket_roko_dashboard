@@ -986,6 +986,10 @@ function BookingView({ hallId }) {
     );
   }
 }
+const getSeatName = (rowIndex, seatIndex) => {
+  const rowLetter = String.fromCharCode(65 + rowIndex); // A, B, C...
+  return `${rowLetter}${seatIndex + 1}`; // A1, A2...
+};
 
 function DrawMode({ hallId, is_edit = false, is_add = false }) {
   const dispatch = useDispatch();
@@ -1570,23 +1574,41 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
               <rect width="5000" height="4000" fill="url(#grid)" />
 
               {/* ROWS */}
-              {placedRows.map((row) =>
-                row.pts.map((pt, i) => (
-                  <rect
-                    key={`${row.id}_${i}`}
-                    x={pt.x - SEAT_SIZE / 2}
-                    y={pt.y - SEAT_SIZE / 2}
-                    width={SEAT_SIZE}
-                    height={SEAT_SIZE}
-                    rx={shapeRadius(row.shape)}
-                    fill={row.color + "30"}
-                    stroke={row.color}
-                  />
-                )),
+              {placedRows.map((row, rowIndex) =>
+                row.pts.map((pt, i) => {
+                  const name = getSeatName(rowIndex, i);
+
+                  return (
+                    <g key={`${row.id}_${i}`}>
+                      <rect
+                        x={pt.x - SEAT_SIZE / 2}
+                        y={pt.y - SEAT_SIZE / 2}
+                        width={SEAT_SIZE}
+                        height={SEAT_SIZE}
+                        rx={shapeRadius(row.shape)}
+                        fill={row.color + "30"}
+                        stroke={row.color}
+                      />
+
+                      {/* 👇 SEAT LABEL */}
+                      <text
+                        x={pt.x}
+                        y={pt.y + 4}
+                        textAnchor="middle"
+                        fontSize="8"
+                        fill="#fff"
+                        pointerEvents="none"
+                        style={{ userSelect: "none" }}
+                      >
+                        {name}
+                      </text>
+                    </g>
+                  );
+                }),
               )}
 
               {/* SEATS */}
-              {placedSeats.map((seat) => (
+              {/* {placedSeats.map((seat) => (
                 <rect
                   key={seat.id}
                   x={seat.x - SEAT_SIZE / 2}
@@ -1598,8 +1620,37 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                   stroke={seat.color}
                   onMouseDown={(e) => startSeatDrag(seat.id, e)}
                 />
-              ))}
+              ))} */}
+              {placedSeats.map((seat, i) => {
+                const name = `S${i + 1}`;
 
+                return (
+                  <g key={seat.id}>
+                    <rect
+                      x={seat.x - SEAT_SIZE / 2}
+                      y={seat.y - SEAT_SIZE / 2}
+                      width={SEAT_SIZE}
+                      height={SEAT_SIZE}
+                      rx={shapeRadius(seat.shape)}
+                      fill={seat.color + "30"}
+                      stroke={seat.color}
+                      onMouseDown={(e) => startSeatDrag(seat.id, e)}
+                    />
+
+                    {/* 👇 LABEL */}
+                    <text
+                      x={seat.x}
+                      y={seat.y + 4}
+                      textAnchor="middle"
+                      fontSize="8"
+                      fill="#fff"
+                      pointerEvents="none"
+                    >
+                      {name}
+                    </text>
+                  </g>
+                );
+              })}
               {/* PREVIEW */}
               {previewPts.map((pt, i) => (
                 <rect
