@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "/api", // ✅ remove the full domain
+  baseURL: "http://localhost:4000/api", // ✅ remove the full domain
 });
 
 // attach token

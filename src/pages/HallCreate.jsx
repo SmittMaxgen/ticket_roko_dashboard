@@ -95,18 +95,18 @@ const GAP = 5;
 // ─────────────────────────────────────────────────────────────
 // GEOMETRY
 // ─────────────────────────────────────────────────────────────
-function seatsAlongLine(x1, y1, x2, y2) {
-  const dx = x2 - x1,
-    dy = y2 - y1;
-  const dist = Math.sqrt(dx * dx + dy * dy);
-  const count = Math.max(1, Math.round(dist / (S + GAP)) + 1);
-  const ux = dist === 0 ? 1 : dx / dist;
-  const uy = dist === 0 ? 0 : dy / dist;
-  return Array.from({ length: count }, (_, i) => ({
-    x: x1 + ux * i * (S + GAP),
-    y: y1 + uy * i * (S + GAP),
-  }));
-}
+// function seatsAlongLine(x1, y1, x2, y2) {
+//   const dx = x2 - x1,
+//     dy = y2 - y1;
+//   const dist = Math.sqrt(dx * dx + dy * dy);
+//   const count = Math.max(1, Math.round(dist / (S + GAP)) + 1);
+//   const ux = dist === 0 ? 1 : dx / dist;
+//   const uy = dist === 0 ? 0 : dy / dist;
+//   return Array.from({ length: count }, (_, i) => ({
+//     x: x1 + ux * i * (S + GAP),
+//     y: y1 + uy * i * (S + GAP),
+//   }));
+// }
 
 // Status → colours
 const seatBg = (seat) => {
@@ -311,7 +311,7 @@ function BookingView({ hallId }) {
     dispatch(fetchHallByIdThunk({ id: hallId || id }));
   }, [dispatch, hallId, id]);
   useEffect(() => {
-    if (hall?.seats) {
+    if (Array.isArray(hall?.seats)) {
       setLocalSeats(hall.seats.map((s) => ({ ...s })));
     }
   }, [hall]);
@@ -1213,11 +1213,15 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
   // MOUSE DOWN
   // ---------------------------------------------------
   const handleMouseDown = (e) => {
-    if (e.button === 1 || e.button === 2 || e.altKey || e.shiftKey) {
+    // if (e.button === 1 || e.button === 2 || e.altKey || e.shiftKey) {
+    //   startPan(e);
+    //   return;
+    // }
+
+    if (e.button !== 0 || e.altKey || e.shiftKey) {
       startPan(e);
       return;
     }
-
     const pos = svgPoint(e);
 
     if (tool === "erase") {
@@ -1296,16 +1300,37 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
       const pts = seatsAlongLine(startPos.x, startPos.y, pos.x, pos.y);
 
       if (pts.length > 0) {
-        setPlacedRows((prev) => [
-          ...prev,
-          {
-            id: `r_${Date.now()}`,
-            pts,
-            color: sec.color,
-            sectionId: sec.id,
-            shape: seatShape,
-          },
-        ]);
+        // setPlacedRows((prev) => [
+        //   ...prev,
+        //   {
+        //     id: `r_${Date.now()}`,
+        //     pts,
+        //     color: sec.color,
+        //     sectionId: sec.id,
+        //     shape: seatShape,
+        //   },
+        // ]);
+        setPlacedRows((prev) => {
+          const rowIndex = prev.length;
+          const rowLetter = String.fromCharCode(65 + rowIndex); // A, B, C...
+
+          const ptsWithNames = pts.map((p, i) => ({
+            ...p,
+            seat_name: `${rowLetter}${i + 1}`,
+          }));
+
+          return [
+            ...prev,
+            {
+              id: `r_${Date.now()}`,
+              pts: ptsWithNames,
+              color: sec.color,
+              sectionId: sec.id,
+              shape: seatShape,
+              rowLetter, // ✅ store it
+            },
+          ];
+        });
       }
     }
 
@@ -1522,7 +1547,11 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
             }}
           >
             <button
-              onClick={() => setZoom((z) => clamp(z - 0.1, MIN_ZOOM, MAX_ZOOM))}
+              onClick={() =>
+                setZoom((z) =>
+                  clamp(Number((z + direction).toFixed(2)), MIN_ZOOM, MAX_ZOOM),
+                )
+              }
             >
               -
             </button>
@@ -1622,7 +1651,10 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                 />
               ))} */}
               {placedSeats.map((seat, i) => {
-                const name = `S${i + 1}`;
+                // const name = `S${i + 1}`;
+                const name =
+                  seat.seat_name ||
+                  `${String.fromCharCode(65 + Math.floor(i / 10))}${(i % 10) + 1}`;
 
                 return (
                   <g key={seat.id}>
