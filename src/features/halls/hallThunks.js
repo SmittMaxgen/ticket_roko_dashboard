@@ -82,12 +82,20 @@ import api from "../../api/axios";
 // placedSeats: [{ id, x, y, color, sectionId, shape }]
 // sections:    [{ id, label, color, price, seat_type }]
 // ─────────────────────────────────────────────────────────────
+// export const serialiseDrawLayout = ({
+//   placedRows = [],
+//   placedSeats = [],
+//   sections = [],
+//   canvasWidth = 800,
+//   canvasHeight = 600,
+// }) => {
 export const serialiseDrawLayout = ({
   placedRows = [],
   placedSeats = [],
   sections = [],
   canvasWidth = 800,
   canvasHeight = 600,
+  rowOffset = 0, // ← how many DB rows already exist (edit mode)
 }) => {
   const secMap = {};
   sections.forEach((s) => {
@@ -99,75 +107,128 @@ export const serialiseDrawLayout = ({
     };
   });
 
-  let globalColIdx = 0; // running column counter across all rows
+  // let globalColIdx = 0; // running column counter across all rows
+  // const seats = [];
+
+  // // Track rows by their Y position to assign row labels
+  // // Group placed rows by approximate Y so we can assign A, B, C labels
+  // const rowGroups = {};
+  // placedRows.forEach((row) => {
+  //   const yKey = Math.round((row.pts[0]?.y || 0) / 30); // snap to ~30px bands
+  //   if (!rowGroups[yKey]) rowGroups[yKey] = [];
+  //   rowGroups[yKey].push(row);
+  // });
+
+  // const sortedYKeys = Object.keys(rowGroups).sort((a, b) => +a - +b);
+  // // let rowLabelIdx = 0;
+  // let rowLabelIdx = rowOffset; // ← start after existing DB rows (D, E, F...)
+
+  // sortedYKeys.forEach((yKey) => {
+  //   const rowsAtY = rowGroups[yKey];
+  //   const rowLabel = String.fromCharCode(65 + rowLabelIdx); // A, B, C...
+  //   rowLabelIdx++;
+
+  //   // Sort rows left to right within the same Y band
+  //   rowsAtY.sort((a, b) => (a.pts[0]?.x || 0) - (b.pts[0]?.x || 0));
+
+  //   let colIdx = 1;
+  //   rowsAtY.forEach((row) => {
+  //     const sec = secMap[row.sectionId] || {
+  //       label: "General",
+  //       color: "#b2b2b2",
+  //       price: 0,
+  //       seat_type: "standard",
+  //     };
+
+  //     row.pts.forEach((pt, i) => {
+  //       seats.push({
+  //         seat_name: `${rowLabel}${colIdx}`,
+  //         row_label: rowLabel,
+  //         col_index: colIdx,
+  //         seat_type: sec.seat_type,
+  //         is_space: false,
+  //         section_label: sec.label,
+  //         price: sec.price,
+  //         x_pos: Math.round(pt.x * 100) / 100,
+  //         y_pos: Math.round(pt.y * 100) / 100,
+  //         fill: sec.color,
+  //         sort_order: colIdx - 1,
+  //       });
+  //       colIdx++;
+  //     });
+
+  //     // Add aisle gap between row segments in the same Y band
+  //     if (rowsAtY.indexOf(row) < rowsAtY.length - 1) {
+  //       seats.push({
+  //         seat_name: `${rowLabel}-SPC-${colIdx}`,
+  //         row_label: rowLabel,
+  //         col_index: colIdx,
+  //         seat_type: "space",
+  //         is_space: true,
+  //         price: 0,
+  //         x_pos: 0,
+  //         y_pos: 0,
+  //         fill: "#2a2a35",
+  //         sort_order: colIdx - 1,
+  //       });
+  //       colIdx++;
+  //     }
+  //   });
+  // });
+
   const seats = [];
 
-  // Track rows by their Y position to assign row labels
-  // Group placed rows by approximate Y so we can assign A, B, C labels
-  const rowGroups = {};
+  // Use rowLetter + seat_name already computed in handleMouseUp — no re-grouping
   placedRows.forEach((row) => {
-    const yKey = Math.round((row.pts[0]?.y || 0) / 30); // snap to ~30px bands
-    if (!rowGroups[yKey]) rowGroups[yKey] = [];
-    rowGroups[yKey].push(row);
-  });
+    const sec = secMap[row.sectionId] || {
+      label: "General",
+      color: "#b2b2b2",
+      price: 0,
+      seat_type: "standard",
+    };
 
-  const sortedYKeys = Object.keys(rowGroups).sort((a, b) => +a - +b);
-  let rowLabelIdx = 0;
-
-  sortedYKeys.forEach((yKey) => {
-    const rowsAtY = rowGroups[yKey];
-    const rowLabel = String.fromCharCode(65 + rowLabelIdx); // A, B, C...
-    rowLabelIdx++;
-
-    // Sort rows left to right within the same Y band
-    rowsAtY.sort((a, b) => (a.pts[0]?.x || 0) - (b.pts[0]?.x || 0));
-
-    let colIdx = 1;
-    rowsAtY.forEach((row) => {
-      const sec = secMap[row.sectionId] || {
-        label: "General",
-        color: "#b2b2b2",
-        price: 0,
-        seat_type: "standard",
-      };
-
-      row.pts.forEach((pt, i) => {
-        seats.push({
-          seat_name: `${rowLabel}${colIdx}`,
-          row_label: rowLabel,
-          col_index: colIdx,
-          seat_type: sec.seat_type,
-          is_space: false,
-          section_label: sec.label,
-          price: sec.price,
-          x_pos: Math.round(pt.x * 100) / 100,
-          y_pos: Math.round(pt.y * 100) / 100,
-          fill: sec.color,
-          sort_order: colIdx - 1,
-        });
-        colIdx++;
+    row.pts.forEach((pt, i) => {
+      seats.push({
+        seat_name: pt.seat_name || `${row.rowLetter}${i + 1}`,
+        row_label: row.rowLetter,
+        col_index: i + 1,
+        seat_type: sec.seat_type,
+        is_space: false,
+        section_label: sec.label,
+        price: sec.price,
+        x_pos: Math.round(pt.x * 100) / 100,
+        y_pos: Math.round(pt.y * 100) / 100,
+        fill: sec.color,
+        sort_order: i,
       });
-
-      // Add aisle gap between row segments in the same Y band
-      if (rowsAtY.indexOf(row) < rowsAtY.length - 1) {
-        seats.push({
-          seat_name: `${rowLabel}-SPC-${colIdx}`,
-          row_label: rowLabel,
-          col_index: colIdx,
-          seat_type: "space",
-          is_space: true,
-          price: 0,
-          x_pos: 0,
-          y_pos: 0,
-          fill: "#2a2a35",
-          sort_order: colIdx - 1,
-        });
-        colIdx++;
-      }
     });
   });
 
   // Individual placed seats (not in rows)
+  // placedSeats.forEach((s, i) => {
+  //   const sec = secMap[s.sectionId] || {
+  //     label: "General",
+  //     color: "#b2b2b2",
+  //     price: 0,
+  //     seat_type: "standard",
+  //   };
+  //   seats.push({
+  //     seat_name: `S${i + 1}`,
+  //     row_label: "S",
+  //     col_index: i + 1,
+  //     seat_type: sec.seat_type,
+  //     is_space: false,
+  //     section_label: sec.label,
+  //     price: sec.price,
+  //     x_pos: Math.round(s.x * 100) / 100,
+  //     y_pos: Math.round(s.y * 100) / 100,
+  //     fill: sec.color,
+  //     sort_order: i,
+  //   });
+  // });
+
+  // Individual placed seats (not in rows)
+  // In edit mode these come from API with original labels — preserve them
   placedSeats.forEach((s, i) => {
     const sec = secMap[s.sectionId] || {
       label: "General",
@@ -175,21 +236,23 @@ export const serialiseDrawLayout = ({
       price: 0,
       seat_type: "standard",
     };
+
+    const hasOriginalLabel = s.seat_name && s.row_label && s.row_label !== "S";
+
     seats.push({
-      seat_name: `S${i + 1}`,
-      row_label: "S",
-      col_index: i + 1,
+      seat_name: hasOriginalLabel ? s.seat_name : `S${i + 1}`,
+      row_label: hasOriginalLabel ? s.row_label : "S",
+      col_index: s.col_index || i + 1,
       seat_type: sec.seat_type,
       is_space: false,
       section_label: sec.label,
       price: sec.price,
       x_pos: Math.round(s.x * 100) / 100,
       y_pos: Math.round(s.y * 100) / 100,
-      fill: sec.color,
-      sort_order: i,
+      fill: s.color || sec.color,
+      sort_order: s.col_index ? s.col_index - 1 : i,
     });
   });
-
   return { seats, canvas_width: canvasWidth, canvas_height: canvasHeight };
 };
 

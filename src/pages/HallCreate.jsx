@@ -126,14 +126,34 @@ const seatBorder = (seat) => {
 // ─────────────────────────────────────────────────────────────
 // SAVE HALL DIALOG (used inside DrawMode)
 // ─────────────────────────────────────────────────────────────
-function SaveHallDialog({ open, onClose, onSave, saving }) {
+// function SaveHallDialog({ open, onClose, onSave, saving }) {
+//   const [form, setForm] = useState({
+//     name: "",
+//     description: "",
+//     hall_type: "end_stage",
+//     city: "",
+//     address: "",
+//   });
+function SaveHallDialog({ open, onClose, onSave, saving, initialData = null }) {
   const [form, setForm] = useState({
-    name: "",
-    description: "",
-    hall_type: "end_stage",
-    city: "",
-    address: "",
+    name: initialData?.name || "",
+    description: initialData?.description || "",
+    hall_type: initialData?.hall_type || "end_stage",
+    city: initialData?.city || "",
+    address: initialData?.address || "",
   });
+
+  useEffect(() => {
+    if (open && initialData) {
+      setForm({
+        name: initialData.name || "",
+        description: initialData.description || "",
+        hall_type: initialData.hall_type || "end_stage",
+        city: initialData.city || "",
+        address: initialData.address || "",
+      });
+    }
+  }, [open, initialData]);
   const [err, setErr] = useState("");
 
   const handleSubmit = () => {
@@ -1027,8 +1047,11 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
   const [placedRows, setPlacedRows] = useState([]);
   const [placedSeats, setPlacedSeats] = useState([]);
 
+  // const [saveOpen, setSaveOpen] = useState(false);
+  // const [loadedEdit, setLoadedEdit] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
   const [loadedEdit, setLoadedEdit] = useState(false);
+  // const [rowOffset, setRowOffset] = useState(0); // tracks rows already in DB
 
   // VIEWPORT
   const [zoom, setZoom] = useState(1);
@@ -1114,10 +1137,17 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
       dispatch(fetchHallByIdThunk({ id: hallId }));
     }
 
+    // if (is_add) {
+    //   setPlacedRows([]);
+    //   setPlacedSeats([]);
+    //   setLoadedEdit(false);
+    // }
+
     if (is_add) {
       setPlacedRows([]);
       setPlacedSeats([]);
       setLoadedEdit(false);
+      // setRowOffset(0); // fresh hall starts from row A
     }
   }, [dispatch, hallId, is_edit, is_add]);
 
@@ -1126,6 +1156,24 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
 
     const apiSeats = hall.seats.filter((s) => !s.is_space);
 
+    // const mapped = apiSeats.map((seat) => {
+    //   const sec =
+    //     DRAW_SECTIONS.find(
+    //       (x) =>
+    //         x.label === seat.section_label ||
+    //         x.color === seat.fill ||
+    //         Number(x.price) === Number(seat.price),
+    //     ) || DRAW_SECTIONS[0];
+
+    //   return {
+    //     id: String(seat.id),
+    //     x: snap(Number(seat.x_pos)),
+    //     y: snap(Number(seat.y_pos)),
+    //     color: seat.fill || sec.color,
+    //     sectionId: sec.id,
+    //     shape: "rounded",
+    //   };
+    // });
     const mapped = apiSeats.map((seat) => {
       const sec =
         DRAW_SECTIONS.find(
@@ -1142,8 +1190,14 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
         color: seat.fill || sec.color,
         sectionId: sec.id,
         shape: "rounded",
+        seat_name: seat.seat_name, // ← preserve label
+        row_label: seat.row_label, // ← preserve row
       };
     });
+
+    // Count distinct existing row letters so new rows continue after them
+    // const existingRowCount = Object.keys(hall.rows || {}).length;
+    // setRowOffset(existingRowCount);
 
     setPlacedSeats(mapped);
     setLoadedEdit(true);
@@ -1280,6 +1334,13 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
   // UP
   // ---------------------------------------------------
   const handleMouseUp = (e) => {
+    console.log(
+      "DEBUG hall.rows →",
+      hall?.rows,
+      "keys →",
+      Object.keys(hall?.rows || {}),
+    ); // ← ADD THIS
+
     if (panning) {
       setPanning(false);
       return;
@@ -1300,19 +1361,12 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
       const pts = seatsAlongLine(startPos.x, startPos.y, pos.x, pos.y);
 
       if (pts.length > 0) {
-        // setPlacedRows((prev) => [
-        //   ...prev,
-        //   {
-        //     id: `r_${Date.now()}`,
-        //     pts,
-        //     color: sec.color,
-        //     sectionId: sec.id,
-        //     shape: seatShape,
-        //   },
-        // ]);
         setPlacedRows((prev) => {
-          const rowIndex = prev.length;
-          const rowLetter = String.fromCharCode(65 + rowIndex); // A, B, C...
+          // Count existing DB rows only in edit mode
+          const dbRowCount = is_edit ? Object.keys(hall?.rows || {}).length : 0;
+
+          const rowIndex = prev.length + dbRowCount;
+          const rowLetter = String.fromCharCode(65 + rowIndex);
 
           const ptsWithNames = pts.map((p, i) => ({
             ...p,
@@ -1327,7 +1381,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
               color: sec.color,
               sectionId: sec.id,
               shape: seatShape,
-              rowLetter, // ✅ store it
+              rowLetter,
             },
           ];
         });
@@ -1379,14 +1433,22 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
     const canvasWidth = 3000;
     const canvasHeight = 2000;
 
+    // const layout = serialiseDrawLayout({
+    //   placedRows,
+    //   placedSeats,
+    //   sections: DRAW_SECTIONS,
+    //   canvasWidth,
+    //   canvasHeight,
+    // });
+
     const layout = serialiseDrawLayout({
       placedRows,
       placedSeats,
       sections: DRAW_SECTIONS,
       canvasWidth,
       canvasHeight,
+      rowOffset: is_edit ? Object.keys(hall?.rows || {}).length : 0,
     });
-
     if (!layout.seats.length) {
       enqueueSnackbar("Please create at least one seat", {
         variant: "warning",
@@ -1396,10 +1458,14 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
 
     let result;
 
+    // if (is_edit) {
+    //   result = await dispatch(
+    //     updateHallThunk({
+    //       id: hallId,
     if (is_edit) {
       result = await dispatch(
         updateHallThunk({
-          id: hallId,
+          id: hallId || hall?.id,
           ...hallMeta,
           ...layout,
         }),
@@ -1549,7 +1615,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
             <button
               onClick={() =>
                 setZoom((z) =>
-                  clamp(Number((z + direction).toFixed(2)), MIN_ZOOM, MAX_ZOOM),
+                  clamp(Number((z - 0.1).toFixed(2)), MIN_ZOOM, MAX_ZOOM),
                 )
               }
             >
@@ -1605,7 +1671,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
               {/* ROWS */}
               {placedRows.map((row, rowIndex) =>
                 row.pts.map((pt, i) => {
-                  const name = getSeatName(rowIndex, i);
+                  const name = pt.seat_name || getSeatName(rowIndex, i);
 
                   return (
                     <g key={`${row.id}_${i}`}>
@@ -1772,11 +1838,18 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
         </div>
       </div>
 
+      {/* <SaveHallDialog
+        open={saveOpen}
+        onClose={() => setSaveOpen(false)}
+        onSave={handleSave}
+        saving={saving}
+      /> */}
       <SaveHallDialog
         open={saveOpen}
         onClose={() => setSaveOpen(false)}
         onSave={handleSave}
         saving={saving}
+        initialData={is_edit ? hall : null}
       />
     </>
   );
