@@ -328,13 +328,8 @@ function BookingView({ hallId }) {
   // Load Hall
   // ─────────────────────────────────────────────
   useEffect(() => {
-    dispatch(clearCurrentHall());
-    if (id) {
-      // Event context — use booking layout (event prices + sold status)
-      dispatch(fetchBookingLayoutThunk(id));
-    } else {
-      dispatch(fetchHallByIdThunk({ id: hallId }));
-    }
+    dispatch(clearCurrentHall()); // clear old hall first
+    dispatch(fetchHallByIdThunk({ id: hallId || id }));
   }, [dispatch, hallId, id]);
   useEffect(() => {
     if (Array.isArray(hall?.seats)) {
