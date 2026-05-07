@@ -3,10 +3,12 @@ import { createSlice } from "@reduxjs/toolkit";
 import {
   fetchHallsThunk,
   fetchHallByIdThunk,
+  fetchBookingLayoutThunk,
   createHallThunk,
   updateHallThunk,
   deleteHallThunk,
 } from "./hallThunks";
+// import { fetchBookingLayoutThunk } from "../bookings/bookingThunks";
 
 const hallSlice = createSlice({
   name: "halls",
@@ -40,7 +42,19 @@ const hallSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-
+      // ── fetch booking layout (event-specific prices) ──
+      .addCase(fetchBookingLayoutThunk.pending, (state) => {
+        state.loading = true;
+        state.currentHall = null;
+      })
+      .addCase(fetchBookingLayoutThunk.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentHall = action.payload;
+      })
+      .addCase(fetchBookingLayoutThunk.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
       // ── fetch single ──────────────────────────────
       .addCase(fetchHallByIdThunk.pending, (state) => {
         state.loading = true;

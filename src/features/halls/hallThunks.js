@@ -342,3 +342,33 @@ export const fetchHallStatsThunk = createAsyncThunk(
     }
   },
 );
+
+// Fetches event booking layout with event-specific prices + booking status
+export const fetchBookingLayoutThunk = createAsyncThunk(
+  "halls/fetchBookingLayout",
+  async (eventId, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get(`/events/${eventId}/booking-layout`);
+      const layout = data.data;
+
+      // Group seats by row_label for DrawMode/BookingView compatibility
+      const rows = {};
+      (layout.seats || []).forEach((seat) => {
+        if (!seat.row_label) return;
+        if (!rows[seat.row_label]) rows[seat.row_label] = [];
+        rows[seat.row_label].push(seat);
+      });
+
+      // Return in same shape as fetchHallByIdThunk so BookingView works unchanged
+      return {
+        ...layout.hall,
+        seats: layout.seats,
+        rows,
+      };
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to load booking layout",
+      );
+    }
+  },
+);

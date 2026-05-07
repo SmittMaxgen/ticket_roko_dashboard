@@ -82,6 +82,13 @@ const STATUS_COLORS = {
   draft: "default",
 };
 
+const SECTION_LABELS = [
+  { label: "Premium", color: "#f59e0b" },
+  { label: "Executive", color: "#818cf8" },
+  { label: "General", color: "#34d399" },
+  { label: "VIP", color: "#f472b6" },
+];
+
 const EMPTY_FORM = {
   hall_id: "",
   category_id: "",
@@ -96,6 +103,7 @@ const EMPTY_FORM = {
   total_tickets: 0,
   is_free: false,
   status: "draft",
+  section_prices: { Premium: 0, Executive: 0, General: 0, VIP: 0 },
 };
 
 function StatCard({ title, value, icon, color }) {
@@ -229,17 +237,19 @@ export default function Events({ user }) {
       return;
     }
 
+    // Transform section_prices object → array for API
+    const section_prices = Object.entries(form.section_prices).map(
+      ([section_label, price]) => ({ section_label, price: Number(price) }),
+    );
+
+    const payload = { ...form, section_prices };
+
     let result;
 
     if (editing) {
-      result = await dispatch(
-        updateEventThunk({
-          id: editing,
-          ...form,
-        }),
-      );
+      result = await dispatch(updateEventThunk({ id: editing, ...payload }));
     } else {
-      result = await dispatch(createEventThunk(form));
+      result = await dispatch(createEventThunk(payload));
     }
 
     if (result.meta.requestStatus === "fulfilled") {
@@ -442,14 +452,25 @@ export default function Events({ user }) {
               onClick={() => {
                 // setEditing(row.id);
                 // handleNavigateToEventHall(row);
+                // Build section_prices map from API array
+                const spMap = { Premium: 0, Executive: 0, General: 0, VIP: 0 };
+                (row.sectionPrices || []).forEach((sp) => {
+                  spMap[sp.section_label] = Number(sp.price);
+                });
                 setForm({
+                  hall_id: row.hall_id || "",
+                  category_id: row.category_id || "",
                   title: row.title || "",
                   city: row.city || "",
                   address: row.address || "",
                   description: row.description || "",
+                  event_date: row.event_date || "",
+                  start_time: row.start_time || "",
+                  end_time: row.end_time || "",
                   ticket_price: row.ticket_price || 0,
                   total_tickets: row.total_tickets || 0,
                   status: row.status || "draft",
+                  section_prices: spMap,
                 });
                 setOpen(true);
               }}
@@ -792,6 +813,64 @@ export default function Events({ user }) {
               fullWidth
               required
             />
+            <TextField
+              label="Total Tickets"
+              type="number"
+              value={form.total_tickets}
+              inputProps={{ min: 1 }}
+              onChange={(e) =>
+                setForm({ ...form, total_tickets: e.target.value })
+              }
+              fullWidth
+              required
+            />
+
+            {/* ── Section Prices ── */}
+            <Box>
+              <Typography
+                sx={{ color: "#94a3b8", fontSize: 12, mb: 1, fontWeight: 600 }}
+              >
+                SECTION PRICES (per seat)
+              </Typography>
+              <Grid container spacing={1.5}>
+                {SECTION_LABELS.map((sec) => (
+                  <Grid item xs={6} key={sec.label}>
+                    <TextField
+                      label={sec.label}
+                      type="number"
+                      size="small"
+                      fullWidth
+                      value={form.section_prices[sec.label]}
+                      inputProps={{ min: 0 }}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          section_prices: {
+                            ...form.section_prices,
+                            [sec.label]: e.target.value,
+                          },
+                        })
+                      }
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <span style={{ color: sec.color, fontWeight: 700 }}>
+                              ₹
+                            </span>
+                          </InputAdornment>
+                        ),
+                      }}
+                      sx={{
+                        "& .MuiOutlinedInput-root": {
+                          "& fieldset": { borderColor: sec.color + "55" },
+                          "&:hover fieldset": { borderColor: sec.color },
+                        },
+                      }}
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
           </Stack>
         </DialogContent>
 
