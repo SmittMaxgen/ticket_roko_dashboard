@@ -581,6 +581,17 @@ export default function BookingManager({ eventId }) {
   const MAX_ZOOM = 3;
   const SEAT_SIZE = 22;
 
+  // NEW — add this
+  const selectedSeatObjects = useMemo(() => {
+    return (layout?.seats || []).filter((s) => selectedSeats.includes(s.id));
+  }, [layout?.seats, selectedSeats]);
+
+  const selectedTotal = useMemo(() => {
+    return selectedSeatObjects.reduce(
+      (sum, s) => sum + Number(s.price || 0),
+      0,
+    );
+  }, [selectedSeatObjects]);
   // Load Data
   useEffect(() => {
     const event_id = eventId || id;
@@ -611,6 +622,7 @@ export default function BookingManager({ eventId }) {
       createBookingThunk({
         event_id,
         seat_ids: selectedSeats,
+        payment_method: "cash",
       }),
     );
 
@@ -700,7 +712,7 @@ export default function BookingManager({ eventId }) {
   const getSeatStroke = (seat) => {
     const isSelected = selectedSeats.includes(seat.id);
     if (isSelected) return "#60A5FA";
-    if (seat.status === "sold") return "#7f1d1d";
+    if (seat.status === "sold") return "grey";
     return seat.fill || "#475569";
   };
 
@@ -1115,7 +1127,7 @@ export default function BookingManager({ eventId }) {
         </div>
 
         {/* Footer Summary */}
-        {selectedSeats.length > 0 && (
+        {/* {selectedSeats.length > 0 && (
           <div
             style={{
               padding: 20,
@@ -1135,6 +1147,83 @@ export default function BookingManager({ eventId }) {
               }}
             >
               {selectedSeats.join(", ")}
+            </div>
+          </div>
+        )} */}
+        {selectedSeats.length > 0 && (
+          <div
+            style={{
+              padding: 20,
+              borderTop: "1px solid #172036",
+              background: "#0a101f",
+            }}
+          >
+            <div style={{ color: "#94A3B8", fontSize: 12, marginBottom: 10 }}>
+              Selected Seats
+            </div>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 6,
+                marginBottom: 12,
+              }}
+            >
+              {selectedSeatObjects.map((s) => (
+                <div
+                  key={s.id}
+                  style={{
+                    background: "#1e293b",
+                    borderRadius: 8,
+                    padding: "4px 10px",
+                    fontSize: 12,
+                    color: "#fff",
+                  }}
+                >
+                  {s.seat_name}
+                  <span style={{ color: "#22C55E", marginLeft: 6 }}>
+                    ₹{s.price}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div style={{ borderTop: "1px solid #1e293b", paddingTop: 10 }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: 12,
+                  color: "#64748B",
+                  marginBottom: 4,
+                }}
+              >
+                <span>Subtotal</span>
+                <span>₹{selectedTotal}</span>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: 12,
+                  color: "#64748B",
+                  marginBottom: 8,
+                }}
+              >
+                <span>Convenience (5%)</span>
+                <span>₹{Math.round(selectedTotal * 0.05)}</span>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontWeight: 700,
+                  color: "#22C55E",
+                  fontSize: 14,
+                }}
+              >
+                <span>Total</span>
+                <span>₹{selectedTotal + Math.round(selectedTotal * 0.05)}</span>
+              </div>
             </div>
           </div>
         )}

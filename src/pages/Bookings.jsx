@@ -1212,8 +1212,10 @@ export default function Bookings({
               {/* Booking Info */}
               <Grid container spacing={2}>
                 <Grid item xs={12} md={6}>
-                  <Info title="Customer" value={detail.user_name} />
-                  <Info title="Email" value={detail.user_email} />
+                  {/* <Info title="Customer" value={detail.user_name} />
+                  <Info title="Email" value={detail.user_email} /> */}
+                  <Info title="Customer" value={detail.user?.name} />
+                  <Info title="Email" value={detail.user?.email} />
                   <Info title="Payment" value={detail.payment_status} />
                   <Info title="Status" value={detail.status} />
                 </Grid>
