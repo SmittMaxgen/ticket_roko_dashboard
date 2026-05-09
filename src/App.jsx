@@ -449,7 +449,7 @@ function AppRoutes() {
               </ProtectedRoute>
             }
           />
-          {/* <Route path="vendor-registration" element={<VendorRegistration />} /> */}
+          <Route path="vendor-registration" element={<VendorRegistration />} />
 
           {/* Inner 404 */}
           <Route path="*" element={<NotFound />} />
