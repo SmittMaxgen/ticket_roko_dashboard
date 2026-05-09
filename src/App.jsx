@@ -250,6 +250,7 @@ import BookingManager from "./pages/BookingManager";
 
 // AUTH THUNK
 import { meThunk } from "./features/auth/authThunks";
+import VendorRegistration from "./pages/VendorRegistration";
 
 // ─────────────────────────────────────────────
 // Lazy Pages
@@ -262,6 +263,7 @@ const Bookings = lazy(() => import("./pages/Bookings"));
 const HallCreate = lazy(() => import("./pages/HallCreate"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Settings = lazy(() => import("./pages/Settings"));
+const Vendor = lazy(() => import("./pages/Settings"));
 
 // ─────────────────────────────────────────────
 // Loader
@@ -430,6 +432,7 @@ function AppRoutes() {
               </ProtectedRoute>
             }
           />
+          <Route path="vendor-registration" element={<VendorRegistration />} />
 
           {/* Inner 404 */}
           <Route path="*" element={<NotFound />} />
