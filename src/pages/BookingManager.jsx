@@ -712,7 +712,7 @@ export default function BookingManager({ eventId }) {
   const getSeatStroke = (seat) => {
     const isSelected = selectedSeats.includes(seat.id);
     if (isSelected) return "#60A5FA";
-    if (seat.status === "sold") return "grey";
+    if (seat.status === "sold") return "#c92c4b";
     return seat.fill || "#475569";
   };
 
