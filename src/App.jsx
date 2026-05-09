@@ -224,7 +224,13 @@
 // Pass userId to My Bookings page
 
 import { lazy, Suspense, useEffect } from "react";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useNavigate,
+  Navigate,
+} from "react-router-dom";
 
 import { Provider, useDispatch, useSelector } from "react-redux";
 
