@@ -376,8 +376,19 @@ function AppRoutes() {
           }
         >
           {/* Dashboard */}
-          <Route index element={<Dashboard />} />
+          {/* <Route index element={<Dashboard />} /> */}
 
+          <Route
+            index
+            element={
+              user?.role === "vendor_organizer" &&
+              (!user?.vendorProfile || !user?.vendorProfile?.is_completed) ? (
+                <Navigate to="/vendor-registration" replace />
+              ) : (
+                <Dashboard />
+              )
+            }
+          />
           {/* Users */}
           <Route
             path="users"
@@ -432,7 +443,7 @@ function AppRoutes() {
               </ProtectedRoute>
             }
           />
-          <Route path="vendor-registration" element={<VendorRegistration />} />
+          {/* <Route path="vendor-registration" element={<VendorRegistration />} /> */}
 
           {/* Inner 404 */}
           <Route path="*" element={<NotFound />} />
