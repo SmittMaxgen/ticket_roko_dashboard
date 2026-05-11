@@ -36,11 +36,10 @@ export default function Layout() {
     dispatch(logout());
     navigate("/login");
   };
-  const showSidebar =
-    !user?.vendorProfile || !user?.vendorProfile?.is_completed;
+  const showSidebar = user?.vendorProfile?.is_completed === true;
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", background: "#0A1628" }}>
-      {!showSidebar && <Sidebar />}
+      <Sidebar />
 
       <Box
         sx={{
