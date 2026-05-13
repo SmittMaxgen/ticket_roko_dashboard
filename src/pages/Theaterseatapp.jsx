@@ -27,6 +27,17 @@ import {
 } from "@mui/material";
 
 import {
+  fetchSectionsThunk,
+  fetchDrawToolsThunk,
+  fetchSeatShapesThunk,
+  createSectionThunk,
+} from "../features/options/optionsThunks";
+import {
+  selectSections,
+  selectDrawTools,
+  selectSeatShapes,
+} from "../features/options/optionsSelectors";
+import {
   fetchHallByIdThunk,
   createHallThunk,
   serialiseDrawLayout,
@@ -51,42 +62,49 @@ import {
 // ─────────────────────────────────────────────────────────────
 const MODES = ["Book Seats", "Admin: Draw Mode"];
 
-const DRAW_SECTIONS = [
-  {
-    id: "premium",
-    label: "Premium",
-    color: "#f59e0b",
-    price: 800,
-    seat_type: "vip",
-  },
-  {
-    id: "executive",
-    label: "Executive",
-    color: "#818cf8",
-    price: 500,
-    seat_type: "standard",
-  },
-  {
-    id: "general",
-    label: "General",
-    color: "#34d399",
-    price: 250,
-    seat_type: "standard",
-  },
-  { id: "vip", label: "VIP", color: "#f472b6", price: 1200, seat_type: "vip" },
-];
+// const DRAW_SECTIONS = [
+//   {
+//     id: "premium",
+//     label: "Premium",
+//     color: "#f59e0b",
+//     price: 800,
+//     seat_type: "vip",
+//   },
+//   {
+//     id: "executive",
+//     label: "Executive",
+//     color: "#818cf8",
+//     price: 500,
+//     seat_type: "standard",
+//   },
+//   {
+//     id: "general",
+//     label: "General",
+//     color: "#34d399",
+//     price: 250,
+//     seat_type: "standard",
+//   },
+//   { id: "vip", label: "VIP", color: "#f472b6", price: 1200, seat_type: "vip" },
+//   {
+//     id: "standard",
+//     label: "Standard",
+//     color: "#001170",
+//     price: 250,
+//     seat_type: "standard",
+//   },
+// ];
 
-const DRAW_TOOLS = [
-  { id: "row", icon: "▬", label: "Add Row" },
-  { id: "seat", icon: "◻", label: "Add Seat" },
-  { id: "erase", icon: "⌫", label: "Erase" },
-];
+// const DRAW_TOOLS = [
+//   { id: "row", icon: "▬", label: "Add Row" },
+//   { id: "seat", icon: "◻", label: "Add Seat" },
+//   { id: "erase", icon: "⌫", label: "Erase" },
+// ];
 
-const SEAT_SHAPES = [
-  { id: "rounded", r: 4, label: "Rounded" },
-  { id: "square", r: 1, label: "Square" },
-  { id: "circle", r: 11, label: "Circle" },
-];
+// const SEAT_SHAPES = [
+//   { id: "rounded", r: 4, label: "Rounded" },
+//   { id: "square", r: 1, label: "Square" },
+//   { id: "circle", r: 11, label: "Circle" },
+// ];
 
 const HALL_TYPES = ["end_stage", "arena", "proscenium", "traverse", "custom"];
 
@@ -873,7 +891,37 @@ function BookingView({ hallId }) {
 function DrawMode() {
   const dispatch = useDispatch();
   const { enqueueSnackbar } = useSnackbar();
+  // const saving = useSelector(selectHallActionLoading);
   const saving = useSelector(selectHallActionLoading);
+  const DRAW_SECTIONS = useSelector(selectSections);
+  const DRAW_TOOLS = useSelector(selectDrawTools);
+  const SEAT_SHAPES = useSelector(selectSeatShapes);
+
+  // useEffect(() => {
+  //   dispatch(fetchSectionsThunk());
+  //   dispatch(fetchDrawToolsThunk());
+  //   dispatch(fetchSeatShapesThunk());
+  // }, [dispatch]);
+  useEffect(() => {
+    dispatch(fetchSectionsThunk());
+    dispatch(fetchDrawToolsThunk());
+    dispatch(fetchSeatShapesThunk());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (DRAW_SECTIONS.length > 0)
+      setActiveSec((prev) =>
+        DRAW_SECTIONS.find((s) => s.id === prev) ? prev : DRAW_SECTIONS[0].id,
+      );
+  }, [DRAW_SECTIONS]);
+
+
+  useEffect(() => {
+    if (SEAT_SHAPES.length > 0)
+      setSeatShape((prev) =>
+        SEAT_SHAPES.find((s) => s.id === prev) ? prev : SEAT_SHAPES[0].id,
+      );
+  }, [SEAT_SHAPES]);
 
   const svgRef = useRef(null);
 
@@ -888,8 +936,15 @@ function DrawMode() {
   const [placedSeats, setPlacedSeats] = useState([]);
   const [saveOpen, setSaveOpen] = useState(false);
 
-  const getSec = () => DRAW_SECTIONS.find((s) => s.id === activeSec);
-  const getShape = () => SEAT_SHAPES.find((s) => s.id === seatShape);
+  // const getSec = () => DRAW_SECTIONS.find((s) => s.id === activeSec);
+  // const getShape = () => SEAT_SHAPES.find((s) => s.id === seatShape);
+  const getSec = () =>
+    DRAW_SECTIONS.find((s) => s.id === activeSec) ||
+    DRAW_SECTIONS[0] || { color: "#818cf8", id: "", label: "" };
+
+  const getShape = () =>
+    SEAT_SHAPES.find((s) => s.id === seatShape) ||
+    SEAT_SHAPES[0] || { r: 4, id: "rounded", label: "Rounded" };
 
   const svgPoint = (e) => {
     const rect = svgRef.current?.getBoundingClientRect();
@@ -1020,8 +1075,10 @@ function DrawMode() {
         )
       : null;
 
-  const shapeR = getShape().r;
-  const secColor = getSec().color;
+  // const shapeR = getShape().r;
+  // const secColor = getSec().color;
+  const shapeR = getShape()?.r ?? 4;
+  const secColor = getSec()?.color ?? "#818cf8";
   const totalSeats =
     placedRows.reduce((a, r) => a + r.pts.length, 0) + placedSeats.length;
 
@@ -1134,6 +1191,41 @@ function DrawMode() {
                 </button>
               );
             })}
+            <button
+              onClick={() => {
+                const id_key = prompt("id_key (e.g. balcony):")
+                  ?.trim()
+                  .toLowerCase();
+                if (!id_key) return;
+                const label = prompt("Label (e.g. Balcony):") || id_key;
+                const color = prompt("Color hex (e.g. #f59e0b):") || "#818cf8";
+                const price = Number(prompt("Price (e.g. 500):") || 0);
+                const seat_type =
+                  prompt("Type: vip or standard:") || "standard";
+                dispatch(
+                  createSectionThunk({
+                    id_key,
+                    label,
+                    color,
+                    price,
+                    seat_type,
+                  }),
+                );
+              }}
+              style={{
+                width: "100%",
+                padding: "8px",
+                marginTop: 6,
+                background: "transparent",
+                border: "1px dashed #2563EB44",
+                borderRadius: 8,
+                color: "#2563EB",
+                cursor: "pointer",
+                fontSize: 12,
+              }}
+            >
+              + Add Section
+            </button>
           </div>
 
           {/* Tools */}

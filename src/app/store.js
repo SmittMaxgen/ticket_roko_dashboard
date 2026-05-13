@@ -9,6 +9,7 @@ import bookingReducer from "../features/bookings/bookingSlice";
 import dashboardReducer from "../features/dashboard/dashboardSlice";
 import categoryReducer from "../features/categories/categorySlice";
 import vendorReducer from "../features/vendor/vendorSlice";
+import optionsReducer from "../features/options/optionsSlice";
 
 export const store = configureStore({
   reducer: {
@@ -20,5 +21,6 @@ export const store = configureStore({
     dashboard: dashboardReducer,
     category: categoryReducer,
     vendor: vendorReducer,
+    options: optionsReducer,
   },
 });

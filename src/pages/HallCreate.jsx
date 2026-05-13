@@ -41,6 +41,22 @@ import {
   selectSelectedTotal,
   selectSeatsByRow,
 } from "../features/hallSeat/seatSelectors";
+
+import {
+  fetchSectionsThunk,
+  fetchDrawToolsThunk,
+  fetchSeatShapesThunk,
+  createSectionThunk,
+  deleteSectionThunk,
+  updateSeatLabelThunk,
+} from "../features/options/optionsThunks";
+import {
+  selectSections,
+  selectDrawTools,
+  selectSeatShapes,
+} from "../features/options/optionsSelectors";
+
+// import { useParams } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import BookingManager from "./BookingManager";
 import { clearCurrentHall } from "../features/halls/hallSlice";
@@ -50,42 +66,50 @@ import { clearCurrentHall } from "../features/halls/hallSlice";
 // ─────────────────────────────────────────────────────────────
 const MODES = ["Book Seats", "Admin: Draw Mode", "Bookings"];
 
-const DRAW_SECTIONS = [
-  {
-    id: "premium",
-    label: "Premium",
-    color: "#f59e0b",
-    price: 800,
-    seat_type: "vip",
-  },
-  {
-    id: "executive",
-    label: "Executive",
-    color: "#818cf8",
-    price: 500,
-    seat_type: "standard",
-  },
-  {
-    id: "general",
-    label: "General",
-    color: "#34d399",
-    price: 250,
-    seat_type: "standard",
-  },
-  { id: "vip", label: "VIP", color: "#f472b6", price: 1200, seat_type: "vip" },
-];
+// const DRAW_SECTIONS = [
+//   {
+//     id: "premium",
+//     label: "Premium",
+//     color: "#f59e0b",
+//     price: 800,
+//     seat_type: "vip",
+//   },
+//   {
+//     id: "executive",
+//     label: "Executive",
+//     color: "#818cf8",
+//     price: 500,
+//     seat_type: "standard",
+//   },
+//   {
+//     id: "general",
+//     label: "General",
+//     color: "#34d399",
+//     price: 250,
+//     seat_type: "standard",
+//   },
+//   { id: "vip", label: "VIP", color: "#f472b6", price: 1200, seat_type: "vip" },
+//   {
+//     id: "standard",
+//     label: "Standard",
+//     color: "#001170",
+//     price: 250,
+//     seat_type: "standard",
+//   },
+// ];
 
-const DRAW_TOOLS = [
-  { id: "row", icon: "▬", label: "Add Row" },
-  { id: "seat", icon: "◻", label: "Add Seat" },
-  { id: "erase", icon: "⌫", label: "Erase" },
-];
+// const DRAW_TOOLS = [
+//   { id: "row", icon: "▬", label: "Add Row" },
+//   { id: "seat", icon: "◻", label: "Add Seat" },
+//   { id: "erase", icon: "⌫", label: "Erase" },
+// ];
 
-const SEAT_SHAPES = [
-  { id: "rounded", r: 4, label: "Rounded" },
-  { id: "square", r: 1, label: "Square" },
-  { id: "circle", r: 11, label: "Circle" },
-];
+// const SEAT_SHAPES = [
+//   { id: "rounded", r: 4, label: "Rounded" },
+//   { id: "square", r: 1, label: "Square" },
+//   { id: "circle", r: 11, label: "Circle" },
+// ];
+// REPLACE the deleted static constants with these:
 
 const HALL_TYPES = ["end_stage", "arena", "proscenium", "traverse", "custom"];
 
@@ -1019,6 +1043,9 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
   const hall = useSelector(selectCurrentHall);
   const saving = useSelector(selectHallActionLoading);
   const loading = useSelector(selectHallLoading);
+  const DRAW_SECTIONS = useSelector(selectSections);
+  const DRAW_TOOLS = useSelector(selectDrawTools);
+  const SEAT_SHAPES = useSelector(selectSeatShapes);
 
   const svgRef = useRef(null);
   const wrapRef = useRef(null);
@@ -1052,6 +1079,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
   // const [loadedEdit, setLoadedEdit] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
   const [loadedEdit, setLoadedEdit] = useState(false);
+  const [selectedSeatIds, setSelectedSeatIds] = useState([]);
   // const [rowOffset, setRowOffset] = useState(0); // tracks rows already in DB
 
   // VIEWPORT
@@ -1067,10 +1095,14 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
   const snap = (n) => Math.round(n / GRID) * GRID;
 
   const getSec = () =>
-    DRAW_SECTIONS.find((s) => s.id === activeSec) || DRAW_SECTIONS[0];
+    (DRAW_SECTIONS || []).find((s) => s.id === activeSec) ||
+    DRAW_SECTIONS?.[0] || { color: "#818cf8", id: "", label: "" };
+
+  // const shapeRadius = (shape) =>
+  //   SEAT_SHAPES.find((s) => s.id === shape)?.r ?? 4;
 
   const shapeRadius = (shape) =>
-    SEAT_SHAPES.find((s) => s.id === shape)?.r ?? 4;
+    (SEAT_SHAPES || []).find((s) => s.id === shape)?.r ?? 4;
 
   const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 
@@ -1131,6 +1163,37 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
   //   }
   // }, [hallId, is_edit]);
 
+  // useEffect(() => {
+  //   dispatch(fetchSectionsThunk());
+  //   dispatch(fetchDrawToolsThunk());
+  //   dispatch(fetchSeatShapesThunk());
+  // }, [dispatch]);
+
+  // useEffect(() => {
+  //   dispatch(fetchSectionsThunk());
+  //   dispatch(fetchDrawToolsThunk());
+  //   dispatch(fetchSeatShapesThunk());
+  // }, [dispatch]);
+  useEffect(() => {
+    dispatch(fetchSectionsThunk());
+    dispatch(fetchDrawToolsThunk());
+    dispatch(fetchSeatShapesThunk());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (DRAW_SECTIONS.length > 0)
+      setActiveSec((prev) =>
+        DRAW_SECTIONS.find((s) => s.id === prev) ? prev : DRAW_SECTIONS[0].id,
+      );
+  }, [DRAW_SECTIONS]);
+
+  useEffect(() => {
+    if (SEAT_SHAPES.length > 0)
+      setSeatShape((prev) =>
+        SEAT_SHAPES.find((s) => s.id === prev) ? prev : SEAT_SHAPES[0].id,
+      );
+  }, [SEAT_SHAPES]);
+
   useEffect(() => {
     dispatch(clearCurrentHall());
 
@@ -1177,7 +1240,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
     // });
     const mapped = apiSeats.map((seat) => {
       const sec =
-        DRAW_SECTIONS.find(
+        DRAW_SECTIONS?.find(
           (x) =>
             x.label === seat.section_label ||
             x.color === seat.fill ||
@@ -1188,8 +1251,8 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
         id: String(seat.id),
         x: snap(Number(seat.x_pos)),
         y: snap(Number(seat.y_pos)),
-        color: seat.fill || sec.color,
-        sectionId: sec.id,
+        color: seat.fill || sec?.color,
+        sectionId: sec?.id,
         shape: "rounded",
         seat_name: seat.seat_name, // ← preserve label
         row_label: seat.row_label, // ← preserve row
@@ -1251,6 +1314,15 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
       y: nextPanY,
     });
   };
+  // ---------------------------------------------------
+  // WHEEL (non-passive fix)
+  // ---------------------------------------------------
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+    el.addEventListener("wheel", handleWheel, { passive: false });
+    return () => el.removeEventListener("wheel", handleWheel);
+  }, [zoom, pan]);
 
   // ---------------------------------------------------
   // PAN START
@@ -1277,6 +1349,8 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
       startPan(e);
       return;
     }
+    if (tool === "select") return; // seats handle their own onClick
+
     const pos = svgPoint(e);
 
     if (tool === "erase") {
@@ -1442,10 +1516,11 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
     //   canvasHeight,
     // });
 
+    // this already works because DRAW_SECTIONS is now dynamic from Redux
     const layout = serialiseDrawLayout({
       placedRows,
       placedSeats,
-      sections: DRAW_SECTIONS,
+      sections: DRAW_SECTIONS, // ← now dynamic, no change needed
       canvasWidth,
       canvasHeight,
       rowOffset: is_edit ? Object.keys(hall?.rows || {}).length : 0,
@@ -1550,7 +1625,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
             padding: 14,
           }}
         >
-          {DRAW_SECTIONS.map((sec) => (
+          {DRAW_SECTIONS?.map((sec) => (
             <button
               key={sec.id}
               onClick={() => setActiveSec(sec.id)}
@@ -1571,8 +1646,36 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
             </button>
           ))}
 
+          {/* <hr style={{ margin: "14px 0", borderColor: "#1e1e2a" }} /> */}
+          <button
+            onClick={() => {
+              const id_key = prompt("id_key (e.g. balcony):")
+                ?.trim()
+                .toLowerCase();
+              if (!id_key) return;
+              const label = prompt("Label (e.g. Balcony):") || id_key;
+              const color = prompt("Color hex (e.g. #f59e0b):") || "#818cf8";
+              const price = Number(prompt("Price (e.g. 500):") || 0);
+              const seat_type = prompt("Type: vip or standard:") || "standard";
+              dispatch(
+                createSectionThunk({ id_key, label, color, price, seat_type }),
+              );
+            }}
+            style={{
+              width: "100%",
+              padding: "8px",
+              marginTop: 6,
+              background: "transparent",
+              border: "1px dashed #2563EB44",
+              borderRadius: 8,
+              color: "#2563EB",
+              cursor: "pointer",
+              fontSize: 12,
+            }}
+          >
+            + Add Section
+          </button>
           <hr style={{ margin: "14px 0", borderColor: "#1e1e2a" }} />
-
           {DRAW_TOOLS.map((t) => (
             <button
               key={t.id}
@@ -1644,7 +1747,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
             ref={svgRef}
             width="100%"
             height="100%"
-            onWheel={handleWheel}
+            // onWheel={handleWheel}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -1673,17 +1776,50 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
               {placedRows.map((row, rowIndex) =>
                 row.pts.map((pt, i) => {
                   const name = pt.seat_name || getSeatName(rowIndex, i);
+                  const seatKey = `${row.id}_${i}`;
+                  const isSel = selectedSeatIds.includes(seatKey);
 
                   return (
-                    <g key={`${row.id}_${i}`}>
+                    <g
+                      key={seatKey}
+                      style={{
+                        cursor: tool === "select" ? "pointer" : "default",
+                      }}
+                      onClick={(e) => {
+                        if (tool !== "select") return;
+                        e.stopPropagation();
+                        if (e.ctrlKey || e.metaKey) {
+                          // Ctrl+click → single seat toggle
+                          setSelectedSeatIds((prev) =>
+                            prev.includes(seatKey)
+                              ? prev.filter((x) => x !== seatKey)
+                              : [...prev, seatKey],
+                          );
+                        } else {
+                          // click → toggle entire row
+                          const rowKeys = row.pts.map(
+                            (_, idx) => `${row.id}_${idx}`,
+                          );
+                          const allSel = rowKeys.every((k) =>
+                            selectedSeatIds.includes(k),
+                          );
+                          setSelectedSeatIds((prev) =>
+                            allSel
+                              ? prev.filter((k) => !rowKeys.includes(k))
+                              : [...new Set([...prev, ...rowKeys])],
+                          );
+                        }
+                      }}
+                    >
                       <rect
                         x={pt.x - SEAT_SIZE / 2}
                         y={pt.y - SEAT_SIZE / 2}
                         width={SEAT_SIZE}
                         height={SEAT_SIZE}
                         rx={shapeRadius(row.shape)}
-                        fill={row.color + "30"}
-                        stroke={row.color}
+                        fill={isSel ? row.color + "99" : row.color + "30"}
+                        stroke={isSel ? "#fff" : row.color}
+                        strokeWidth={isSel ? 2 : 1}
                       />
 
                       {/* 👇 SEAT LABEL */}
@@ -1723,6 +1859,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                   seat.seat_name ||
                   `${String.fromCharCode(65 + Math.floor(i / 10))}${(i % 10) + 1}`;
 
+                const isSel = selectedSeatIds.includes(String(seat.id));
                 return (
                   <g key={seat.id}>
                     <rect
@@ -1731,9 +1868,24 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                       width={SEAT_SIZE}
                       height={SEAT_SIZE}
                       rx={shapeRadius(seat.shape)}
-                      fill={seat.color + "30"}
-                      stroke={seat.color}
-                      onMouseDown={(e) => startSeatDrag(seat.id, e)}
+                      fill={isSel ? seat.color + "99" : seat.color + "30"}
+                      stroke={isSel ? "#fff" : seat.color}
+                      strokeWidth={isSel ? 2 : 1}
+                      style={{
+                        cursor: tool === "select" ? "pointer" : "default",
+                      }}
+                      onMouseDown={(e) =>
+                        tool !== "select" && startSeatDrag(seat.id, e)
+                      }
+                      onClick={(e) => {
+                        if (tool !== "select") return;
+                        e.stopPropagation();
+                        setSelectedSeatIds((prev) =>
+                          prev.includes(String(seat.id))
+                            ? prev.filter((x) => x !== String(seat.id))
+                            : [...prev, String(seat.id)],
+                        );
+                      }}
                     />
 
                     {/* 👇 LABEL */}
@@ -1747,6 +1899,20 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                     >
                       {name}
                     </text>
+                    {/* 👇 CUSTOM TITLE BADGE */}
+                    {seat.customLabel && (
+                      <text
+                        x={seat.x}
+                        y={seat.y - SEAT_SIZE / 2 - 3}
+                        textAnchor="middle"
+                        fontSize="7"
+                        fill="#f59e0b"
+                        fontWeight="700"
+                        pointerEvents="none"
+                      >
+                        {seat.customLabel}
+                      </text>
+                    )}
                   </g>
                 );
               })}
@@ -1821,6 +1987,144 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
             Total Seats
           </div>
 
+          {selectedSeatIds.length > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ color: "#64748B", fontSize: 11, marginBottom: 6 }}>
+                {selectedSeatIds.length} seat
+                {selectedSeatIds.length > 1 ? "s" : ""} selected
+              </div>
+              <button
+                onClick={async () => {
+                  const title = prompt("Enter title (e.g. Teachers):");
+                  if (!title?.trim()) return;
+                  const label = title.trim();
+
+                  // ── Numeric IDs = DB seats (edit mode) ──────────
+                  const dbIds = selectedSeatIds
+                    .filter((id) => /^\d+$/.test(id))
+                    .map(Number);
+
+                  // ── Row keys = r_xxx_i (local placedRows) ────────
+                  const rowKeys = selectedSeatIds.filter((id) =>
+                    id.startsWith("r_"),
+                  );
+
+                  // ── Local individual seat IDs = s_xxx ────────────
+                  const localIds = selectedSeatIds.filter((id) =>
+                    id.startsWith("s_"),
+                  );
+
+                  console.log("Add Title →", {
+                    label,
+                    hallId,
+                    dbIds,
+                    rowKeys,
+                    localIds,
+                  });
+
+                  // 1️⃣ Edit mode: call API for DB seats
+                  const effectiveHallId = hallId || hall?.id;
+                  if (dbIds.length > 0 && effectiveHallId) {
+                    const result = await dispatch(
+                      updateSeatLabelThunk({
+                        hallId: effectiveHallId,
+                        seat_ids: dbIds,
+                        section_label: label,
+                      }),
+                    );
+                    if (updateSeatLabelThunk.fulfilled.match(result)) {
+                      const { seats = [], updated_count } = result.payload;
+
+                      // ── Update placedSeats in UI immediately ──
+                      if (seats.length > 0) {
+                        setPlacedSeats((prev) =>
+                          prev.map((s) => {
+                            const updated = seats.find(
+                              (u) => String(u.id) === String(s.id),
+                            );
+                            return updated
+                              ? { ...s, customLabel: updated.section_label }
+                              : s;
+                          }),
+                        );
+                      }
+
+                      enqueueSnackbar(
+                        `✅ "${label}" applied to ${updated_count} seats`,
+                        { variant: "success" },
+                      );
+                    } else {
+                      enqueueSnackbar(
+                        result.payload || "Failed to update labels",
+                        { variant: "error" },
+                      );
+                    }
+                  }
+
+                  // 2️⃣ Add mode: update placedRows locally
+                  if (rowKeys.length > 0) {
+                    const rowIds = [
+                      ...new Set(
+                        rowKeys.map((k) => k.split("_").slice(0, 2).join("_")),
+                      ),
+                    ];
+                    setPlacedRows((prev) =>
+                      prev.map((row) =>
+                        rowIds.includes(row.id)
+                          ? { ...row, customLabel: label }
+                          : row,
+                      ),
+                    );
+                    enqueueSnackbar(
+                      `✅ "${label}" set on ${rowKeys.length} seats (save to persist)`,
+                      { variant: "info" },
+                    );
+                  }
+
+                  // 3️⃣ Add mode: update placedSeats locally
+                  if (localIds.length > 0) {
+                    setPlacedSeats((prev) =>
+                      prev.map((s) =>
+                        localIds.includes(s.id)
+                          ? { ...s, customLabel: label }
+                          : s,
+                      ),
+                    );
+                  }
+
+                  if (
+                    dbIds.length === 0 &&
+                    rowKeys.length === 0 &&
+                    localIds.length === 0
+                  ) {
+                    enqueueSnackbar("No valid seats selected", {
+                      variant: "warning",
+                    });
+                  }
+
+                  setSelectedSeatIds([]);
+                }}
+              >
+                🏷 Add Title →
+              </button>
+              <button
+                onClick={() => setSelectedSeatIds([])}
+                style={{
+                  width: "100%",
+                  padding: 6,
+                  border: "1px solid #334155",
+                  borderRadius: 8,
+                  background: "transparent",
+                  color: "#64748B",
+                  fontSize: 11,
+                  cursor: "pointer",
+                }}
+              >
+                Clear Selection
+              </button>
+            </div>
+          )}
+
           <button
             disabled={saving || totalSeats === 0}
             onClick={() => setSaveOpen(true)}
@@ -1862,7 +2166,6 @@ export default function HallCreate({
   is_add = false,
 }) {
   const { id } = useParams();
-
   const [mode, setMode] = useState(0);
   useEffect(() => {
     if (is_add || is_edit) {

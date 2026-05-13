@@ -553,6 +553,13 @@ import {
   selectIsBookingCreating,
 } from "../features/bookings/bookingSelectors";
 
+import {
+  fetchSectionsThunk,
+  updateSeatLabelThunk,
+} from "../features/options/optionsThunks";
+import { selectSections } from "../features/options/optionsSelectors";
+import { useSnackbar } from "notistack";
+
 export default function BookingManager({ eventId }) {
   const dispatch = useDispatch();
   const { id } = useParams();
@@ -574,6 +581,12 @@ export default function BookingManager({ eventId }) {
   const [dragStart, setDragStart] = useState(null);
 
   const [tooltip, setTooltip] = useState(null);
+
+  // ── Admin Select Tool ─────────────────────────────
+  const [adminTool, setAdminTool] = useState(null); // null | "select"
+  const [labelSeatIds, setLabelSeatIds] = useState([]);
+  const { enqueueSnackbar } = useSnackbar();
+  const DRAW_SECTIONS = useSelector(selectSections);
 
   const wrapRef = useRef(null);
 
@@ -599,6 +612,7 @@ export default function BookingManager({ eventId }) {
       dispatch(fetchBookingsThunk({ event_id }));
       dispatch(fetchBookingLayoutThunk(event_id));
     }
+    dispatch(fetchSectionsThunk());
   }, [dispatch, eventId, id]);
 
   // Toggle Seat Selection
@@ -702,18 +716,23 @@ export default function BookingManager({ eventId }) {
   const stopPan = () => setDragging(false);
 
   // Seat Colors (consistent with BookingView)
+  const validColor = (fill) =>
+    /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(fill) ? fill : "#64748B";
+
   const getSeatFill = (seat) => {
-    const isSelected = selectedSeats.includes(seat.id);
-    if (isSelected) return "#2563EB";
+    const color = validColor(seat.fill);
+    if (labelSeatIds.includes(seat.id)) return color + "99";
+    if (selectedSeats.includes(seat.id)) return "#2563EB";
     if (seat.status === "sold") return "#2a1116";
-    return seat.fill ? seat.fill + "22" : "#64748B22";
+    return color + "22";
   };
 
   const getSeatStroke = (seat) => {
-    const isSelected = selectedSeats.includes(seat.id);
-    if (isSelected) return "#60A5FA";
+    const color = validColor(seat.fill);
+    if (labelSeatIds.includes(seat.id)) return "#fff";
+    if (selectedSeats.includes(seat.id)) return "#60A5FA";
     if (seat.status === "sold") return "#c92c4b";
-    return seat.fill || "#475569";
+    return color;
   };
 
   if (loading) {
@@ -779,7 +798,114 @@ export default function BookingManager({ eventId }) {
         </div>
 
         {/* Stage */}
+        {/* Admin Toolbar */}
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            marginBottom: 12,
+            alignItems: "center",
+          }}
+        >
+          <span style={{ color: "#475569", fontSize: 11, fontWeight: 600 }}>
+            ADMIN:
+          </span>
+          <button
+            onClick={() => {
+              setAdminTool((prev) => (prev === "select" ? null : "select"));
+              setLabelSeatIds([]);
+            }}
+            style={{
+              padding: "6px 14px",
+              borderRadius: 8,
+              border: `1px solid ${adminTool === "select" ? "#2563EB" : "#1e293b"}`,
+              background: adminTool === "select" ? "#1e293b" : "transparent",
+              color: adminTool === "select" ? "#60A5FA" : "#64748B",
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            ⊹ Select Tool {adminTool === "select" ? "(ON)" : ""}
+          </button>
+
+          {labelSeatIds.length > 0 && (
+            <>
+              <span style={{ color: "#64748B", fontSize: 11 }}>
+                {labelSeatIds.length} selected
+              </span>
+              <button
+                onClick={async () => {
+                  const title = prompt(
+                    "Enter title for selected seats (e.g. Teachers):",
+                  );
+                  if (!title?.trim()) return;
+                  const hallId = layout?.hall?.id;
+                  if (!hallId) {
+                    enqueueSnackbar("Hall ID not found", { variant: "error" });
+                    return;
+                  }
+                  const result = await dispatch(
+                    updateSeatLabelThunk({
+                      hallId,
+                      seat_ids: labelSeatIds,
+                      section_label: title.trim(),
+                    }),
+                  );
+                  if (updateSeatLabelThunk.fulfilled.match(result)) {
+                    enqueueSnackbar(
+                      `✅ "${title}" applied to ${labelSeatIds.length} seats`,
+                      { variant: "success" },
+                    );
+                    dispatch(fetchBookingLayoutThunk(eventId || id));
+                  } else {
+                    enqueueSnackbar(result.payload || "Failed", {
+                      variant: "error",
+                    });
+                  }
+                  setLabelSeatIds([]);
+                  setAdminTool(null);
+                }}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: "#1D4ED8",
+                  color: "#fff",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                🏷 Add Title
+              </button>
+              <button
+                onClick={() => setLabelSeatIds([])}
+                style={{
+                  padding: "6px 10px",
+                  borderRadius: 8,
+                  border: "1px solid #334155",
+                  background: "transparent",
+                  color: "#64748B",
+                  fontSize: 11,
+                  cursor: "pointer",
+                }}
+              >
+                Clear
+              </button>
+            </>
+          )}
+
+          {adminTool === "select" && labelSeatIds.length === 0 && (
+            <span style={{ color: "#475569", fontSize: 11 }}>
+              Click row to select · Ctrl+click for single seat
+            </span>
+          )}
+        </div>
+
+        {/* Stage */}
         <div style={{ textAlign: "center", marginBottom: 18 }}>
+          {" "}
           <div
             style={{
               width: 420,
@@ -848,6 +974,30 @@ export default function BookingManager({ eventId }) {
               </defs>
               <rect width="100%" height="100%" fill="url(#seatgrid)" />
 
+              {/* Section label text per row group */}
+              {(() => {
+                const rowLabels = {};
+                (layout?.seats || [])
+                  .filter((s) => !s.is_space)
+                  .forEach((s) => {
+                    const key = s.row_label;
+                    if (!rowLabels[key]) rowLabels[key] = s;
+                  });
+                return Object.values(rowLabels).map((s) => (
+                  <text
+                    key={`lbl_${s.row_label}`}
+                    x={Number(s.x_pos) - SEAT_SIZE / 2 - 6}
+                    y={Number(s.y_pos) + 5}
+                    textAnchor="end"
+                    fontSize="9"
+                    fill={s.fill || "#64748B"}
+                    fontWeight="700"
+                  >
+                    {s.section_label || s.row_label}
+                  </text>
+                ));
+              })()}
+
               {(layout?.seats || []).map((seat) => {
                 if (seat.is_space) return null;
                 const x = Number(seat.x_pos) - SEAT_SIZE / 2;
@@ -869,7 +1019,36 @@ export default function BookingManager({ eventId }) {
                         seat.status === "sold" ? "not-allowed" : "pointer",
                       transition: "all 0.15s ease",
                     }}
-                    onClick={() => toggleSeat(seat)}
+                    onClick={(e) => {
+                      if (adminTool === "select") {
+                        e.stopPropagation();
+                        if (e.ctrlKey || e.metaKey) {
+                          setLabelSeatIds((prev) =>
+                            prev.includes(seat.id)
+                              ? prev.filter((x) => x !== seat.id)
+                              : [...prev, seat.id],
+                          );
+                        } else {
+                          // select all seats in same row_label
+                          const rowSeats = (layout?.seats || [])
+                            .filter(
+                              (s) =>
+                                s.row_label === seat.row_label && !s.is_space,
+                            )
+                            .map((s) => s.id);
+                          const allSel = rowSeats.every((sid) =>
+                            labelSeatIds.includes(sid),
+                          );
+                          setLabelSeatIds((prev) =>
+                            allSel
+                              ? prev.filter((x) => !rowSeats.includes(x))
+                              : [...new Set([...prev, ...rowSeats])],
+                          );
+                        }
+                        return;
+                      }
+                      toggleSeat(seat);
+                    }}
                     onMouseEnter={(e) =>
                       setTooltip({
                         seat,
@@ -963,6 +1142,58 @@ export default function BookingManager({ eventId }) {
               color="#60A5FA"
             />
           </div>
+
+          {/* Section Summary */}
+          {(layout?.sectionSummary || []).length > 0 && (
+            <div style={{ marginTop: 14 }}>
+              <div
+                style={{
+                  fontSize: 10,
+                  color: "#475569",
+                  fontWeight: 600,
+                  letterSpacing: 1,
+                  marginBottom: 8,
+                }}
+              >
+                SECTIONS
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2,1fr)",
+                  gap: 6,
+                }}
+              >
+                {(layout?.sectionSummary || []).map((sec) => (
+                  <div
+                    key={sec.label}
+                    style={{
+                      background: sec.fill + "14",
+                      border: `1px solid ${sec.fill}33`,
+                      borderRadius: 8,
+                      padding: "8px 10px",
+                    }}
+                  >
+                    <div
+                      style={{ color: sec.fill, fontWeight: 700, fontSize: 15 }}
+                    >
+                      {sec.available}
+                    </div>
+                    <div
+                      style={{ fontSize: 10, color: "#94A3B8", marginTop: 2 }}
+                    >
+                      {sec.label}
+                    </div>
+                    <div
+                      style={{ fontSize: 9, color: "#475569", marginTop: 1 }}
+                    >
+                      {sec.sold} sold / {sec.total} total
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Controls */}

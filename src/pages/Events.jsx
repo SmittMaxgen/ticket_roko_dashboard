@@ -87,6 +87,7 @@ const SECTION_LABELS = [
   { label: "Executive", color: "#818cf8" },
   { label: "General", color: "#34d399" },
   { label: "VIP", color: "#f472b6" },
+  { label: "Standard", color: "#001170" },
 ];
 
 const EMPTY_FORM = {
