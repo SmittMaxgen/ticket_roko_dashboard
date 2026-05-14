@@ -850,6 +850,7 @@ export default function BookingManager({ eventId }) {
                       hallId,
                       seat_ids: labelSeatIds,
                       section_label: title.trim(),
+                      event_id: eventId || id,
                     }),
                   );
                   if (updateSeatLabelThunk.fulfilled.match(result)) {

@@ -91,11 +91,15 @@ export const fetchSeatShapesThunk = createAsyncThunk(
 
 export const updateSeatLabelThunk = createAsyncThunk(
   "options/updateSeatLabel",
-  async ({ hallId, seat_ids, section_label }, { rejectWithValue }) => {
+  async (
+    { hallId, seat_ids, section_label, event_id },
+    { rejectWithValue },
+  ) => {
     try {
       const res = await api.patch(`/halls/${hallId}/seats/label`, {
         seat_ids,
         section_label,
+        event_id: event_id || null,
       });
       console.log("res.data", res?.data);
       return res.data;
