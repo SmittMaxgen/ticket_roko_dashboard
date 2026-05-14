@@ -971,130 +971,155 @@ export default function Bookings({
   };
 
   const columns = [
-    {
-      field: "booking_ref",
-      headerName: "Ref #",
-      width: 150,
-      renderCell: ({ value }) => (
+  {
+    field: "booking_ref",
+    headerName: "Ref #",
+    width: 150,
+    renderCell: ({ value }) => (
+      <Typography
+        sx={{
+          color: "#38BDF8",
+          fontWeight: 700,
+          fontFamily: "monospace",
+          fontSize: 12,
+        }}
+      >
+        {value}
+      </Typography>
+    ),
+  },
+
+  {
+    field: "customer",
+    headerName: "Customer",
+    flex: 1,
+    minWidth: 220,
+    renderCell: ({ row }) => (
+      <Box>
         <Typography
           sx={{
-            color: "#38BDF8",
+            color: "#fff",
             fontWeight: 700,
-            fontFamily: "monospace",
-            fontSize: 12,
+            fontSize: 13,
           }}
         >
-          {value}
+          {row.user?.name || "-"}
         </Typography>
-      ),
-    },
 
-    {
-      field: "customer",
-      headerName: "Customer",
-      flex: 1,
-      minWidth: 220,
-      renderCell: ({ row }) => (
-        <Box>
-          <Typography sx={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>
-            {row.user_name}
-          </Typography>
-
-          <Typography sx={{ color: "#94A3B8", fontSize: 11 }}>
-            {row.user_email}
-          </Typography>
-        </Box>
-      ),
-    },
-
-    {
-      field: "event",
-      headerName: "Event",
-      flex: 1,
-      minWidth: 220,
-      renderCell: ({ row }) => (
-        <Box>
-          <Typography sx={{ color: "#fff", fontSize: 13 }}>
-            {row.event_title}
-          </Typography>
-
-          <Typography sx={{ color: "#64748B", fontSize: 11 }}>
-            {row.event_date
-              ? new Date(row.event_date).toLocaleDateString("en-IN")
-              : "-"}
-          </Typography>
-        </Box>
-      ),
-    },
-
-    {
-      field: "total_seats",
-      headerName: "Seats",
-      width: 80,
-    },
-
-    {
-      field: "total_amount",
-      headerName: "Amount",
-      width: 130,
-      renderCell: ({ value }) => (
-        <Typography sx={{ color: "#22C55E", fontWeight: 700 }}>
-          ₹{Number(value || 0).toLocaleString("en-IN")}
+        <Typography
+          sx={{
+            color: "#94A3B8",
+            fontSize: 11,
+          }}
+        >
+          {row.user?.email || "-"}
         </Typography>
-      ),
-    },
+      </Box>
+    ),
+  },
 
-    {
-      field: "payment_status",
-      headerName: "Payment",
-      width: 120,
-      renderCell: ({ value }) => (
-        <Chip
-          label={value}
-          size="small"
-          color={PAY_COLOR[value] || "default"}
-        />
-      ),
-    },
+  {
+    field: "event",
+    headerName: "Event",
+    flex: 1,
+    minWidth: 220,
+    renderCell: ({ row }) => (
+      <Box>
+        <Typography
+          sx={{
+            color: "#fff",
+            fontSize: 13,
+          }}
+        >
+          {row.event?.title || "-"}
+        </Typography>
 
-    {
-      field: "status",
-      headerName: "Status",
-      width: 120,
-      renderCell: ({ value }) => (
-        <Chip
-          label={value}
-          size="small"
-          color={STATUS_COLOR[value] || "default"}
-        />
-      ),
-    },
+        <Typography
+          sx={{
+            color: "#64748B",
+            fontSize: 11,
+          }}
+        >
+          {row.event?.event_date
+            ? new Date(row.event.event_date).toLocaleDateString("en-IN")
+            : "-"}
+        </Typography>
+      </Box>
+    ),
+  },
 
-    {
-      field: "actions",
-      headerName: "Actions",
-      width: 120,
-      sortable: false,
-      renderCell: ({ row }) => (
-        <Box>
-          <Tooltip title="View">
-            <IconButton onClick={() => handleView(row.id)}>
-              <VisibilityIcon sx={{ color: "#38BDF8" }} />
+  {
+    field: "total_seats",
+    headerName: "Seats",
+    width: 80,
+  },
+
+  {
+    field: "total_amount",
+    headerName: "Amount",
+    width: 130,
+    renderCell: ({ value }) => (
+      <Typography
+        sx={{
+          color: "#22C55E",
+          fontWeight: 700,
+        }}
+      >
+        ₹{Number(value || 0).toLocaleString("en-IN")}
+      </Typography>
+    ),
+  },
+
+  {
+    field: "payment_status",
+    headerName: "Payment",
+    width: 120,
+    renderCell: ({ value }) => (
+      <Chip
+        label={value}
+        size="small"
+        color={PAY_COLOR[value] || "default"}
+      />
+    ),
+  },
+
+  {
+    field: "status",
+    headerName: "Status",
+    width: 120,
+    renderCell: ({ value }) => (
+      <Chip
+        label={value}
+        size="small"
+        color={STATUS_COLOR[value] || "default"}
+      />
+    ),
+  },
+
+  {
+    field: "actions",
+    headerName: "Actions",
+    width: 120,
+    sortable: false,
+    renderCell: ({ row }) => (
+      <Box>
+        <Tooltip title="View">
+          <IconButton onClick={() => handleView(row.id)}>
+            <VisibilityIcon sx={{ color: "#38BDF8" }} />
+          </IconButton>
+        </Tooltip>
+
+        {row.status === "confirmed" && (
+          <Tooltip title="Cancel">
+            <IconButton onClick={() => handleCancel(row.id)}>
+              <CancelIcon sx={{ color: "#EF4444" }} />
             </IconButton>
           </Tooltip>
-
-          {row.status === "confirmed" && (
-            <Tooltip title="Cancel">
-              <IconButton onClick={() => handleCancel(row.id)}>
-                <CancelIcon sx={{ color: "#EF4444" }} />
-              </IconButton>
-            </Tooltip>
-          )}
-        </Box>
-      ),
-    },
-  ];
-
+        )}
+      </Box>
+    ),
+  },
+];
   return (
     <Box>
       {/* Header */}
