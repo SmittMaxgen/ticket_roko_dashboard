@@ -1044,7 +1044,8 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
   const saving = useSelector(selectHallActionLoading);
   const loading = useSelector(selectHallLoading);
 
-  const DRAW_SECTIONS = useSelector(selectSections) || []; // ← Fixed
+  // ←←← CRITICAL FIXES HERE
+  const DRAW_SECTIONS = useSelector(selectSections) || [];
   const DRAW_TOOLS = useSelector(selectDrawTools) || [];
   const SEAT_SHAPES = useSelector(selectSeatShapes) || [];
 
@@ -1058,7 +1059,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
   const MAX_ZOOM = 3;
 
   const [tool, setTool] = useState("row");
-  const [activeSec, setActiveSec] = useState("premium");
+  const [activeSec, setActiveSec] = useState(DRAW_SECTIONS[0]?.id || "premium");
   const [seatShape, setSeatShape] = useState("rounded");
 
   const [drawing, setDrawing] = useState(false);
