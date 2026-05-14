@@ -205,11 +205,15 @@ export default function Events({ user }) {
     dispatch(fetchCategories());
   }, [dispatch]);
   const stats = useMemo(() => {
-    const approved = rows.filter((x) => x.status === "approved").length;
-    const pending = rows.filter((x) => x.status === "pending_approval").length;
-    const rejected = rows.filter((x) => x.status === "rejected").length;
+    const safeRows = Array.isArray(rows) ? rows : [];
 
-    const revenue = rows.reduce(
+    const approved = safeRows.filter((x) => x.status === "approved").length;
+    const pending = safeRows.filter(
+      (x) => x.status === "pending_approval",
+    ).length;
+    const rejected = safeRows.filter((x) => x.status === "rejected").length;
+
+    const revenue = safeRows.reduce(
       (a, b) => a + Number(b.ticket_price || 0) * Number(b.sold_tickets || 0),
       0,
     );
@@ -649,7 +653,7 @@ export default function Events({ user }) {
 
           <DataGrid
             style={{ width: "100%" }}
-            rows={rows}
+            rows={Array.isArray(rows) ? rows : []}
             columns={columns}
             rowCount={total}
             loading={loading}
