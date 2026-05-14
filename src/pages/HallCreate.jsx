@@ -1080,9 +1080,12 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
 
   const snap = (n) => Math.round(n / GRID) * GRID;
 
-  const getSec = () =>
-    DRAW_SECTIONS.find((s) => s.id === activeSec) ||
-    DRAW_SECTIONS[0] || { color: "#818cf8", id: "", label: "" };
+  const getSec = () => {
+    if (!DRAW_SECTIONS || DRAW_SECTIONS.length === 0) {
+      return { color: "#818cf8", id: "", label: "Default" };
+    }
+    return DRAW_SECTIONS.find((s) => s.id === activeSec) || DRAW_SECTIONS[0];
+  };
 
   const shapeRadius = (shape) =>
     SEAT_SHAPES.find((s) => s.id === shape)?.r ?? 4;
@@ -1609,7 +1612,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
             padding: 14,
           }}
         >
-          {DRAW_SECTIONS?.map((sec) => (
+          {DRAW_SECTIONS.map((sec) => (
             <button
               key={sec.id}
               onClick={() => setActiveSec(sec.id)}
