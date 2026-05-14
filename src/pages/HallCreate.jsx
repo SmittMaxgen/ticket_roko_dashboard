@@ -249,7 +249,7 @@ function SaveHallDialog({ open, onClose, onSave, saving, initialData = null }) {
                   color: "#F8FAFC",
                 }}
               >
-                {HALL_TYPES.map((t) => (
+                {HALL_TYPES?.map((t) => (
                   <MenuItem key={t} value={t}>
                     {t.replace("_", " ")}
                   </MenuItem>
@@ -357,7 +357,7 @@ function BookingView({ hallId }) {
   }, [dispatch, hallId, id]);
   useEffect(() => {
     if (Array.isArray(hall?.seats)) {
-      setLocalSeats(hall.seats.map((s) => ({ ...s })));
+      setLocalSeats(hall?.seats?.map((s) => ({ ...s })));
     }
   }, [hall]);
 
@@ -366,7 +366,7 @@ function BookingView({ hallId }) {
   // ─────────────────────────────────────────────
   const toggleSeat = (seatId) => {
     setLocalSeats((prev) =>
-      prev.map((seat) => {
+      prev?.map((seat) => {
         if (seat.id !== seatId) return seat;
         if (seat.is_space) return seat;
         if (seat.status === "sold") return seat;
@@ -656,7 +656,7 @@ function BookingView({ hallId }) {
 
               <rect width="100%" height="100%" fill="url(#seatgrid)" />
 
-              {localSeats.map((seat) => {
+              {localSeats?.map((seat) => {
                 if (seat.is_space) return null;
 
                 const x = Number(seat.x_pos) - SEAT / 2;
@@ -722,7 +722,7 @@ function BookingView({ hallId }) {
             <svg width={canvasW} height={canvasH}>
               <rect width="100%" height="100%" fill="#040612" />
 
-              {localSeats.map((seat) => {
+              {localSeats?.map((seat) => {
                 if (seat.is_space) return null;
 
                 return (
@@ -786,7 +786,7 @@ function BookingView({ hallId }) {
               marginTop: 16,
             }}
           >
-            {Object.values(sectionSummary).map((sec) => (
+            {Object.values(sectionSummary)?.map((sec) => (
               <div
                 key={sec.label}
                 style={{
@@ -840,7 +840,7 @@ function BookingView({ hallId }) {
             SELECTED SEATS
           </div>
 
-          {selectedSeats.length === 0 ? (
+          {selectedSeats?.length === 0 ? (
             <div
               style={{
                 color: "#475569",
@@ -852,7 +852,7 @@ function BookingView({ hallId }) {
               Click seats to select
             </div>
           ) : (
-            selectedSeats.map((seat) => (
+            selectedSeats?.map((seat) => (
               <div
                 key={seat.id}
                 style={{
@@ -931,7 +931,7 @@ function BookingView({ hallId }) {
           </div>
 
           <button
-            disabled={!selectedSeats.length}
+            disabled={!selectedSeats?.length}
             style={{
               width: "100%",
               padding: 14,
@@ -939,14 +939,14 @@ function BookingView({ hallId }) {
               borderRadius: 12,
               fontWeight: 800,
               fontSize: 14,
-              cursor: selectedSeats.length ? "pointer" : "not-allowed",
-              background: selectedSeats.length
+              cursor: selectedSeats?.length ? "pointer" : "not-allowed",
+              background: selectedSeats?.length
                 ? "linear-gradient(135deg,#2563EB,#1D4ED8)"
                 : "#1e293b",
-              color: selectedSeats.length ? "#fff" : "#64748B",
+              color: selectedSeats?.length ? "#fff" : "#64748B",
             }}
           >
-            {selectedSeats.length > 0 ? "Proceed To Pay →" : "Select Seats"}
+            {selectedSeats?.length > 0 ? "Proceed To Pay →" : "Select Seats"}
           </button>
         </div>
       </div>
@@ -1146,7 +1146,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
     }
 
     const map = {};
-    return pts.filter((p) => {
+    return pts?.filter((p) => {
       const key = `${p.x}_${p.y}`;
       if (map[key]) return false;
       map[key] = true;
@@ -1238,7 +1238,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
     //     shape: "rounded",
     //   };
     // });
-    const mapped = apiSeats.map((seat) => {
+    const mapped = apiSeats?.map((seat) => {
       const sec =
         DRAW_SECTIONS?.find(
           (x) =>
@@ -1387,7 +1387,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
 
     if (dragSeatId) {
       setPlacedSeats((prev) =>
-        prev.map((s) =>
+        prev?.map((s) =>
           s.id === dragSeatId
             ? {
                 ...s,
@@ -1443,7 +1443,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
           const rowIndex = prev.length + dbRowCount;
           const rowLetter = String.fromCharCode(65 + rowIndex);
 
-          const ptsWithNames = pts.map((p, i) => ({
+          const ptsWithNames = pts?.map((p, i) => ({
             ...p,
             seat_name: `${rowLetter}${i + 1}`,
           }));
@@ -1581,7 +1581,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
       : [];
 
   const totalSeats =
-    placedRows.reduce((a, r) => a + r.pts.length, 0) + placedSeats.length;
+    placedRows?.reduce((a, r) => a + r.pts.length, 0) + placedSeats?.length;
 
   const secColor = getSec().color;
 
@@ -1676,7 +1676,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
             + Add Section
           </button>
           <hr style={{ margin: "14px 0", borderColor: "#1e1e2a" }} />
-          {DRAW_TOOLS.map((t) => (
+          {DRAW_TOOLS?.map((t) => (
             <button
               key={t.id}
               onClick={() => setTool(t.id)}
@@ -1773,10 +1773,10 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
               <rect width="5000" height="4000" fill="url(#grid)" />
 
               {/* ROWS */}
-              {placedRows.map((row, rowIndex) =>
-                row.pts.map((pt, i) => {
-                  const name = pt.seat_name || getSeatName(rowIndex, i);
-                  const seatKey = `${row.id}_${i}`;
+              {placedRows?.map((row, rowIndex) =>
+                row.pts?.map((pt, i) => {
+                  const name = pt?.seat_name || getSeatName(rowIndex, i);
+                  const seatKey = `${row?.id}_${i}`;
                   const isSel = selectedSeatIds.includes(seatKey);
 
                   return (
@@ -1853,10 +1853,10 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                   onMouseDown={(e) => startSeatDrag(seat.id, e)}
                 />
               ))} */}
-              {placedSeats.map((seat, i) => {
+              {placedSeats?.map((seat, i) => {
                 // const name = `S${i + 1}`;
                 const name =
-                  seat.seat_name ||
+                  seat?.seat_name ||
                   `${String.fromCharCode(65 + Math.floor(i / 10))}${(i % 10) + 1}`;
 
                 const isSel = selectedSeatIds.includes(String(seat.id));
@@ -1917,7 +1917,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                 );
               })}
               {/* PREVIEW */}
-              {previewPts.map((pt, i) => (
+              {previewPts?.map((pt, i) => (
                 <rect
                   key={i}
                   x={pt.x - SEAT_SIZE / 2}
@@ -2001,16 +2001,16 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
 
                   // ── Numeric IDs = DB seats (edit mode) ──────────
                   const dbIds = selectedSeatIds
-                    .filter((id) => /^\d+$/.test(id))
-                    .map(Number);
+                    ?.filter((id) => /^\d+$/.test(id))
+                    ?.map(Number);
 
                   // ── Row keys = r_xxx_i (local placedRows) ────────
-                  const rowKeys = selectedSeatIds.filter((id) =>
+                  const rowKeys = selectedSeatIds?.filter((id) =>
                     id.startsWith("r_"),
                   );
 
                   // ── Local individual seat IDs = s_xxx ────────────
-                  const localIds = selectedSeatIds.filter((id) =>
+                  const localIds = selectedSeatIds?.filter((id) =>
                     id.startsWith("s_"),
                   );
 
@@ -2038,7 +2038,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                       // ── Update placedSeats in UI immediately ──
                       if (seats.length > 0) {
                         setPlacedSeats((prev) =>
-                          prev.map((s) => {
+                          prev?.map((s) => {
                             const updated = seats?.find(
                               (u) => String(u.id) === String(s.id),
                             );
@@ -2069,7 +2069,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                       ),
                     ];
                     setPlacedRows((prev) =>
-                      prev.map((row) =>
+                      prev?.map((row) =>
                         rowIds.includes(row.id)
                           ? { ...row, customLabel: label }
                           : row,
@@ -2084,7 +2084,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                   // 3️⃣ Add mode: update placedSeats locally
                   if (localIds.length > 0) {
                     setPlacedSeats((prev) =>
-                      prev.map((s) =>
+                      prev?.map((s) =>
                         localIds.includes(s.id)
                           ? { ...s, customLabel: label }
                           : s,
@@ -2296,7 +2296,7 @@ export default function HallCreate({
             );
           })} */}
 
-          {MODES.map((m, i) => {
+          {MODES?.map((m, i) => {
             const showOnlyDrawMode = is_add || is_edit;
 
             // Hide other tabs when add/edit mode
