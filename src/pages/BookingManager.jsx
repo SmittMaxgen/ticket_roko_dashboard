@@ -596,7 +596,7 @@ export default function BookingManager({ eventId }) {
 
   // NEW — add this
   const selectedSeatObjects = useMemo(() => {
-    return (layout?.seats || []).filter((s) => selectedSeats.includes(s.id));
+    return (layout?.seats || [])?.filter((s) => selectedSeats?.includes(s.id));
   }, [layout?.seats, selectedSeats]);
 
   const selectedTotal = useMemo(() => {
@@ -621,7 +621,7 @@ export default function BookingManager({ eventId }) {
 
     setSelectedSeats((prev) =>
       prev.includes(seat.id)
-        ? prev.filter((id) => id !== seat.id)
+        ? prev?.filter((id) => id !== seat.id)
         : [...prev, seat.id],
     );
   }, []);
@@ -660,7 +660,7 @@ export default function BookingManager({ eventId }) {
   // Filtered Bookings
   const filteredBookings = useMemo(() => {
     const q = search.toLowerCase();
-    return bookings.filter((b) => {
+    return bookings?.filter((b) => {
       const matchSearch =
         b.customer_name?.toLowerCase().includes(q) ||
         b.mobile?.includes(q) ||
@@ -668,7 +668,7 @@ export default function BookingManager({ eventId }) {
 
       const matchStatus =
         statusFilter === "all" ||
-        b.status?.toLowerCase() === statusFilter.toLowerCase();
+        b.status?.toLowerCase() === statusFilter?.toLowerCase();
 
       return matchSearch && matchStatus;
     });
@@ -676,9 +676,12 @@ export default function BookingManager({ eventId }) {
 
   // Stats
   const stats = useMemo(() => {
-    const revenue = bookings.reduce((sum, b) => sum + Number(b.amount || 0), 0);
-    const paid = bookings.filter((b) => b.status === "paid").length;
-    const cancelled = bookings.filter((b) => b.status === "cancelled").length;
+    const revenue = bookings?.reduce(
+      (sum, b) => sum + Number(b.amount || 0),
+      0,
+    );
+    const paid = bookings?.filter((b) => b.status === "paid").length;
+    const cancelled = bookings?.filter((b) => b.status === "cancelled").length;
 
     return { total: bookings.length, paid, cancelled, revenue };
   }, [bookings]);
@@ -979,8 +982,8 @@ export default function BookingManager({ eventId }) {
               {(() => {
                 const rowLabels = {};
                 (layout?.seats || [])
-                  .filter((s) => !s.is_space)
-                  .forEach((s) => {
+                  ?.filter((s) => !s.is_space)
+                  ?.forEach((s) => {
                     const key = s.row_label;
                     if (!rowLabels[key]) rowLabels[key] = s;
                   });
@@ -1025,14 +1028,14 @@ export default function BookingManager({ eventId }) {
                         e.stopPropagation();
                         if (e.ctrlKey || e.metaKey) {
                           setLabelSeatIds((prev) =>
-                            prev.includes(seat.id)
-                              ? prev.filter((x) => x !== seat.id)
+                            prev?.includes(seat.id)
+                              ? prev?.filter((x) => x !== seat.id)
                               : [...prev, seat.id],
                           );
                         } else {
                           // select all seats in same row_label
                           const rowSeats = (layout?.seats || [])
-                            .filter(
+                            ?.filter(
                               (s) =>
                                 s.row_label === seat.row_label && !s.is_space,
                             )
@@ -1042,7 +1045,7 @@ export default function BookingManager({ eventId }) {
                           );
                           setLabelSeatIds((prev) =>
                             allSel
-                              ? prev.filter((x) => !rowSeats.includes(x))
+                              ? prev?.filter((x) => !rowSeats.includes(x))
                               : [...new Set([...prev, ...rowSeats])],
                           );
                         }
@@ -1259,7 +1262,7 @@ export default function BookingManager({ eventId }) {
 
         {/* Booking List */}
         <div style={{ flex: 1, overflowY: "auto", padding: 20 }}>
-          {filteredBookings.length === 0 ? (
+          {filteredBookings?.length === 0 ? (
             <div
               style={{
                 color: "#64748B",
@@ -1270,7 +1273,7 @@ export default function BookingManager({ eventId }) {
               No bookings found
             </div>
           ) : (
-            filteredBookings.map((booking) => (
+            filteredBookings?.map((booking) => (
               <div
                 key={booking.id}
                 onClick={() => setSelectedBooking(booking)}
