@@ -1095,14 +1095,14 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
   const snap = (n) => Math.round(n / GRID) * GRID;
 
   const getSec = () =>
-    (DRAW_SECTIONS || []).find((s) => s.id === activeSec) ||
+    (DRAW_SECTIONS || [])?.find((s) => s.id === activeSec) ||
     DRAW_SECTIONS?.[0] || { color: "#818cf8", id: "", label: "" };
 
   // const shapeRadius = (shape) =>
   //   SEAT_SHAPES.find((s) => s.id === shape)?.r ?? 4;
 
   const shapeRadius = (shape) =>
-    (SEAT_SHAPES || []).find((s) => s.id === shape)?.r ?? 4;
+    (SEAT_SHAPES || [])?.find((s) => s.id === shape)?.r ?? 4;
 
   const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
 
@@ -1183,14 +1183,14 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
   useEffect(() => {
     if (DRAW_SECTIONS.length > 0)
       setActiveSec((prev) =>
-        DRAW_SECTIONS.find((s) => s.id === prev) ? prev : DRAW_SECTIONS[0].id,
+        DRAW_SECTIONS?.find((s) => s.id === prev) ? prev : DRAW_SECTIONS[0].id,
       );
   }, [DRAW_SECTIONS]);
 
   useEffect(() => {
     if (SEAT_SHAPES.length > 0)
       setSeatShape((prev) =>
-        SEAT_SHAPES.find((s) => s.id === prev) ? prev : SEAT_SHAPES[0].id,
+        SEAT_SHAPES?.find((s) => s.id === prev) ? prev : SEAT_SHAPES[0].id,
       );
   }, [SEAT_SHAPES]);
 
@@ -2039,7 +2039,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                       if (seats.length > 0) {
                         setPlacedSeats((prev) =>
                           prev.map((s) => {
-                            const updated = seats.find(
+                            const updated = seats?.find(
                               (u) => String(u.id) === String(s.id),
                             );
                             return updated
