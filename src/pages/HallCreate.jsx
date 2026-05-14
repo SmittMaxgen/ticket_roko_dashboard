@@ -1043,69 +1043,50 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
   const hall = useSelector(selectCurrentHall);
   const saving = useSelector(selectHallActionLoading);
   const loading = useSelector(selectHallLoading);
-  const DRAW_SECTIONS = useSelector(selectSections);
-  const DRAW_TOOLS = useSelector(selectDrawTools);
-  const SEAT_SHAPES = useSelector(selectSeatShapes);
+
+  const DRAW_SECTIONS = useSelector(selectSections) || []; // ← Fixed
+  const DRAW_TOOLS = useSelector(selectDrawTools) || [];
+  const SEAT_SHAPES = useSelector(selectSeatShapes) || [];
 
   const svgRef = useRef(null);
   const wrapRef = useRef(null);
 
-  // ---------------------------------------------------
-  // CONFIG
-  // ---------------------------------------------------
   const GRID = 28;
   const SEAT_SIZE = 22;
 
   const MIN_ZOOM = 0.35;
   const MAX_ZOOM = 3;
 
-  // ---------------------------------------------------
-  // STATES
-  // ---------------------------------------------------
   const [tool, setTool] = useState("row");
   const [activeSec, setActiveSec] = useState("premium");
   const [seatShape, setSeatShape] = useState("rounded");
 
   const [drawing, setDrawing] = useState(false);
   const [dragSeatId, setDragSeatId] = useState(null);
-
   const [startPos, setStartPos] = useState(null);
   const [liveEnd, setLiveEnd] = useState(null);
 
   const [placedRows, setPlacedRows] = useState([]);
   const [placedSeats, setPlacedSeats] = useState([]);
-
-  // const [saveOpen, setSaveOpen] = useState(false);
-  // const [loadedEdit, setLoadedEdit] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
   const [loadedEdit, setLoadedEdit] = useState(false);
   const [selectedSeatIds, setSelectedSeatIds] = useState([]);
-  // const [rowOffset, setRowOffset] = useState(0); // tracks rows already in DB
 
-  // VIEWPORT
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
-
   const [panning, setPanning] = useState(false);
   const [panStart, setPanStart] = useState(null);
 
-  // ---------------------------------------------------
-  // HELPERS
-  // ---------------------------------------------------
   const snap = (n) => Math.round(n / GRID) * GRID;
 
   const getSec = () =>
-    (DRAW_SECTIONS || [])?.find((s) => s.id === activeSec) ||
-    DRAW_SECTIONS?.[0] || { color: "#818cf8", id: "", label: "" };
-
-  // const shapeRadius = (shape) =>
-  //   SEAT_SHAPES.find((s) => s.id === shape)?.r ?? 4;
+    DRAW_SECTIONS.find((s) => s.id === activeSec) ||
+    DRAW_SECTIONS[0] || { color: "#818cf8", id: "", label: "" };
 
   const shapeRadius = (shape) =>
-    (SEAT_SHAPES || [])?.find((s) => s.id === shape)?.r ?? 4;
+    SEAT_SHAPES.find((s) => s.id === shape)?.r ?? 4;
 
   const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
-
   // ---------------------------------------------------
   // SCREEN => SVG COORDS (ZOOM SAFE)
   // ---------------------------------------------------
@@ -1181,17 +1162,19 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
   }, [dispatch]);
 
   useEffect(() => {
-    if (DRAW_SECTIONS.length > 0)
+    if (DRAW_SECTIONS.length > 0) {
       setActiveSec((prev) =>
-        DRAW_SECTIONS?.find((s) => s.id === prev) ? prev : DRAW_SECTIONS[0].id,
+        DRAW_SECTIONS.find((s) => s.id === prev) ? prev : DRAW_SECTIONS[0].id,
       );
+    }
   }, [DRAW_SECTIONS]);
 
   useEffect(() => {
-    if (SEAT_SHAPES.length > 0)
+    if (SEAT_SHAPES.length > 0) {
       setSeatShape((prev) =>
-        SEAT_SHAPES?.find((s) => s.id === prev) ? prev : SEAT_SHAPES[0].id,
+        SEAT_SHAPES.find((s) => s.id === prev) ? prev : SEAT_SHAPES[0].id,
       );
+    }
   }, [SEAT_SHAPES]);
 
   useEffect(() => {
