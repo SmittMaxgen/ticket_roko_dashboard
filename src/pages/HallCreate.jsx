@@ -1044,7 +1044,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
   const saving = useSelector(selectHallActionLoading);
   const loading = useSelector(selectHallLoading);
 
-  // ←←← CRITICAL FIXES HERE
+  // Safe defaults
   const DRAW_SECTIONS = useSelector(selectSections) || [];
   const DRAW_TOOLS = useSelector(selectDrawTools) || [];
   const SEAT_SHAPES = useSelector(selectSeatShapes) || [];
@@ -1054,7 +1054,6 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
 
   const GRID = 28;
   const SEAT_SIZE = 22;
-
   const MIN_ZOOM = 0.35;
   const MAX_ZOOM = 3;
 
@@ -1081,9 +1080,8 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
   const snap = (n) => Math.round(n / GRID) * GRID;
 
   const getSec = () => {
-    if (!DRAW_SECTIONS || DRAW_SECTIONS.length === 0) {
+    if (DRAW_SECTIONS.length === 0)
       return { color: "#818cf8", id: "", label: "Default" };
-    }
     return DRAW_SECTIONS.find((s) => s.id === activeSec) || DRAW_SECTIONS[0];
   };
 
@@ -1091,47 +1089,31 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
     SEAT_SHAPES.find((s) => s.id === shape)?.r ?? 4;
 
   const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
-  // ---------------------------------------------------
-  // SCREEN => SVG COORDS (ZOOM SAFE)
-  // ---------------------------------------------------
+
   const svgPoint = (e) => {
     const rect = svgRef.current?.getBoundingClientRect();
-
     if (!rect) return { x: 0, y: 0 };
 
     const rawX = (e.clientX - rect.left - pan.x) / zoom;
     const rawY = (e.clientY - rect.top - pan.y) / zoom;
 
-    return {
-      x: snap(rawX),
-      y: snap(rawY),
-    };
+    return { x: snap(rawX), y: snap(rawY) };
   };
 
-  // ---------------------------------------------------
-  // PERFECT GRID ROW
-  // ---------------------------------------------------
   const seatsAlongLine = (x1, y1, x2, y2) => {
     const dx = x2 - x1;
     const dy = y2 - y1;
-
     const dist = Math.sqrt(dx * dx + dy * dy);
-
     const count = Math.max(1, Math.round(dist / GRID));
 
     const pts = [];
-
     for (let i = 0; i <= count; i++) {
       const t = i / count;
-
-      pts.push({
-        x: snap(x1 + dx * t),
-        y: snap(y1 + dy * t),
-      });
+      pts.push({ x: snap(x1 + dx * t), y: snap(y1 + dy * t) });
     }
 
     const map = {};
-    return pts?.filter((p) => {
+    return pts.filter((p) => {
       const key = `${p.x}_${p.y}`;
       if (map[key]) return false;
       map[key] = true;
@@ -1139,26 +1121,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
     });
   };
 
-  // ---------------------------------------------------
-  // LOAD EDIT
-  // ---------------------------------------------------
-  // useEffect(() => {
-  //   if (is_edit && hallId) {
-  //     dispatch(fetchHallByIdThunk({ id: hallId }));
-  //   }
-  // }, [hallId, is_edit]);
-
-  // useEffect(() => {
-  //   dispatch(fetchSectionsThunk());
-  //   dispatch(fetchDrawToolsThunk());
-  //   dispatch(fetchSeatShapesThunk());
-  // }, [dispatch]);
-
-  // useEffect(() => {
-  //   dispatch(fetchSectionsThunk());
-  //   dispatch(fetchDrawToolsThunk());
-  //   dispatch(fetchSeatShapesThunk());
-  // }, [dispatch]);
+  // Load data
   useEffect(() => {
     dispatch(fetchSectionsThunk());
     dispatch(fetchDrawToolsThunk());
@@ -1168,7 +1131,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
   useEffect(() => {
     if (DRAW_SECTIONS.length > 0) {
       setActiveSec((prev) =>
-        DRAW_SECTIONS.find((s) => s.id === prev) ? prev : DRAW_SECTIONS[0].id,
+        DRAW_SECTIONS.some((s) => s.id === prev) ? prev : DRAW_SECTIONS[0].id,
       );
     }
   }, [DRAW_SECTIONS]);
@@ -1176,58 +1139,31 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
   useEffect(() => {
     if (SEAT_SHAPES.length > 0) {
       setSeatShape((prev) =>
-        SEAT_SHAPES.find((s) => s.id === prev) ? prev : SEAT_SHAPES[0].id,
+        SEAT_SHAPES.some((s) => s.id === prev) ? prev : SEAT_SHAPES[0].id,
       );
     }
   }, [SEAT_SHAPES]);
 
   useEffect(() => {
     dispatch(clearCurrentHall());
-
     if (is_edit && hallId) {
       dispatch(fetchHallByIdThunk({ id: hallId }));
     }
-
-    // if (is_add) {
-    //   setPlacedRows([]);
-    //   setPlacedSeats([]);
-    //   setLoadedEdit(false);
-    // }
-
     if (is_add) {
       setPlacedRows([]);
       setPlacedSeats([]);
       setLoadedEdit(false);
-      // setRowOffset(0); // fresh hall starts from row A
     }
   }, [dispatch, hallId, is_edit, is_add]);
 
+  // Load existing hall for edit
   useEffect(() => {
     if (!is_edit || !hall?.seats || loadedEdit) return;
 
     const apiSeats = hall.seats.filter((s) => !s.is_space);
-
-    // const mapped = apiSeats.map((seat) => {
-    //   const sec =
-    //     DRAW_SECTIONS.find(
-    //       (x) =>
-    //         x.label === seat.section_label ||
-    //         x.color === seat.fill ||
-    //         Number(x.price) === Number(seat.price),
-    //     ) || DRAW_SECTIONS[0];
-
-    //   return {
-    //     id: String(seat.id),
-    //     x: snap(Number(seat.x_pos)),
-    //     y: snap(Number(seat.y_pos)),
-    //     color: seat.fill || sec.color,
-    //     sectionId: sec.id,
-    //     shape: "rounded",
-    //   };
-    // });
-    const mapped = apiSeats?.map((seat) => {
+    const mapped = apiSeats.map((seat) => {
       const sec =
-        DRAW_SECTIONS?.find(
+        DRAW_SECTIONS.find(
           (x) =>
             x.label === seat.section_label ||
             x.color === seat.fill ||
@@ -1241,22 +1177,15 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
         color: seat.fill || sec?.color,
         sectionId: sec?.id,
         shape: "rounded",
-        seat_name: seat.seat_name, // ← preserve label
-        row_label: seat.row_label, // ← preserve row
+        seat_name: seat.seat_name,
+        row_label: seat.row_label,
       };
     });
 
-    // Count distinct existing row letters so new rows continue after them
-    // const existingRowCount = Object.keys(hall.rows || {}).length;
-    // setRowOffset(existingRowCount);
-
     setPlacedSeats(mapped);
     setLoadedEdit(true);
-
-    enqueueSnackbar("Hall loaded for editing", {
-      variant: "info",
-    });
-  }, [hall, is_edit, loadedEdit]);
+    enqueueSnackbar("Hall loaded for editing", { variant: "info" });
+  }, [hall, is_edit, loadedEdit, DRAW_SECTIONS]);
 
   // ---------------------------------------------------
   // ERASE
@@ -1663,7 +1592,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
             + Add Section
           </button>
           <hr style={{ margin: "14px 0", borderColor: "#1e1e2a" }} />
-          {DRAW_TOOLS?.map((t) => (
+          {DRAW_TOOLS.map((t) => (
             <button
               key={t.id}
               onClick={() => setTool(t.id)}
@@ -1760,8 +1689,8 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
               <rect width="5000" height="4000" fill="url(#grid)" />
 
               {/* ROWS */}
-              {placedRows?.map((row, rowIndex) =>
-                row.pts?.map((pt, i) => {
+              {placedRows.map((row, rowIndex) =>
+                row.pts.map((pt, i) => {
                   const name = pt?.seat_name || getSeatName(rowIndex, i);
                   const seatKey = `${row?.id}_${i}`;
                   const isSel = selectedSeatIds.includes(seatKey);
@@ -1840,7 +1769,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                   onMouseDown={(e) => startSeatDrag(seat.id, e)}
                 />
               ))} */}
-              {placedSeats?.map((seat, i) => {
+              {placedSeats.map((seat, i) => {
                 // const name = `S${i + 1}`;
                 const name =
                   seat?.seat_name ||
@@ -1904,7 +1833,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                 );
               })}
               {/* PREVIEW */}
-              {previewPts?.map((pt, i) => (
+              {previewPts.map((pt, i) => (
                 <rect
                   key={i}
                   x={pt.x - SEAT_SIZE / 2}
