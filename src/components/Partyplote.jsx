@@ -237,6 +237,8 @@ export default function PartyPlotPanel() {
   }, [dispatch]);
 
   const handleSelectPlot = (plot) => {
+    if (!plot?.id) return;
+
     setSelectedPlotId(plot.id);
 
     dispatch(fetchPartyPlotByIdThunk(plot.id));
@@ -245,24 +247,23 @@ export default function PartyPlotPanel() {
   const handleCreatePlot = () => {
     dispatch(createPartyPlotThunk(form))
       .unwrap()
-      .then((newPlot) => {
+      .then((response) => {
+        const createdPlot = response?.data || response;
+
         enqueueSnackbar("Party plot created", {
           variant: "success",
         });
 
-        // close dialog
         setShowCreateDialog(false);
 
-        // refresh sidebar list
         dispatch(fetchPartyPlotsThunk());
 
-        // auto select newly created plot
-        setSelectedPlotId(newPlot.id);
+        if (createdPlot?.id) {
+          setSelectedPlotId(createdPlot.id);
 
-        // fetch full details with tickets
-        dispatch(fetchPartyPlotByIdThunk(newPlot.id));
+          dispatch(fetchPartyPlotByIdThunk(createdPlot.id));
+        }
 
-        // reset form
         setForm({
           name: "",
           description: "",
@@ -270,7 +271,6 @@ export default function PartyPlotPanel() {
           total_tickets: 100,
         });
 
-        // auto switch tab
         setTab("overview");
       })
       .catch((err) => {
@@ -290,11 +290,22 @@ export default function PartyPlotPanel() {
 
         setDeleteDialog(null);
 
-        dispatch(fetchPartyPlotsThunk());
+        dispatch(fetchPartyPlotsThunk())
+          .unwrap()
+          .then((plots) => {
+            // if deleted plot was selected
+            if (selectedPlotId === deleteDialog) {
+              if (plots.length > 0) {
+                // auto select first remaining plot
+                setSelectedPlotId(plots[0].id);
 
-        if (selectedPlotId === deleteDialog) {
-          setSelectedPlotId(null);
-        }
+                dispatch(fetchPartyPlotByIdThunk(plots[0].id));
+              } else {
+                // no plots left
+                setSelectedPlotId(null);
+              }
+            }
+          });
       })
       .catch((err) => {
         enqueueSnackbar(err || "Delete failed", {
