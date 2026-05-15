@@ -10,6 +10,8 @@ import dashboardReducer from "../features/dashboard/dashboardSlice";
 import categoryReducer from "../features/categories/categorySlice";
 import vendorReducer from "../features/vendor/vendorSlice";
 import optionsReducer from "../features/options/optionsSlice";
+import partyPlotReducer from "../features/partyPlot/partyPlotSlice";
+import partyPlotBookingsReducer from "../features/partyPlot/partyPlotBookingSlice";
 
 export const store = configureStore({
   reducer: {
@@ -22,5 +24,7 @@ export const store = configureStore({
     category: categoryReducer,
     vendor: vendorReducer,
     options: optionsReducer,
+    partyPlot: partyPlotReducer,
+    partyPlotBookings: partyPlotBookingsReducer,
   },
 });

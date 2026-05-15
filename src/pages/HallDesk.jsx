@@ -18,6 +18,7 @@ import {
   CardContent,
   Stack,
   IconButton,
+  Tooltip,
 } from "@mui/material";
 
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -52,34 +53,46 @@ const HallDesk = () => {
   };
 
   return (
-    <Box>
+    <Box sx={{ p: 0 }}>
       {/* Header */}
       <Stack
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: "15px",
-        }}
         direction="row"
         justifyContent="space-between"
         alignItems="center"
+        sx={{
+          mb: 4,
+          pb: 3,
+          borderBottom: "1px solid rgba(100, 116, 139, 0.2)",
+        }}
       >
-        <Typography
-          sx={{
-            color: "#fff",
-            fontSize: 25,
-            fontWeight: 800,
-          }}
-        >
-          Bookings
-        </Typography>
+        <Box>
+          <Typography
+            sx={{
+              fontSize: "2rem",
+              fontWeight: 800,
+              background: "linear-gradient(135deg, #f59e0b 0%, #6366f1 100%)",
+              backgroundClip: "text",
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+              mb: 0.5,
+            }}
+          >
+            Venues
+          </Typography>
+          <Typography sx={{ color: "#a0aec0", fontSize: "0.9rem" }}>
+            Manage your halls and venues
+          </Typography>
+        </Box>
 
         <CommonButton
           variant="contained"
           onClick={() => handleAddHall()}
           startIcon={<AddIcon />}
+          sx={{
+            background: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+          }}
         >
-          Add Hall
+          Add New Venue
         </CommonButton>
       </Stack>
 
@@ -92,51 +105,152 @@ const HallDesk = () => {
 
       {/* Loading */}
       {loading ? (
-        <Box display="flex" justifyContent="center" mt={5}>
+        <Box display="flex" justifyContent="center" mt={8}>
           <CircularProgress />
         </Box>
       ) : (
-        <Stack spacing={2}>
+        <Stack spacing={2.5}>
           {halls?.length === 0 ? (
-            <Typography>No halls found</Typography>
+            <Card
+              sx={{
+                textAlign: "center",
+                py: 8,
+                background:
+                  "linear-gradient(135deg, rgba(30,41,59,0.5), rgba(15,23,42,0.5))",
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: "1.2rem",
+                  color: "#a0aec0",
+                  fontWeight: 500,
+                }}
+              >
+                No venues yet. Create your first venue to get started!
+              </Typography>
+            </Card>
           ) : (
-            halls.map((hall) => (
-              <Card key={hall.id} variant="outlined">
-                <CardContent>
+            halls.map((hall, idx) => (
+              <Card
+                key={hall.id}
+                variant="outlined"
+                sx={{
+                  background:
+                    "linear-gradient(135deg, rgba(30,41,59,0.88), rgba(15,23,42,0.75))",
+                  border: "1px solid rgba(100, 116, 139, 0.2)",
+                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                  overflow: "hidden",
+                  position: "relative",
+                  borderRadius: 3,
+                  backdropFilter: "blur(10px)",
+                  boxShadow: "0 12px 30px rgba(15, 23, 42, 0.2)",
+                  "&::before": {
+                    content: '""',
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: "2px",
+                    background:
+                      "linear-gradient(90deg, #f59e0b, #6366f1, transparent)",
+                  },
+                  "&:hover": {
+                    borderColor: "rgba(100, 116, 139, 0.45)",
+                    boxShadow: "0 25px 50px rgba(15, 23, 42, 0.25)",
+                    transform: "translateY(-4px)",
+                  },
+                }}
+              >
+                <CardContent sx={{ p: 3 }}>
                   <Stack
                     direction="row"
                     justifyContent="space-between"
-                    alignItems="center"
+                    alignItems="flex-start"
+                    spacing={3}
                   >
-                    <Box>
-                      <Typography variant="h6">
-                        {hall.name || "Unnamed Hall"}
-                      </Typography>
+                    <Box flex={1}>
+                      <Stack spacing={1.5}>
+                        <Typography
+                          variant="h5"
+                          sx={{
+                            fontWeight: 700,
+                            fontSize: "1.3rem",
+                            color: "#fff",
+                          }}
+                        >
+                          {hall.name || "Unnamed Venue"}
+                        </Typography>
+                        <Stack spacing={0.5}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: "#a0aec0",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
+                            <span style={{ fontWeight: 600 }}>Capacity:</span>
+                            <span
+                              style={{
+                                background: "rgba(245, 158, 11, 0.15)",
+                                padding: "4px 8px",
+                                borderRadius: "4px",
+                                color: "#fcd34d",
+                                fontWeight: 600,
+                              }}
+                            >
+                              {hall.capacity || "N/A"} seats
+                            </span>
+                          </Typography>
 
-                      <Typography variant="body2" color="text.secondary">
-                        Capacity: {hall.capacity || "N/A"}
-                      </Typography>
-
-                      <Typography variant="body2" color="text.secondary">
-                        Location: {hall.location || "N/A"}
-                      </Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: "#a0aec0",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
+                            <span style={{ fontWeight: 600 }}>Location:</span>
+                            {hall.address || "N/A"}
+                          </Typography>
+                        </Stack>
+                      </Stack>
                     </Box>
+                    <Stack direction="row" spacing={0.5}>
+                      <Tooltip title="Edit Venue">
+                        <IconButton
+                          onClick={() => handleNavigate(hall)}
+                          color="primary"
+                          // sx={{
+                          //   // borderRadius: "50%",
+                          //   background: "rgba(245, 158, 11, 0.1)",
+                          //   "&:hover": {
+                          //     background: "rgba(245, 158, 11, 0.2)",
+                          //   },
+                          // }}
+                        >
+                          <EditIcon />
+                        </IconButton>
+                      </Tooltip>
 
-                    <Stack direction="row" spacing={1}>
-                      <IconButton
-                        onClick={() => handleNavigate(hall)}
-                        color="primary"
-                      >
-                        <EditIcon />
-                      </IconButton>
-
-                      <IconButton
-                        color="error"
-                        onClick={() => handleDelete(hall.id)}
-                        disabled={actionLoading}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
+                      <Tooltip title="Delete Venue">
+                        <IconButton
+                          color="error"
+                          onClick={() => handleDelete(hall.id)}
+                          disabled={actionLoading}
+                          // sx={{
+                          //   background: "rgba(239, 68, 68, 0.1)",
+                          //   "&:hover": {
+                          //     background: "rgba(239, 68, 68, 0.2)",
+                          //   },
+                          // }}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </Tooltip>
                     </Stack>
                   </Stack>
                 </CardContent>

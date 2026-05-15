@@ -59,12 +59,14 @@ import {
 // import { useParams } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import BookingManager from "./BookingManager";
+import Partyplote from "../components/Partyplote";
 import { clearCurrentHall } from "../features/halls/hallSlice";
+import PartyPlotPanel from "../components/Partyplote";
 
 // ─────────────────────────────────────────────────────────────
 // CONSTANTS
 // ─────────────────────────────────────────────────────────────
-const MODES = ["Book Seats", "Admin: Draw Mode", "Bookings"];
+const MODES = ["Book Seats", "Admin: Draw Mode", "Bookings", "Party Plot"];
 
 // const DRAW_SECTIONS = [
 //   {
@@ -205,14 +207,18 @@ function SaveHallDialog({ open, onClose, onSave, saving, initialData = null }) {
       maxWidth="sm"
       fullWidth
       PaperProps={{
-        sx: { background: "#1E293B", border: "1px solid #334155" },
+        sx: {
+          background: "#0f172a",
+          border: "1px solid #334155",
+          borderRadius: 2,
+        },
       }}
     >
       <DialogTitle sx={{ color: "#F8FAFC", fontWeight: 700, fontSize: 16 }}>
         Save Hall Layout
       </DialogTitle>
-      <DialogContent>
-        <Grid container spacing={2} sx={{ pt: 1 }}>
+      <DialogContent sx={{ pt: 1, pb: 2, background: "#0c1220" }}>
+        <Grid container spacing={2}>
           {err && (
             <Grid item xs={12}>
               <Alert
@@ -232,12 +238,17 @@ function SaveHallDialog({ open, onClose, onSave, saving, initialData = null }) {
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               sx={{
                 "& .MuiOutlinedInput-root fieldset": { borderColor: "#334155" },
+                "& .MuiOutlinedInput-root": {
+                  color: "#F8FAFC",
+                  background: "#0b1323",
+                },
+                "& .MuiInputLabel-root": { color: "#94A3B8" },
               }}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
             <FormControl size="small" fullWidth>
-              <InputLabel sx={{ color: "#64748B" }}>Hall Type</InputLabel>
+              <InputLabel sx={{ color: "#94A3B8" }}>Hall Type</InputLabel>
               <Select
                 label="Hall Type"
                 value={form.hall_type}
@@ -247,6 +258,7 @@ function SaveHallDialog({ open, onClose, onSave, saving, initialData = null }) {
                 sx={{
                   "& fieldset": { borderColor: "#334155" },
                   color: "#F8FAFC",
+                  background: "#0b1323",
                 }}
               >
                 {HALL_TYPES?.map((t) => (
@@ -266,6 +278,11 @@ function SaveHallDialog({ open, onClose, onSave, saving, initialData = null }) {
               onChange={(e) => setForm({ ...form, city: e.target.value })}
               sx={{
                 "& .MuiOutlinedInput-root fieldset": { borderColor: "#334155" },
+                "& .MuiOutlinedInput-root": {
+                  color: "#F8FAFC",
+                  background: "#0b1323",
+                },
+                "& .MuiInputLabel-root": { color: "#94A3B8" },
               }}
             />
           </Grid>
@@ -280,6 +297,11 @@ function SaveHallDialog({ open, onClose, onSave, saving, initialData = null }) {
               onChange={(e) => setForm({ ...form, address: e.target.value })}
               sx={{
                 "& .MuiOutlinedInput-root fieldset": { borderColor: "#334155" },
+                "& .MuiOutlinedInput-root": {
+                  color: "#F8FAFC",
+                  background: "#0b1323",
+                },
+                "& .MuiInputLabel-root": { color: "#94A3B8" },
               }}
             />
           </Grid>
@@ -296,13 +318,18 @@ function SaveHallDialog({ open, onClose, onSave, saving, initialData = null }) {
               }
               sx={{
                 "& .MuiOutlinedInput-root fieldset": { borderColor: "#334155" },
+                "& .MuiOutlinedInput-root": {
+                  color: "#F8FAFC",
+                  background: "#0b1323",
+                },
+                "& .MuiInputLabel-root": { color: "#94A3B8" },
               }}
             />
           </Grid>
         </Grid>
       </DialogContent>
-      <DialogActions sx={{ p: "16px 24px", gap: 1 }}>
-        <Button onClick={onClose} sx={{ color: "#64748B" }}>
+      <DialogActions sx={{ p: "16px 24px", gap: 1, background: "#0b1323" }}>
+        <Button onClick={onClose} sx={{ color: "#94A3B8" }}>
           Cancel
         </Button>
         <Button
@@ -312,6 +339,7 @@ function SaveHallDialog({ open, onClose, onSave, saving, initialData = null }) {
           sx={{
             background: "linear-gradient(135deg,#2563EB,#1D4ED8)",
             "&:hover": { background: "#1D4ED8" },
+            minWidth: 120,
           }}
         >
           {saving ? (
@@ -1077,6 +1105,27 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
   const [panning, setPanning] = useState(false);
   const [panStart, setPanStart] = useState(null);
 
+  const [sectionDialogOpen, setSectionDialogOpen] = useState(false);
+  const [sectionForm, setSectionForm] = useState({
+    id_key: "",
+    label: "",
+    color: "#818cf8",
+    price: "",
+    seat_type: "standard",
+  });
+  const [sectionError, setSectionError] = useState("");
+
+  const resetSectionForm = () => {
+    setSectionForm({
+      id_key: "",
+      label: "",
+      color: "#818cf8",
+      price: "",
+      seat_type: "standard",
+    });
+    setSectionError("");
+  };
+
   const snap = (n) => Math.round(n / GRID) * GRID;
 
   const getSec = () => {
@@ -1565,32 +1614,214 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
           {/* <hr style={{ margin: "14px 0", borderColor: "#1e1e2a" }} /> */}
           <button
             onClick={() => {
-              const id_key = prompt("id_key (e.g. balcony):")
-                ?.trim()
-                .toLowerCase();
-              if (!id_key) return;
-              const label = prompt("Label (e.g. Balcony):") || id_key;
-              const color = prompt("Color hex (e.g. #f59e0b):") || "#818cf8";
-              const price = Number(prompt("Price (e.g. 500):") || 0);
-              const seat_type = prompt("Type: vip or standard:") || "standard";
-              dispatch(
-                createSectionThunk({ id_key, label, color, price, seat_type }),
-              );
+              resetSectionForm();
+              setSectionDialogOpen(true);
             }}
             style={{
               width: "100%",
-              padding: "8px",
-              marginTop: 6,
-              background: "transparent",
-              border: "1px dashed #2563EB44",
-              borderRadius: 8,
-              color: "#2563EB",
+              padding: "10px 12px",
+              marginTop: 10,
+              background: "#0b1220",
+              border: "1px solid #334155",
+              borderRadius: 10,
+              color: "#8fbdfd",
               cursor: "pointer",
-              fontSize: 12,
+              fontSize: 13,
+              transition: "all 160ms ease",
             }}
           >
             + Add Section
           </button>
+          <Dialog
+            open={sectionDialogOpen}
+            onClose={() => setSectionDialogOpen(false)}
+            maxWidth="xs"
+            fullWidth
+            PaperProps={{
+              sx: {
+                background: "#0b1220",
+                border: "1px solid #1e293b",
+                borderRadius: 2,
+              },
+            }}
+          >
+            <DialogTitle
+              sx={{ color: "#F8FAFC", fontWeight: 700, fontSize: 16 }}
+            >
+              Add Section
+            </DialogTitle>
+            <DialogContent sx={{ pt: 1, pb: 2, background: "#0c1220" }}>
+              {sectionError && (
+                <Alert
+                  severity="error"
+                  sx={{
+                    mb: 2,
+                    background: "#2d1515",
+                    color: "#fca5a5",
+                    fontSize: 12,
+                  }}
+                >
+                  {sectionError}
+                </Alert>
+              )}
+              <TextField
+                label="Section ID"
+                size="small"
+                fullWidth
+                value={sectionForm.id_key}
+                onChange={(e) =>
+                  setSectionForm({ ...sectionForm, id_key: e.target.value })
+                }
+                sx={{
+                  mb: 2,
+                  "& .MuiOutlinedInput-root fieldset": {
+                    borderColor: "#334155",
+                  },
+                  "& .MuiOutlinedInput-root": {
+                    color: "#F8FAFC",
+                    background: "#0b1323",
+                  },
+                  "& .MuiInputLabel-root": { color: "#94A3B8" },
+                }}
+              />
+              <TextField
+                label="Label"
+                size="small"
+                fullWidth
+                value={sectionForm.label}
+                onChange={(e) =>
+                  setSectionForm({ ...sectionForm, label: e.target.value })
+                }
+                sx={{
+                  mb: 2,
+                  "& .MuiOutlinedInput-root fieldset": {
+                    borderColor: "#334155",
+                  },
+                  "& .MuiOutlinedInput-root": {
+                    color: "#F8FAFC",
+                    background: "#0b1323",
+                  },
+                  "& .MuiInputLabel-root": { color: "#94A3B8" },
+                }}
+              />
+              <TextField
+                label="Price"
+                size="small"
+                fullWidth
+                type="number"
+                value={sectionForm.price}
+                onChange={(e) =>
+                  setSectionForm({ ...sectionForm, price: e.target.value })
+                }
+                sx={{
+                  mb: 2,
+                  "& .MuiOutlinedInput-root fieldset": {
+                    borderColor: "#334155",
+                  },
+                  "& .MuiOutlinedInput-root": {
+                    color: "#F8FAFC",
+                    background: "#0b1323",
+                  },
+                  "& .MuiInputLabel-root": { color: "#94A3B8" },
+                }}
+              />
+              <FormControl size="small" fullWidth sx={{ mb: 2 }}>
+                <InputLabel sx={{ color: "#94A3B8" }}>Seat Type</InputLabel>
+                <Select
+                  label="Seat Type"
+                  value={sectionForm.seat_type}
+                  onChange={(e) =>
+                    setSectionForm({
+                      ...sectionForm,
+                      seat_type: e.target.value,
+                    })
+                  }
+                  sx={{
+                    "& fieldset": { borderColor: "#334155" },
+                    color: "#F8FAFC",
+                    background: "#0b1323",
+                  }}
+                >
+                  <MenuItem value="standard">standard</MenuItem>
+                  <MenuItem value="vip">vip</MenuItem>
+                </Select>
+              </FormControl>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  padding: "10px 12px",
+                  border: "1px solid #334155",
+                  borderRadius: 10,
+                  background: "#09101f",
+                }}
+              >
+                <div style={{ color: "#94A3B8", fontSize: 13, minWidth: 88 }}>
+                  Color
+                </div>
+                <input
+                  type="color"
+                  value={sectionForm.color}
+                  onChange={(e) =>
+                    setSectionForm({ ...sectionForm, color: e.target.value })
+                  }
+                  style={{
+                    width: 44,
+                    height: 44,
+                    border: "none",
+                    padding: 0,
+                    background: "transparent",
+                    cursor: "pointer",
+                    borderRadius: 8,
+                  }}
+                />
+                <span style={{ color: "#F8FAFC", fontSize: 13 }}>
+                  {sectionForm.color}
+                </span>
+              </div>
+            </DialogContent>
+            <DialogActions
+              sx={{ p: "16px 24px", gap: 1, background: "#0b1323" }}
+            >
+              <Button
+                onClick={() => setSectionDialogOpen(false)}
+                sx={{ color: "#94A3B8" }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                onClick={() => {
+                  const id_key = sectionForm.id_key?.trim().toLowerCase();
+                  if (!id_key) {
+                    setSectionError("Section ID is required");
+                    return;
+                  }
+                  const label = sectionForm.label?.trim() || id_key;
+                  const price = Number(sectionForm.price) || 0;
+                  const seat_type = sectionForm.seat_type || "standard";
+                  dispatch(
+                    createSectionThunk({
+                      id_key,
+                      label,
+                      color: sectionForm.color || "#818cf8",
+                      price,
+                      seat_type,
+                    }),
+                  );
+                  setSectionDialogOpen(false);
+                }}
+                sx={{
+                  background: "linear-gradient(135deg,#2563EB,#1D4ED8)",
+                  "&:hover": { background: "#1D4ED8" },
+                  minWidth: 92,
+                }}
+              >
+                Add
+              </Button>
+            </DialogActions>
+          </Dialog>
           <hr style={{ margin: "14px 0", borderColor: "#1e1e2a" }} />
           {DRAW_TOOLS.map((t) => (
             <button
@@ -2088,7 +2319,7 @@ export default function HallCreate({
       setMode(1); // Auto activate Admin: Draw Mode
     }
   }, [is_add, is_edit]);
-
+  const [activePanel, setActivePanel] = useState("draw"); // "draw" | "partyplot"
   return (
     <div
       style={{
@@ -2221,33 +2452,58 @@ export default function HallCreate({
             // Force Draw Mode active when add/edit
             const active = showOnlyDrawMode ? i === 1 : mode === i;
             return (
-              <button
-                key={i}
-                onClick={() => setMode(i)}
-                style={{
-                  padding: "10px 18px",
-                  borderRadius: 12,
-                  border: active
-                    ? "1px solid #2563EB55"
-                    : "1px solid transparent",
-                  background: active
-                    ? "linear-gradient(135deg,#1D4ED8,#2563EB)"
-                    : "transparent",
-                  color: active ? "#fff" : "#94A3B8",
-                  cursor: "pointer",
-                  fontWeight: active ? 700 : 600,
-                  fontSize: 13,
-                  transition: "all .2s ease",
-                  boxShadow: active
-                    ? "0 10px 20px rgba(37,99,235,.25)"
-                    : "none",
-                }}
-              >
-                {i === 0 && "🎟 "}
-                {i === 1 && "🛠 "}
-                {i === 2 && "📊 "}
-                {m}
-              </button>
+              <>
+                <button
+                  key={i}
+                  onClick={() => setMode(i)}
+                  style={{
+                    padding: "10px 18px",
+                    borderRadius: 12,
+                    border: active
+                      ? "1px solid #2563EB55"
+                      : "1px solid transparent",
+                    background: active
+                      ? "linear-gradient(135deg,#1D4ED8,#2563EB)"
+                      : "transparent",
+                    color: active ? "#fff" : "#94A3B8",
+                    cursor: "pointer",
+                    fontWeight: active ? 700 : 600,
+                    fontSize: 13,
+                    transition: "all .2s ease",
+                    boxShadow: active
+                      ? "0 10px 20px rgba(37,99,235,.25)"
+                      : "none",
+                  }}
+                >
+                  {i === 0 && "🎟 "}
+                  {i === 1 && "🛠 "}
+                  {i === 2 && "📊 "}
+                  {m}
+                </button>
+                <button
+                  onClick={() => setActivePanel("partyplot")}
+                  style={{
+                    background:
+                      activePanel === "partyplot"
+                        ? "linear-gradient(135deg,#f59e0b,#d97706)"
+                        : "transparent",
+                    border: "2px solid #f59e0b",
+                    borderRadius: 10,
+                    padding: "8px 20px",
+                    color: "#fff",
+                    fontWeight: 700,
+                    fontSize: 13,
+                    cursor: "pointer",
+                    boxShadow:
+                      activePanel === "partyplot"
+                        ? "0 0 16px #f59e0b66"
+                        : "none",
+                    marginLeft: 8,
+                  }}
+                >
+                  🎪 Party Plot
+                </button>
+              </>
             );
           })}
         </div>
@@ -2328,15 +2584,39 @@ export default function HallCreate({
         }}
       >
         {/* MODE 0 */}
-        {mode === 0 && <BookingView hallId={hallId} />}
+        {/* {mode === 0 && <BookingView hallId={hallId} />} */}
 
         {/* MODE 1 */}
-        {mode === 1 && (
+        {/* {mode === 1 && (
           <DrawMode hallId={hallId} is_edit={is_edit} is_add={is_add} />
-        )}
+        )} */}
 
         {/* MODE 2 */}
-        {mode === 2 && <BookingManager eventId={id} />}
+        {/* {mode === 2 && <BookingManager eventId={id} />} */}
+
+        {/* MODE 3 */}
+        {/* {mode === 3 && <Partyplote />} */}
+        {/* {mode === 1 && (
+          <div style={{ display: "flex", height: "100%", overflow: "hidden" }}>
+            <div style={{ flex: 1, overflow: "hidden" }}>
+              <DrawMode />
+            </div>
+            <div
+              style={{
+                width: 420,
+                borderLeft: "1px solid #1e1e2a",
+                overflowY: "auto",
+                background: "#0d0d14",
+              }}
+            >
+              <Partyplote />
+            </div>
+          </div>
+        )} */}
+        <div style={{ flex: 1, overflow: "hidden" }}>
+          {activePanel === "draw" && <DrawMode />}
+          {activePanel === "partyplot" && <PartyPlotPanel />}
+        </div>
       </div>
     </div>
   );

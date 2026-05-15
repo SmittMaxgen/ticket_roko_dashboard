@@ -1,336 +1,4 @@
-// // // ── Bookings.jsx ──────────────────────────────────────────
-// // import { useState, useEffect, useCallback } from "react";
-// // import {
-// //   Box,
-// //   Card,
-// //   CardContent,
-// //   Typography,
-// //   Chip,
-// //   IconButton,
-// //   TextField,
-// //   InputAdornment,
-// //   Tab,
-// //   Tabs,
-// //   Tooltip,
-// //   Dialog,
-// //   DialogTitle,
-// //   DialogContent,
-// //   Button,
-// //   DialogActions,
-// // } from "@mui/material";
-// // import { DataGrid } from "@mui/x-data-grid";
-// // import SearchIcon from "@mui/icons-material/Search";
-// // import VisibilityIcon from "@mui/icons-material/VisibilityOutlined";
-// // import CancelIcon from "@mui/icons-material/CancelOutlined";
-// // import api from "../api/axios";
-// // import { useSnackbar } from "notistack";
-
-// // const PAY_COLOR = {
-// //   paid: "success",
-// //   pending: "warning",
-// //   failed: "error",
-// //   refunded: "info",
-// // };
-// // const STATUS_COLOR = {
-// //   confirmed: "success",
-// //   pending: "warning",
-// //   cancelled: "error",
-// // };
-
-// // export function Bookings() {
-// //   const { enqueueSnackbar } = useSnackbar();
-// //   const [rows, setRows] = useState([]);
-// //   const [total, setTotal] = useState(0);
-// //   const [loading, setLoading] = useState(false);
-// //   const [tab, setTab] = useState("all");
-// //   const [search, setSearch] = useState("");
-// //   const [page, setPage] = useState(0);
-// //   const [detail, setDetail] = useState(null);
-
-// //   const load = useCallback(async () => {
-// //     setLoading(true);
-// //     try {
-// //       const params = { page: page + 1, limit: 20, search };
-// //       if (tab !== "all") params.status = tab;
-// //       const { data } = await api.get("/bookings", { params });
-// //       setRows(data.data);
-// //       setTotal(data.total);
-// //     } catch {
-// //       enqueueSnackbar("Failed to load", { variant: "error" });
-// //     } finally {
-// //       setLoading(false);
-// //     }
-// //   }, [page, search, tab]);
-
-// //   useEffect(() => {
-// //     load();
-// //   }, [load]);
-
-// //   const viewDetail = async (id) => {
-// //     const { data } = await api.get(`/bookings/${id}`);
-// //     setDetail(data.data);
-// //   };
-
-// //   const cancelBooking = async (id) => {
-// //     await api.patch(`/bookings/${id}/cancel`);
-// //     enqueueSnackbar("Booking cancelled", { variant: "info" });
-// //     load();
-// //   };
-
-// //   const columns = [
-// //     {
-// //       field: "booking_ref",
-// //       headerName: "Ref #",
-// //       width: 130,
-// //       renderCell: ({ value }) => (
-// //         <Typography
-// //           sx={{
-// //             fontSize: 12,
-// //             fontFamily: "monospace",
-// //             color: "#2563EB",
-// //             fontWeight: 700,
-// //           }}
-// //         >
-// //           {value}
-// //         </Typography>
-// //       ),
-// //     },
-// //     {
-// //       field: "user_name",
-// //       headerName: "Customer",
-// //       flex: 1,
-// //       minWidth: 160,
-// //       renderCell: ({ row }) => (
-// //         <Box>
-// //           <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#F8FAFC" }}>
-// //             {row.user_name}
-// //           </Typography>
-// //           <Typography sx={{ fontSize: 11, color: "#64748B" }}>
-// //             {row.user_email}
-// //           </Typography>
-// //         </Box>
-// //       ),
-// //     },
-// //     {
-// //       field: "event_title",
-// //       headerName: "Event",
-// //       flex: 1.5,
-// //       minWidth: 180,
-// //       renderCell: ({ row }) => (
-// //         <Box>
-// //           <Typography sx={{ fontSize: 12, fontWeight: 500, color: "#F8FAFC" }}>
-// //             {row.event_title}
-// //           </Typography>
-// //           <Typography sx={{ fontSize: 11, color: "#64748B" }}>
-// //             {row.event_date
-// //               ? new Date(row.event_date).toLocaleDateString("en-IN")
-// //               : ""}
-// //           </Typography>
-// //         </Box>
-// //       ),
-// //     },
-// //     {
-// //       field: "total_seats",
-// //       headerName: "Seats",
-// //       width: 70,
-// //       renderCell: ({ value }) => (
-// //         <Typography sx={{ fontSize: 12, color: "#94A3B8" }}>{value}</Typography>
-// //       ),
-// //     },
-// //     {
-// //       field: "total_amount",
-// //       headerName: "Amount",
-// //       width: 110,
-// //       renderCell: ({ value }) => (
-// //         <Typography sx={{ fontSize: 13, fontWeight: 700, color: "#22c55e" }}>
-// //           ₹{Number(value || 0).toLocaleString("en-IN")}
-// //         </Typography>
-// //       ),
-// //     },
-// //     {
-// //       field: "payment_status",
-// //       headerName: "Payment",
-// //       width: 110,
-// //       renderCell: ({ value }) => (
-// //         <Chip
-// //           label={value}
-// //           size="small"
-// //           color={PAY_COLOR[value] || "default"}
-// //           sx={{ fontSize: 10, height: 20 }}
-// //         />
-// //       ),
-// //     },
-// //     {
-// //       field: "status",
-// //       headerName: "Status",
-// //       width: 110,
-// //       renderCell: ({ value }) => (
-// //         <Chip
-// //           label={value}
-// //           size="small"
-// //           color={STATUS_COLOR[value] || "default"}
-// //           sx={{ fontSize: 10, height: 20 }}
-// //         />
-// //       ),
-// //     },
-// //     {
-// //       field: "actions",
-// //       headerName: "",
-// //       width: 90,
-// //       sortable: false,
-// //       renderCell: ({ row }) => (
-// //         <Box sx={{ display: "flex", gap: 0.5 }}>
-// //           <Tooltip title="View">
-// //             <IconButton
-// //               size="small"
-// //               onClick={() => viewDetail(row.id)}
-// //               sx={{ color: "#64748B", "&:hover": { color: "#2563EB" } }}
-// //             >
-// //               <VisibilityIcon fontSize="small" />
-// //             </IconButton>
-// //           </Tooltip>
-// //           {row.status === "confirmed" && (
-// //             <Tooltip title="Cancel">
-// //               <IconButton
-// //                 size="small"
-// //                 onClick={() => cancelBooking(row.id)}
-// //                 sx={{ color: "#64748B", "&:hover": { color: "#ef4444" } }}
-// //               >
-// //                 <CancelIcon fontSize="small" />
-// //               </IconButton>
-// //             </Tooltip>
-// //           )}
-// //         </Box>
-// //       ),
-// //     },
-// //   ];
-
-// //   return (
-// //     <Box>
-// //       <Box sx={{ mb: 3 }}>
-// //         <Typography variant="h5" sx={{ color: "#F8FAFC" }}>
-// //           Bookings
-// //         </Typography>
-// //         <Typography sx={{ color: "#64748B", fontSize: 13 }}>
-// //           View and manage all ticket bookings
-// //         </Typography>
-// //       </Box>
-// //       <Card sx={{ background: "#1E293B" }}>
-// //         <CardContent sx={{ pb: "0 !important" }}>
-// //           <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
-// //             <TextField
-// //               size="small"
-// //               placeholder="Search ref or customer…"
-// //               value={search}
-// //               onChange={(e) => setSearch(e.target.value)}
-// //               sx={{ width: 280 }}
-// //               InputProps={{
-// //                 startAdornment: (
-// //                   <InputAdornment position="start">
-// //                     <SearchIcon sx={{ color: "#64748B", fontSize: 18 }} />
-// //                   </InputAdornment>
-// //                 ),
-// //               }}
-// //             />
-// //           </Box>
-// //           <Tabs
-// //             value={tab}
-// //             onChange={(_, v) => setTab(v)}
-// //             sx={{
-// //               mb: 1,
-// //               "& .MuiTab-root": {
-// //                 fontSize: 12,
-// //                 minHeight: 40,
-// //                 color: "#64748B",
-// //               },
-// //               "& .Mui-selected": { color: "#2563EB !important" },
-// //               "& .MuiTabs-indicator": { background: "#2563EB" },
-// //             }}
-// //           >
-// //             {["all", "confirmed", "pending", "cancelled"].map((t) => (
-// //               <Tab
-// //                 key={t}
-// //                 label={t.charAt(0).toUpperCase() + t.slice(1)}
-// //                 value={t}
-// //               />
-// //             ))}
-// //           </Tabs>
-// //         </CardContent>
-// //         <DataGrid
-// //           rows={rows}
-// //           columns={columns}
-// //           loading={loading}
-// //           rowCount={total}
-// //           paginationMode="server"
-// //           paginationModel={{ page, pageSize: 20 }}
-// //           onPaginationModelChange={(m) => setPage(m.page)}
-// //           autoHeight
-// //           disableRowSelectionOnClick
-// //           sx={{ border: "none" }}
-// //         />
-// //       </Card>
-
-// //       <Dialog
-// //         open={!!detail}
-// //         onClose={() => setDetail(null)}
-// //         maxWidth="sm"
-// //         fullWidth
-// //         PaperProps={{
-// //           sx: { background: "#1E293B", border: "1px solid #334155" },
-// //         }}
-// //       >
-// //         <DialogTitle sx={{ color: "#F8FAFC", fontWeight: 700 }}>
-// //           Booking #{detail?.booking_ref}
-// //         </DialogTitle>
-// //         <DialogContent>
-// //           {detail && (
-// //             <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-// //               {[
-// //                 ["Customer", detail.user_name],
-// //                 ["Email", detail.user_email],
-// //                 ["Event", detail.event_title],
-// //                 ["Seats", detail.total_seats],
-// //                 [
-// //                   "Amount",
-// //                   `₹${Number(detail.total_amount).toLocaleString("en-IN")}`,
-// //                 ],
-// //                 ["Payment", detail.payment_status],
-// //                 ["Status", detail.status],
-// //               ].map(([k, v]) => (
-// //                 <Box
-// //                   key={k}
-// //                   sx={{
-// //                     display: "flex",
-// //                     justifyContent: "space-between",
-// //                     borderBottom: "1px solid #334155",
-// //                     pb: 1,
-// //                   }}
-// //                 >
-// //                   <Typography sx={{ fontSize: 12, color: "#64748B" }}>
-// //                     {k}
-// //                   </Typography>
-// //                   <Typography
-// //                     sx={{ fontSize: 13, fontWeight: 600, color: "#F8FAFC" }}
-// //                   >
-// //                     {v}
-// //                   </Typography>
-// //                 </Box>
-// //               ))}
-// //             </Box>
-// //           )}
-// //         </DialogContent>
-// //         <DialogActions sx={{ p: "16px 24px" }}>
-// //           <Button onClick={() => setDetail(null)}>Close</Button>
-// //         </DialogActions>
-// //       </Dialog>
-// //     </Box>
-// //   );
-// // }
-
-// // export default Bookings;
-
-// // ── Bookings.jsx (FULL UPDATED VERSION) ─────────────────────────────────────
-// import { useState, useEffect, useCallback } from "react";
+// import { useEffect, useState, useCallback } from "react";
 // import {
 //   Box,
 //   Card,
@@ -340,26 +8,28 @@
 //   IconButton,
 //   TextField,
 //   InputAdornment,
-//   Tab,
 //   Tabs,
+//   Tab,
 //   Tooltip,
 //   Dialog,
 //   DialogTitle,
 //   DialogContent,
-//   Button,
 //   DialogActions,
-//   Avatar,
+//   Button,
 //   Divider,
 //   Grid,
 // } from "@mui/material";
+
 // import { DataGrid } from "@mui/x-data-grid";
+
 // import SearchIcon from "@mui/icons-material/Search";
 // import VisibilityIcon from "@mui/icons-material/VisibilityOutlined";
 // import CancelIcon from "@mui/icons-material/CancelOutlined";
 // import EventSeatIcon from "@mui/icons-material/EventSeat";
-// // import api from "../api/axios";
 
 // import { useDispatch, useSelector } from "react-redux";
+// import { useSnackbar } from "notistack";
+
 // import {
 //   fetchBookingsThunk,
 //   fetchUserBookingsThunk,
@@ -374,8 +44,7 @@
 //   selectBookingLoading,
 // } from "../features/bookings/bookingSelectors";
 
-// import { useSnackbar } from "notistack";
-// import { useDispatch, useSelector } from "react-redux";
+// import { clearCurrentBooking } from "../features/bookings/bookingSlice";
 
 // const PAY_COLOR = {
 //   paid: "success",
@@ -390,88 +59,105 @@
 //   cancelled: "error",
 // };
 
-// const fallbackImage = (title) =>
-//   `https://source.unsplash.com/800x500/?event,concert,${encodeURIComponent(
-//     title || "show",
-//   )}`;
-
-// export default function Bookings({ myPage = false, userId = null }) {
-//   const { enqueueSnackbar } = useSnackbar();
-
-//   // const [rows, setRows] = useState([]);
-//   // const [total, setTotal] = useState(0);
-//   // const [loading, setLoading] = useState(false);
-
+// export default function Bookings({
+//   myPage = false, // true = /my-bookings
+//   userId = null, // optional
+// }) {
 //   const dispatch = useDispatch();
+//   const { enqueueSnackbar } = useSnackbar();
+//   const user = useSelector((state) => state.auth.user);
 
+//   // Redux State
 //   const rows = useSelector(selectBookingList);
 //   const total = useSelector(selectBookingTotal);
-//   const loading = useSelector(selectBookingLoading);
 //   const detail = useSelector(selectCurrentBooking);
+//   const loading = useSelector(selectBookingLoading);
 
-//   const [tab, setTab] = useState("all");
-//   const [search, setSearch] = useState("");
+//   // Local State
 //   const [page, setPage] = useState(0);
+//   const [search, setSearch] = useState("");
 
-//   const Bookings = useSelector(selectBookingList);
-//   const BookingsTotal = useSelector(selectBookingTotal);
-//   // console.log("rowsData::::>>>>>>", rowsData);
-//   // LOAD BOOKINGS
-//   const load = useCallback(() => {
+//   // const [tab, setTab] = useState("all");
+//   const [tab, setTab] = useState("all");
+//   const [bookingType, setBookingType] = useState("hall");
+//   // Load Data
+//   const loadBookings = useCallback(() => {
 //     const params = {
 //       page: page + 1,
 //       limit: 20,
 //       search,
 //     };
 
-//     if (tab !== "all") params.status = tab;
-
-//     if (myPage) {
-//       params.userId = userId;
-//       dispatch(fetchUserBookingsThunk(params));
-//     } else {
-//       dispatch(fetchBookingsThunk(params));
+//     if (tab !== "all") {
+//       params.status = tab;
 //     }
-//   }, [page, search, tab, myPage, userId, dispatch]);
+
+//     // if (myPage && userId.role === "user") {
+//     //   if (userId) params.userId = userId;
+//     //   dispatch(fetchUserBookingsThunk(params));
+//     // } else if (myPage && userId.role === "super_admin") {
+//     //   dispatch(fetchBookingsThunk(params));
+//     // }
+//     if (bookingType === "hall") {
+//       if (myPage && user?.role === "user") {
+//         dispatch(fetchUserBookingsThunk(params));
+//       } else {
+//         dispatch(fetchBookingsThunk(params));
+//       }
+//     }
+
+//     // PARTY PLOT BOOKINGS
+//     else if (bookingType === "party_plot") {
+//       dispatch(
+//         fetchUserBookingsThunk({
+//           ...params,
+//           booking_type: "party_plot",
+//         }),
+//       );
+//     }
+//   }, [dispatch, page, search, tab, myPage, userId]);
 
 //   useEffect(() => {
-//     load();
-//   }, [load]);
+//     loadBookings();
+//   }, [loadBookings]);
 
-//   // VIEW DETAIL
-//   const viewDetail = (id) => {
+//   // View Detail
+//   const handleView = (id) => {
 //     dispatch(fetchBookingByIdThunk(id));
 //   };
 
-//   // CANCEL
-//   const cancelBooking = async (id) => {
-//     try {
-//       dispatch(cancelBookingThunk(id))
-//         .unwrap()
-//         .then(() => {
-//           enqueueSnackbar("Booking cancelled", { variant: "success" });
-//         })
-//         .catch(() => {
-//           enqueueSnackbar("Failed to cancel", { variant: "error" });
+//   // Cancel
+//   const handleCancel = (id) => {
+//     dispatch(cancelBookingThunk(id))
+//       .unwrap()
+//       .then(() => {
+//         enqueueSnackbar("Booking cancelled", {
+//           variant: "success",
 //         });
-//       load();
-//     } catch {
-//       enqueueSnackbar("Failed to cancel booking", { variant: "error" });
-//     }
+//       })
+//       .catch((err) => {
+//         enqueueSnackbar(err || "Failed to cancel", {
+//           variant: "error",
+//         });
+//       });
 //   };
 
-//   // GRID COLUMNS
+//   // Close Detail
+//   const closeDetail = () => {
+//     dispatch(clearCurrentBooking());
+//   };
+
 //   const columns = [
 //     {
 //       field: "booking_ref",
-//       headerName: "Booking Ref",
-//       width: 160,
+//       headerName: "Ref #",
+//       width: 150,
 //       renderCell: ({ value }) => (
 //         <Typography
 //           sx={{
-//             fontFamily: "monospace",
 //             color: "#38BDF8",
 //             fontWeight: 700,
+//             fontFamily: "monospace",
 //             fontSize: 12,
 //           }}
 //         >
@@ -484,14 +170,26 @@
 //       field: "customer",
 //       headerName: "Customer",
 //       flex: 1,
-//       minWidth: 180,
+//       minWidth: 220,
 //       renderCell: ({ row }) => (
 //         <Box>
-//           <Typography sx={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>
-//             {row.user_name}
+//           <Typography
+//             sx={{
+//               color: "#fff",
+//               fontWeight: 700,
+//               fontSize: 13,
+//             }}
+//           >
+//             {row.user?.name || "-"}
 //           </Typography>
-//           <Typography sx={{ color: "#94A3B8", fontSize: 11 }}>
-//             {row.user_email}
+
+//           <Typography
+//             sx={{
+//               color: "#94A3B8",
+//               fontSize: 11,
+//             }}
+//           >
+//             {row.user?.email || "-"}
 //           </Typography>
 //         </Box>
 //       ),
@@ -499,18 +197,34 @@
 
 //     {
 //       field: "event",
-//       headerName: "Event",
-//       flex: 1.2,
+//       headerName: bookingType === "party_plot" ? "Party Plot" : "Event",
+//       flex: 1,
 //       minWidth: 220,
+
 //       renderCell: ({ row }) => (
 //         <Box>
-//           <Typography sx={{ color: "#fff", fontSize: 13 }}>
-//             {row.event_title}
+//           <Typography
+//             sx={{
+//               color: "#fff",
+//               fontSize: 13,
+//             }}
+//           >
+//             {bookingType === "party_plot"
+//               ? row.partyPlot?.name || "-"
+//               : row.event?.title || "-"}
 //           </Typography>
-//           <Typography sx={{ color: "#64748B", fontSize: 11 }}>
-//             {row.event_date
-//               ? new Date(row.event_date).toLocaleDateString("en-IN")
-//               : "-"}
+
+//           <Typography
+//             sx={{
+//               color: "#64748B",
+//               fontSize: 11,
+//             }}
+//           >
+//             {bookingType === "party_plot"
+//               ? row.partyPlot?.description || "-"
+//               : row.event?.event_date
+//                 ? new Date(row.event.event_date).toLocaleDateString("en-IN")
+//                 : "-"}
 //           </Typography>
 //         </Box>
 //       ),
@@ -518,16 +232,22 @@
 
 //     {
 //       field: "total_seats",
-//       headerName: "Seats",
+//       // headerName: "Seats",
+//       headerName: bookingType === "party_plot" ? "Tickets" : "Seats",
 //       width: 80,
 //     },
 
 //     {
 //       field: "total_amount",
 //       headerName: "Amount",
-//       width: 120,
+//       width: 130,
 //       renderCell: ({ value }) => (
-//         <Typography sx={{ color: "#22C55E", fontWeight: 700 }}>
+//         <Typography
+//           sx={{
+//             color: "#22C55E",
+//             fontWeight: 700,
+//           }}
+//         >
 //           ₹{Number(value || 0).toLocaleString("en-IN")}
 //         </Typography>
 //       ),
@@ -562,19 +282,19 @@
 //     {
 //       field: "actions",
 //       headerName: "Actions",
-//       width: 110,
+//       width: 120,
 //       sortable: false,
 //       renderCell: ({ row }) => (
 //         <Box>
 //           <Tooltip title="View">
-//             <IconButton onClick={() => viewDetail(row.id)}>
+//             <IconButton onClick={() => handleView(row.id)}>
 //               <VisibilityIcon sx={{ color: "#38BDF8" }} />
 //             </IconButton>
 //           </Tooltip>
 
 //           {row.status === "confirmed" && (
 //             <Tooltip title="Cancel">
-//               <IconButton onClick={() => cancelBooking(row.id)}>
+//               <IconButton onClick={() => handleCancel(row.id)}>
 //                 <CancelIcon sx={{ color: "#EF4444" }} />
 //               </IconButton>
 //             </Tooltip>
@@ -583,33 +303,57 @@
 //       ),
 //     },
 //   ];
-
 //   return (
 //     <Box>
-//       {/* HEADER */}
+//       {/* Header */}
 //       <Box sx={{ mb: 3 }}>
-//         {/* <Typography variant="h5" sx={{ color: "#fff", fontWeight: 800 }}>
-//           Bookings
-//         </Typography> */}
 //         <Typography
 //           sx={{
 //             color: "#fff",
-//             fontSize: 25,
+//             fontSize: 28,
 //             fontWeight: 800,
 //           }}
 //         >
-//           Bookings
+//           {myPage ? "My Bookings" : "Bookings"}
 //         </Typography>
 
 //         <Typography sx={{ color: "#94A3B8", fontSize: 13 }}>
-//           View every booking with full details
+//           {myPage ? "View your booked tickets" : "Manage all customer bookings"}
 //         </Typography>
 //       </Box>
 
-//       {/* CARD */}
-//       <Card sx={{ background: "#0F172A", borderRadius: 3 }}>
+//       {/* Main Card */}
+//       <Card
+//         sx={{
+//           background: "#0F172A",
+//           borderRadius: 3,
+//         }}
+//       >
 //         <CardContent>
-//           {/* SEARCH */}
+//           {/* BOOKING TYPE TABS */}
+//           <Box sx={{ mb: 2 }}>
+//             <Tabs
+//               value={bookingType}
+//               onChange={(_, value) => {
+//                 setBookingType(value);
+//                 setPage(0);
+//               }}
+//               sx={{
+//                 "& .MuiTab-root": {
+//                   color: "#64748B",
+//                   fontWeight: 700,
+//                 },
+//                 "& .Mui-selected": {
+//                   color: "#F59E0B !important",
+//                 },
+//               }}
+//             >
+//               <Tab value="hall" label="Hall Bookings" />
+
+//               <Tab value="party_plot" label="Party Plot Bookings" />
+//             </Tabs>
+//           </Box>
+//           {/* Search */}
 //           <TextField
 //             fullWidth
 //             size="small"
@@ -626,14 +370,21 @@
 //             }}
 //           />
 
-//           {/* TABS */}
+//           {/* Tabs */}
 //           <Tabs
 //             value={tab}
-//             onChange={(_, v) => setTab(v)}
+//             onChange={(_, v) => {
+//               setTab(v);
+//               setPage(0);
+//             }}
 //             sx={{
 //               mb: 2,
-//               "& .MuiTab-root": { color: "#64748B" },
-//               "& .Mui-selected": { color: "#38BDF8 !important" },
+//               "& .MuiTab-root": {
+//                 color: "#64748B",
+//               },
+//               "& .Mui-selected": {
+//                 color: "#38BDF8 !important",
+//               },
 //             }}
 //           >
 //             {["all", "confirmed", "pending", "cancelled"].map((x) => (
@@ -645,17 +396,19 @@
 //             ))}
 //           </Tabs>
 
-//           {/* TABLE */}
+//           {/* Table */}
 //           <DataGrid
-//             style={{ width: "auto" }}
 //             rows={rows}
 //             columns={columns}
 //             loading={loading}
 //             rowCount={total}
 //             autoHeight
-//             pageSizeOptions={[20]}
 //             paginationMode="server"
-//             paginationModel={{ page, pageSize: 20 }}
+//             pageSizeOptions={[20]}
+//             paginationModel={{
+//               page,
+//               pageSize: 20,
+//             }}
 //             onPaginationModelChange={(m) => setPage(m.page)}
 //             disableRowSelectionOnClick
 //             sx={{
@@ -666,12 +419,12 @@
 //         </CardContent>
 //       </Card>
 
-//       {/* DETAIL MODAL */}
+//       {/* Detail Modal */}
 //       <Dialog
 //         open={!!detail}
-//         onClose={() => setDetail(null)}
-//         fullWidth
+//         onClose={closeDetail}
 //         maxWidth="md"
+//         fullWidth
 //         PaperProps={{
 //           sx: {
 //             background: "#0F172A",
@@ -687,117 +440,124 @@
 //         <DialogContent>
 //           {detail && (
 //             <Box>
-//               {/* EVENT IMAGE */}
-//               <Box
-//                 component="img"
-//                 src={
-//                   detail?.event?.banner_url
-//                     ? detail.event.banner_url
-//                     : `https://plus.unsplash.com/premium_photo-1684923604860-64e661f2ff72?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D`
-//                 }
-//                 onError={(e) => {
-//                   e.target.src =
-//                     "https://plus.unsplash.com/premium_photo-1684923604860-64e661f2ff72?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
-//                 }}
-//                 sx={{
-//                   width: "100%",
-//                   height: 240,
-//                   objectFit: "cover",
-//                   borderRadius: 2,
-//                   mb: 3,
-//                 }}
-//               />
-
-//               {/* BOOKING INFO */}
+//               {/* Booking Info */}
 //               <Grid container spacing={2}>
 //                 <Grid item xs={12} md={6}>
-//                   <Info title="Customer" value={detail.user_name} />
-//                   <Info title="Email" value={detail.user_email} />
-//                   <Info title="Booking Ref" value={detail.booking_ref} />
-//                   <Info title="Payment Method" value={detail.payment_method} />
-//                   <Info title="Payment Status" value={detail.payment_status} />
+//                   {/* <Info title="Customer" value={detail.user_name} />
+//                   <Info title="Email" value={detail.user_email} /> */}
+//                   <Info title="Customer" value={detail.user?.name} />
+//                   <Info title="Email" value={detail.user?.email} />
+//                   <Info title="Payment" value={detail.payment_status} />
+//                   <Info title="Status" value={detail.status} />
 //                 </Grid>
 
 //                 <Grid item xs={12} md={6}>
-//                   <Info title="Event" value={detail.event?.title} />
-//                   <Info title="City" value={detail.event?.city} />
-//                   <Info title="Hall" value={detail.event?.hall?.name} />
+//                   {bookingType === "party_plot" ? (
+//                     <>
+//                       <Info title="Party Plot" value={detail.partyPlot?.name} />
+
+//                       <Info
+//                         title="Description"
+//                         value={detail.partyPlot?.description}
+//                       />
+
+//                       <Info title="Tickets" value={detail.total_seats} />
+//                     </>
+//                   ) : (
+//                     <>
+//                       <Info title="Event" value={detail.event?.title} />
+
+//                       <Info title="City" value={detail.event?.city} />
+
+//                       <Info title="Hall" value={detail.event?.hall?.name} />
+//                     </>
+//                   )}
 //                   <Info
 //                     title="Date"
-//                     value={new Date(
-//                       detail.event?.event_date,
-//                     ).toLocaleDateString("en-IN")}
-//                   />
-//                   <Info
-//                     title="Time"
-//                     value={`${detail.event?.start_time} - ${detail.event?.end_time}`}
+//                     value={
+//                       detail.event?.event_date
+//                         ? new Date(detail.event.event_date).toLocaleDateString(
+//                             "en-IN",
+//                           )
+//                         : "-"
+//                     }
 //                   />
 //                 </Grid>
 //               </Grid>
 
-//               <Divider sx={{ my: 3, borderColor: "#1E293B" }} />
-
-//               {/* SEATS */}
-//               <Typography sx={{ fontWeight: 800, mb: 2 }}>
-//                 Seats Booked
-//               </Typography>
-
-//               <Grid container spacing={2}>
-//                 {detail.seats?.map((seat) => (
-//                   <Grid item xs={12} sm={6} md={4} key={seat.id}>
-//                     <Card
-//                       sx={{
-//                         background: "#111827",
-//                         border: "1px solid #1E293B",
-//                         borderRadius: 2,
-//                       }}
-//                     >
-//                       <CardContent>
-//                         <Box
-//                           sx={{
-//                             display: "flex",
-//                             alignItems: "center",
-//                             gap: 1,
-//                             mb: 1,
-//                           }}
-//                         >
-//                           <EventSeatIcon sx={{ color: "#F59E0B" }} />
-//                           <Typography sx={{ fontWeight: 700 }}>
-//                             {seat.seat_name}
-//                           </Typography>
-//                         </Box>
-
-//                         <Typography sx={{ color: "#94A3B8", fontSize: 13 }}>
-//                           Section: {seat.section_label}
-//                         </Typography>
-
-//                         <Typography sx={{ color: "#94A3B8", fontSize: 13 }}>
-//                           Type: {seat.seat_type}
-//                         </Typography>
-
-//                         <Typography
-//                           sx={{
-//                             color: "#22C55E",
-//                             fontWeight: 700,
-//                             mt: 1,
-//                           }}
-//                         >
-//                           ₹{seat.bookedPrice}
-//                         </Typography>
-//                       </CardContent>
-//                     </Card>
-//                   </Grid>
-//                 ))}
-//               </Grid>
-
-//               <Divider sx={{ my: 3, borderColor: "#1E293B" }} />
-
-//               {/* TOTAL */}
-//               <Info title="Subtotal" value={`₹${detail.subtotal}`} />
-//               <Info
-//                 title="Convenience Fee"
-//                 value={`₹${detail.convenience_fee}`}
+//               <Divider
+//                 sx={{
+//                   my: 3,
+//                   borderColor: "#1E293B",
+//                 }}
 //               />
+
+//               {/* Seats */}
+//               {bookingType !== "party_plot" && (
+//                 <>
+//                   {/* Seats */}
+//                   <Typography sx={{ fontWeight: 800, mb: 2 }}>
+//                     Seats Booked
+//                   </Typography>
+
+//                   <Grid container spacing={2}>
+//                     {detail.seats?.map((seat) => (
+//                       <Grid item xs={12} sm={6} md={4} key={seat.id}>
+//                         <Card
+//                           sx={{
+//                             background: "#111827",
+//                             border: "1px solid #1E293B",
+//                           }}
+//                         >
+//                           <CardContent>
+//                             <Box
+//                               sx={{
+//                                 display: "flex",
+//                                 gap: 1,
+//                                 alignItems: "center",
+//                                 mb: 1,
+//                               }}
+//                             >
+//                               <EventSeatIcon sx={{ color: "#F59E0B" }} />
+
+//                               <Typography sx={{ fontWeight: 700 }}>
+//                                 {seat.seat_name}
+//                               </Typography>
+//                             </Box>
+
+//                             <Typography
+//                               sx={{
+//                                 color: "#94A3B8",
+//                                 fontSize: 13,
+//                               }}
+//                             >
+//                               {seat.section_label}
+//                             </Typography>
+
+//                             <Typography
+//                               sx={{
+//                                 color: "#22C55E",
+//                                 fontWeight: 700,
+//                                 mt: 1,
+//                               }}
+//                             >
+//                               ₹{seat.bookedPrice}
+//                             </Typography>
+//                           </CardContent>
+//                         </Card>
+//                       </Grid>
+//                     ))}
+//                   </Grid>
+//                 </>
+//               )}
+
+//               <Divider
+//                 sx={{
+//                   my: 3,
+//                   borderColor: "#1E293B",
+//                 }}
+//               />
+
 //               <Info
 //                 title="Total Amount"
 //                 value={`₹${detail.total_amount}`}
@@ -808,14 +568,14 @@
 //         </DialogContent>
 
 //         <DialogActions>
-//           <Button onClick={() => setDetail(null)}>Close</Button>
+//           <Button onClick={closeDetail}>Close</Button>
 //         </DialogActions>
 //       </Dialog>
 //     </Box>
 //   );
 // }
 
-// // SMALL COMPONENT
+// /* Small Row Component */
 // function Info({ title, value, green }) {
 //   return (
 //     <Box
@@ -830,8 +590,8 @@
 
 //       <Typography
 //         sx={{
-//           fontWeight: 700,
 //           color: green ? "#22C55E" : "#fff",
+//           fontWeight: 700,
 //           fontSize: 13,
 //         }}
 //       >
@@ -840,8 +600,9 @@
 //     </Box>
 //   );
 // }
-// src/pages/Bookings.jsx
+
 import { useEffect, useState, useCallback } from "react";
+
 import {
   Box,
   Card,
@@ -869,10 +630,13 @@ import SearchIcon from "@mui/icons-material/Search";
 import VisibilityIcon from "@mui/icons-material/VisibilityOutlined";
 import CancelIcon from "@mui/icons-material/CancelOutlined";
 import EventSeatIcon from "@mui/icons-material/EventSeat";
+import ConfirmationNumberIcon from "@mui/icons-material/ConfirmationNumber";
 
 import { useDispatch, useSelector } from "react-redux";
+
 import { useSnackbar } from "notistack";
 
+/* HALL BOOKING THUNKS */
 import {
   fetchBookingsThunk,
   fetchUserBookingsThunk,
@@ -880,6 +644,13 @@ import {
   cancelBookingThunk,
 } from "../features/bookings/bookingThunks";
 
+/* PARTY PLOT BOOKING THUNKS */
+import {
+  fetchPartyPlotBookingsThunk,
+  fetchPartyPlotBookingByIdThunk,
+} from "../features/partyPlot/partyPlotBookingThunks";
+
+/* HALL SELECTORS */
 import {
   selectBookingList,
   selectBookingTotal,
@@ -887,7 +658,18 @@ import {
   selectBookingLoading,
 } from "../features/bookings/bookingSelectors";
 
+/* PARTY PLOT SELECTORS */
+import {
+  selectPartyPlotBookingList,
+  selectPartyPlotBookingTotal,
+  selectCurrentPartyPlotBooking,
+  selectPartyPlotBookingLoading,
+} from "../features/partyPlot/PartyPloteBookingSelectors";
+
+/* SLICES */
 import { clearCurrentBooking } from "../features/bookings/bookingSlice";
+
+import { clearCurrentPartyPlotBooking } from "../features/partyPlot/partyPlotBookingSlice";
 
 const PAY_COLOR = {
   paid: "success",
@@ -902,25 +684,63 @@ const STATUS_COLOR = {
   cancelled: "error",
 };
 
-export default function Bookings({
-  myPage = false, // true = /my-bookings
-  userId = null, // optional
-}) {
+export default function Bookings({ myPage = false, userId = null }) {
   const dispatch = useDispatch();
+
   const { enqueueSnackbar } = useSnackbar();
 
-  // Redux State
-  const rows = useSelector(selectBookingList);
-  const total = useSelector(selectBookingTotal);
-  const detail = useSelector(selectCurrentBooking);
-  const loading = useSelector(selectBookingLoading);
+  const user = useSelector((state) => state.auth.user);
 
-  // Local State
+  /* BOOKING TYPE */
+  const [bookingType, setBookingType] = useState("hall");
+
+  /* COMMON STATES */
   const [page, setPage] = useState(0);
+
   const [search, setSearch] = useState("");
+
   const [tab, setTab] = useState("all");
 
-  // Load Data
+  /* =========================
+        HALL BOOKING STATE
+     ========================= */
+
+  const hallRows = useSelector(selectBookingList);
+
+  const hallTotal = useSelector(selectBookingTotal);
+
+  const hallDetail = useSelector(selectCurrentBooking);
+
+  const hallLoading = useSelector(selectBookingLoading);
+
+  /* =========================
+      PARTY PLOT STATE
+     ========================= */
+
+  const partyPlotRows = useSelector(selectPartyPlotBookingList);
+
+  const partyPlotTotal = useSelector(selectPartyPlotBookingTotal);
+
+  const partyPlotDetail = useSelector(selectCurrentPartyPlotBooking);
+
+  const partyPlotLoading = useSelector(selectPartyPlotBookingLoading);
+
+  /* =========================
+          ACTIVE DATA
+     ========================= */
+
+  const rows = bookingType === "party_plot" ? partyPlotRows : hallRows;
+
+  const total = bookingType === "party_plot" ? partyPlotTotal : hallTotal;
+
+  const detail = bookingType === "party_plot" ? partyPlotDetail : hallDetail;
+
+  const loading = bookingType === "party_plot" ? partyPlotLoading : hallLoading;
+
+  /* =========================
+          LOAD BOOKINGS
+     ========================= */
+
   const loadBookings = useCallback(() => {
     const params = {
       page: page + 1,
@@ -932,24 +752,47 @@ export default function Bookings({
       params.status = tab;
     }
 
-    if (myPage && userId.role === "user") {
-      if (userId) params.userId = userId;
-      dispatch(fetchUserBookingsThunk(params));
-    } else if (myPage && userId.role === "super_admin") {
-      dispatch(fetchBookingsThunk(params));
+    /* =========================
+          HALL BOOKINGS
+       ========================= */
+
+    if (bookingType === "hall") {
+      if (myPage && user?.role === "user") {
+        dispatch(fetchUserBookingsThunk(params));
+      } else {
+        dispatch(fetchBookingsThunk(params));
+      }
     }
-  }, [dispatch, page, search, tab, myPage, userId]);
+
+    /* =========================
+       PARTY PLOT BOOKINGS
+       ========================= */
+
+    if (bookingType === "party_plot") {
+      dispatch(fetchPartyPlotBookingsThunk(params));
+    }
+  }, [dispatch, page, search, tab, bookingType, myPage, user]);
 
   useEffect(() => {
     loadBookings();
   }, [loadBookings]);
 
-  // View Detail
+  /* =========================
+         VIEW DETAIL
+     ========================= */
+
   const handleView = (id) => {
-    dispatch(fetchBookingByIdThunk(id));
+    if (bookingType === "party_plot") {
+      dispatch(fetchPartyPlotBookingByIdThunk(id));
+    } else {
+      dispatch(fetchBookingByIdThunk(id));
+    }
   };
 
-  // Cancel
+  /* =========================
+          CANCEL BOOKING
+     ========================= */
+
   const handleCancel = (id) => {
     dispatch(cancelBookingThunk(id))
       .unwrap()
@@ -957,6 +800,8 @@ export default function Bookings({
         enqueueSnackbar("Booking cancelled", {
           variant: "success",
         });
+
+        loadBookings();
       })
       .catch((err) => {
         enqueueSnackbar(err || "Failed to cancel", {
@@ -965,164 +810,215 @@ export default function Bookings({
       });
   };
 
-  // Close Detail
+  /* =========================
+          CLOSE DETAIL
+     ========================= */
+
   const closeDetail = () => {
-    dispatch(clearCurrentBooking());
+    if (bookingType === "party_plot") {
+      dispatch(clearCurrentPartyPlotBooking());
+    } else {
+      dispatch(clearCurrentBooking());
+    }
   };
 
-  const columns = [
-  {
-    field: "booking_ref",
-    headerName: "Ref #",
-    width: 150,
-    renderCell: ({ value }) => (
-      <Typography
-        sx={{
-          color: "#38BDF8",
-          fontWeight: 700,
-          fontFamily: "monospace",
-          fontSize: 12,
-        }}
-      >
-        {value}
-      </Typography>
-    ),
-  },
+  /* =========================
+            COLUMNS
+     ========================= */
 
-  {
-    field: "customer",
-    headerName: "Customer",
-    flex: 1,
-    minWidth: 220,
-    renderCell: ({ row }) => (
-      <Box>
+  const columns = [
+    {
+      field: "booking_ref",
+      headerName: "Ref #",
+      width: 180,
+
+      renderCell: ({ value }) => (
+        <Typography
+          sx={{
+            color: "#38BDF8",
+            fontWeight: 700,
+            fontFamily: "monospace",
+            fontSize: 12,
+          }}
+        >
+          {value}
+        </Typography>
+      ),
+    },
+
+    {
+      field: "customer",
+      headerName: "Customer",
+      flex: 1,
+      minWidth: 220,
+
+      renderCell: ({ row }) => (
+        <Box>
+          <Typography
+            sx={{
+              color: "#fff",
+              fontWeight: 700,
+              fontSize: 13,
+            }}
+          >
+            {row.user?.name || "-"}
+          </Typography>
+
+          <Typography
+            sx={{
+              color: "#94A3B8",
+              fontSize: 11,
+            }}
+          >
+            {row.user?.email || "-"}
+          </Typography>
+        </Box>
+      ),
+    },
+
+    {
+      field: "event",
+      headerName: bookingType === "party_plot" ? "Party Plot" : "Event",
+
+      flex: 1,
+
+      minWidth: 220,
+
+      renderCell: ({ row }) => (
+        <Box>
+          <Typography
+            sx={{
+              color: "#fff",
+              fontSize: 13,
+              fontWeight: 600,
+            }}
+          >
+            {bookingType === "party_plot"
+              ? row.partyPlot?.name || "-"
+              : row.event?.title || "-"}
+          </Typography>
+
+          <Typography
+            sx={{
+              color: "#64748B",
+              fontSize: 11,
+            }}
+          >
+            {bookingType === "party_plot"
+              ? row.partyPlot?.description || "-"
+              : row.event?.event_date
+                ? new Date(row.event.event_date).toLocaleDateString("en-IN")
+                : "-"}
+          </Typography>
+        </Box>
+      ),
+    },
+
+    {
+      field: bookingType === "party_plot" ? "total_tickets" : "total_seats",
+
+      headerName: bookingType === "party_plot" ? "Tickets" : "Seats",
+
+      width: 100,
+
+      renderCell: ({ row }) => (
         <Typography
           sx={{
             color: "#fff",
             fontWeight: 700,
-            fontSize: 13,
           }}
         >
-          {row.user?.name || "-"}
+          {bookingType === "party_plot" ? row.total_tickets : row.total_seats}
         </Typography>
+      ),
+    },
 
+    {
+      field: "total_amount",
+      headerName: "Amount",
+      width: 140,
+
+      renderCell: ({ value }) => (
         <Typography
           sx={{
-            color: "#94A3B8",
-            fontSize: 11,
+            color: "#22C55E",
+            fontWeight: 700,
           }}
         >
-          {row.user?.email || "-"}
+          ₹{Number(value || 0).toLocaleString("en-IN")}
         </Typography>
-      </Box>
-    ),
-  },
+      ),
+    },
 
-  {
-    field: "event",
-    headerName: "Event",
-    flex: 1,
-    minWidth: 220,
-    renderCell: ({ row }) => (
-      <Box>
-        <Typography
-          sx={{
-            color: "#fff",
-            fontSize: 13,
-          }}
-        >
-          {row.event?.title || "-"}
-        </Typography>
+    ...(bookingType === "hall"
+      ? [
+          {
+            field: "payment_status",
 
-        <Typography
-          sx={{
-            color: "#64748B",
-            fontSize: 11,
-          }}
-        >
-          {row.event?.event_date
-            ? new Date(row.event.event_date).toLocaleDateString("en-IN")
-            : "-"}
-        </Typography>
-      </Box>
-    ),
-  },
+            headerName: "Payment",
 
-  {
-    field: "total_seats",
-    headerName: "Seats",
-    width: 80,
-  },
+            width: 120,
 
-  {
-    field: "total_amount",
-    headerName: "Amount",
-    width: 130,
-    renderCell: ({ value }) => (
-      <Typography
-        sx={{
-          color: "#22C55E",
-          fontWeight: 700,
-        }}
-      >
-        ₹{Number(value || 0).toLocaleString("en-IN")}
-      </Typography>
-    ),
-  },
+            renderCell: ({ value }) => (
+              <Chip
+                label={value}
+                size="small"
+                color={PAY_COLOR[value] || "default"}
+              />
+            ),
+          },
+        ]
+      : []),
 
-  {
-    field: "payment_status",
-    headerName: "Payment",
-    width: 120,
-    renderCell: ({ value }) => (
-      <Chip
-        label={value}
-        size="small"
-        color={PAY_COLOR[value] || "default"}
-      />
-    ),
-  },
+    {
+      field: "status",
 
-  {
-    field: "status",
-    headerName: "Status",
-    width: 120,
-    renderCell: ({ value }) => (
-      <Chip
-        label={value}
-        size="small"
-        color={STATUS_COLOR[value] || "default"}
-      />
-    ),
-  },
+      headerName: "Status",
 
-  {
-    field: "actions",
-    headerName: "Actions",
-    width: 120,
-    sortable: false,
-    renderCell: ({ row }) => (
-      <Box>
-        <Tooltip title="View">
-          <IconButton onClick={() => handleView(row.id)}>
-            <VisibilityIcon sx={{ color: "#38BDF8" }} />
-          </IconButton>
-        </Tooltip>
+      width: 120,
 
-        {row.status === "confirmed" && (
-          <Tooltip title="Cancel">
-            <IconButton onClick={() => handleCancel(row.id)}>
-              <CancelIcon sx={{ color: "#EF4444" }} />
+      renderCell: ({ value }) => (
+        <Chip
+          label={value}
+          size="small"
+          color={STATUS_COLOR[value] || "default"}
+        />
+      ),
+    },
+
+    {
+      field: "actions",
+
+      headerName: "Actions",
+
+      width: 120,
+
+      sortable: false,
+
+      renderCell: ({ row }) => (
+        <Box>
+          <Tooltip title="View">
+            <IconButton onClick={() => handleView(row.id)}>
+              <VisibilityIcon sx={{ color: "#38BDF8" }} />
             </IconButton>
           </Tooltip>
-        )}
-      </Box>
-    ),
-  },
-];
+
+          {bookingType === "hall" && row.status === "confirmed" && (
+            <Tooltip title="Cancel">
+              <IconButton onClick={() => handleCancel(row.id)}>
+                <CancelIcon sx={{ color: "#EF4444" }} />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Box>
+      ),
+    },
+  ];
+
   return (
     <Box>
-      {/* Header */}
+      {/* HEADER */}
+
       <Box sx={{ mb: 3 }}>
         <Typography
           sx={{
@@ -1134,12 +1030,18 @@ export default function Bookings({
           {myPage ? "My Bookings" : "Bookings"}
         </Typography>
 
-        <Typography sx={{ color: "#94A3B8", fontSize: 13 }}>
-          {myPage ? "View your booked tickets" : "Manage all customer bookings"}
+        <Typography
+          sx={{
+            color: "#94A3B8",
+            fontSize: 13,
+          }}
+        >
+          {myPage ? "View your bookings" : "Manage all customer bookings"}
         </Typography>
       </Box>
 
-      {/* Main Card */}
+      {/* MAIN CARD */}
+
       <Card
         sx={{
           background: "#0F172A",
@@ -1147,7 +1049,39 @@ export default function Bookings({
         }}
       >
         <CardContent>
-          {/* Search */}
+          {/* BOOKING TYPE */}
+
+          <Box sx={{ mb: 2 }}>
+            <Tabs
+              value={bookingType}
+              onChange={(_, value) => {
+                setBookingType(value);
+
+                setPage(0);
+
+                setSearch("");
+
+                setTab("all");
+              }}
+              sx={{
+                "& .MuiTab-root": {
+                  color: "#64748B",
+                  fontWeight: 700,
+                },
+
+                "& .Mui-selected": {
+                  color: "#F59E0B !important",
+                },
+              }}
+            >
+              <Tab value="hall" label="Hall Bookings" />
+
+              <Tab value="party_plot" label="Party Plot Bookings" />
+            </Tabs>
+          </Box>
+
+          {/* SEARCH */}
+
           <TextField
             fullWidth
             size="small"
@@ -1158,44 +1092,53 @@ export default function Bookings({
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon sx={{ color: "#64748B" }} />
+                  <SearchIcon
+                    sx={{
+                      color: "#64748B",
+                    }}
+                  />
                 </InputAdornment>
               ),
             }}
           />
 
-          {/* Tabs */}
+          {/* STATUS TABS */}
+
           <Tabs
             value={tab}
-            onChange={(_, v) => {
-              setTab(v);
+            onChange={(_, value) => {
+              setTab(value);
+
               setPage(0);
             }}
             sx={{
               mb: 2,
+
               "& .MuiTab-root": {
                 color: "#64748B",
               },
+
               "& .Mui-selected": {
                 color: "#38BDF8 !important",
               },
             }}
           >
-            {["all", "confirmed", "pending", "cancelled"].map((x) => (
+            {["all", "confirmed", "pending", "cancelled"].map((item) => (
               <Tab
-                key={x}
-                value={x}
-                label={x.charAt(0).toUpperCase() + x.slice(1)}
+                key={item}
+                value={item}
+                label={item.charAt(0).toUpperCase() + item.slice(1)}
               />
             ))}
           </Tabs>
 
-          {/* Table */}
+          {/* DATA GRID */}
+
           <DataGrid
-            rows={rows}
+            rows={rows || []}
             columns={columns}
             loading={loading}
-            rowCount={total}
+            rowCount={total || 0}
             autoHeight
             paginationMode="server"
             pageSizeOptions={[20]}
@@ -1208,12 +1151,25 @@ export default function Bookings({
             sx={{
               border: "none",
               color: "#fff",
+
+              "& .MuiDataGrid-columnHeaders": {
+                background: "#111827",
+              },
+
+              "& .MuiDataGrid-cell": {
+                borderColor: "#1E293B",
+              },
+
+              "& .MuiDataGrid-footerContainer": {
+                borderColor: "#1E293B",
+              },
             }}
           />
         </CardContent>
       </Card>
 
-      {/* Detail Modal */}
+      {/* DETAIL MODAL */}
+
       <Dialog
         open={!!detail}
         onClose={closeDetail}
@@ -1234,28 +1190,48 @@ export default function Bookings({
         <DialogContent>
           {detail && (
             <Box>
-              {/* Booking Info */}
+              {/* INFO */}
+
               <Grid container spacing={2}>
                 <Grid item xs={12} md={6}>
-                  {/* <Info title="Customer" value={detail.user_name} />
-                  <Info title="Email" value={detail.user_email} /> */}
                   <Info title="Customer" value={detail.user?.name} />
+
                   <Info title="Email" value={detail.user?.email} />
-                  <Info title="Payment" value={detail.payment_status} />
+
+                  {bookingType === "hall" && (
+                    <Info title="Payment" value={detail.payment_status} />
+                  )}
+
                   <Info title="Status" value={detail.status} />
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-                  <Info title="Event" value={detail.event?.title} />
-                  <Info title="City" value={detail.event?.city} />
-                  <Info title="Hall" value={detail.event?.hall?.name} />
+                  {bookingType === "party_plot" ? (
+                    <>
+                      <Info title="Party Plot" value={detail.partyPlot?.name} />
+
+                      <Info
+                        title="Description"
+                        value={detail.partyPlot?.description}
+                      />
+
+                      <Info title="Tickets" value={detail.total_tickets} />
+                    </>
+                  ) : (
+                    <>
+                      <Info title="Event" value={detail.event?.title} />
+
+                      <Info title="City" value={detail.event?.city} />
+
+                      <Info title="Hall" value={detail.event?.hall?.name} />
+                    </>
+                  )}
+
                   <Info
                     title="Date"
                     value={
-                      detail.event?.event_date
-                        ? new Date(detail.event.event_date).toLocaleDateString(
-                            "en-IN",
-                          )
+                      detail.createdAt
+                        ? new Date(detail.createdAt).toLocaleDateString("en-IN")
                         : "-"
                     }
                   />
@@ -1269,59 +1245,175 @@ export default function Bookings({
                 }}
               />
 
-              {/* Seats */}
-              <Typography sx={{ fontWeight: 800, mb: 2 }}>
-                Seats Booked
-              </Typography>
+              {/* HALL SEATS */}
 
-              <Grid container spacing={2}>
-                {detail.seats?.map((seat) => (
-                  <Grid item xs={12} sm={6} md={4} key={seat.id}>
-                    <Card
-                      sx={{
-                        background: "#111827",
-                        border: "1px solid #1E293B",
-                      }}
-                    >
-                      <CardContent>
-                        <Box
+              {bookingType === "hall" && (
+                <>
+                  <Typography
+                    sx={{
+                      fontWeight: 800,
+                      mb: 2,
+                    }}
+                  >
+                    Seats Booked
+                  </Typography>
+
+                  <Grid container spacing={2}>
+                    {detail.seats?.map((seat) => (
+                      <Grid item xs={12} sm={6} md={4} key={seat.id}>
+                        <Card
                           sx={{
-                            display: "flex",
-                            gap: 1,
-                            alignItems: "center",
-                            mb: 1,
+                            background: "#111827",
+
+                            border: "1px solid #1E293B",
                           }}
                         >
-                          <EventSeatIcon sx={{ color: "#F59E0B" }} />
+                          <CardContent>
+                            <Box
+                              sx={{
+                                display: "flex",
 
-                          <Typography sx={{ fontWeight: 700 }}>
-                            {seat.seat_name}
-                          </Typography>
-                        </Box>
+                                gap: 1,
 
-                        <Typography
-                          sx={{
-                            color: "#94A3B8",
-                            fontSize: 13,
-                          }}
-                        >
-                          {seat.section_label}
-                        </Typography>
+                                alignItems: "center",
 
-                        <Typography
-                          sx={{
-                            color: "#22C55E",
-                            fontWeight: 700,
-                            mt: 1,
-                          }}
-                        >
-                          ₹{seat.bookedPrice}
-                        </Typography>
-                      </CardContent>
-                    </Card>
+                                mb: 1,
+                              }}
+                            >
+                              <EventSeatIcon
+                                sx={{
+                                  color: "#F59E0B",
+                                }}
+                              />
+
+                              <Typography
+                                sx={{
+                                  fontWeight: 700,
+                                }}
+                              >
+                                {seat.seat_name}
+                              </Typography>
+                            </Box>
+
+                            <Typography
+                              sx={{
+                                color: "#94A3B8",
+
+                                fontSize: 13,
+                              }}
+                            >
+                              {seat.section_label}
+                            </Typography>
+
+                            <Typography
+                              sx={{
+                                color: "#22C55E",
+
+                                fontWeight: 700,
+
+                                mt: 1,
+                              }}
+                            >
+                              ₹{seat.bookedPrice}
+                            </Typography>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    ))}
                   </Grid>
-                ))}
-              </Grid>
+                </>
+              )}
+
+              {/* PARTY PLOT TICKETS */}
+
+              {bookingType === "party_plot" && detail.tickets && (
+                <>
+                  <Typography
+                    sx={{
+                      fontWeight: 800,
+                      mb: 2,
+                    }}
+                  >
+                    Tickets
+                  </Typography>
+
+                  <Grid container spacing={2}>
+                    {detail.tickets.map((ticket) => (
+                      <Grid item xs={12} sm={6} md={4} key={ticket.id}>
+                        <Card
+                          sx={{
+                            background: "#111827",
+
+                            border: "1px solid #1E293B",
+                          }}
+                        >
+                          <CardContent>
+                            <Box
+                              sx={{
+                                display: "flex",
+
+                                alignItems: "center",
+
+                                gap: 1,
+
+                                mb: 1,
+                              }}
+                            >
+                              <ConfirmationNumberIcon
+                                sx={{
+                                  color: "#F59E0B",
+                                }}
+                              />
+
+                              <Typography
+                                sx={{
+                                  fontWeight: 700,
+                                }}
+                              >
+                                {ticket.ticket_number}
+                              </Typography>
+                            </Box>
+
+                            <Typography
+                              sx={{
+                                color: "#94A3B8",
+
+                                fontSize: 12,
+                              }}
+                            >
+                              Barcode:
+                            </Typography>
+
+                            <Typography
+                              sx={{
+                                color: "#38BDF8",
+
+                                fontSize: 12,
+
+                                wordBreak: "break-all",
+                              }}
+                            >
+                              {ticket.barcode}
+                            </Typography>
+
+                            <Box
+                              sx={{
+                                mt: 2,
+                              }}
+                            >
+                              <Chip
+                                size="small"
+                                label={ticket.status}
+                                color={STATUS_COLOR[ticket.status] || "default"}
+                              />
+                            </Box>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </>
+              )}
 
               <Divider
                 sx={{
@@ -1332,7 +1424,7 @@ export default function Bookings({
 
               <Info
                 title="Total Amount"
-                value={`₹${detail.total_amount}`}
+                value={`₹${detail.total_amount || 0}`}
                 green
               />
             </Box>
@@ -1347,8 +1439,11 @@ export default function Bookings({
   );
 }
 
-/* Small Row Component */
-function Info({ title, value, green }) {
+/* ====================================
+            INFO ROW
+==================================== */
+
+function Info({ title, value, green = false }) {
   return (
     <Box
       sx={{
@@ -1358,12 +1453,21 @@ function Info({ title, value, green }) {
         borderBottom: "1px solid #1E293B",
       }}
     >
-      <Typography sx={{ color: "#94A3B8", fontSize: 13 }}>{title}</Typography>
+      <Typography
+        sx={{
+          color: "#94A3B8",
+          fontSize: 13,
+        }}
+      >
+        {title}
+      </Typography>
 
       <Typography
         sx={{
           color: green ? "#22C55E" : "#fff",
+
           fontWeight: 700,
+
           fontSize: 13,
         }}
       >

@@ -257,6 +257,7 @@ import BookingManager from "./pages/BookingManager";
 // AUTH THUNK
 import { meThunk } from "./features/auth/authThunks";
 import VendorRegistration from "./pages/VendorRegistration";
+import Partyplote from "./components/Partyplote";
 
 // ─────────────────────────────────────────────
 // Lazy Pages
@@ -450,6 +451,7 @@ function AppRoutes() {
             }
           />
           <Route path="vendor-registration" element={<VendorRegistration />} />
+          <Route path="party-plot" element={<Partyplote />} />
 
           {/* Inner 404 */}
           <Route path="*" element={<NotFound />} />

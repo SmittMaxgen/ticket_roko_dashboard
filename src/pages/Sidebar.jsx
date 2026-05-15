@@ -381,6 +381,13 @@ const NAV = [
   },
 
   {
+    label: "Party Plots",
+    icon: <MeetingRoomIcon />,
+    path: "/party-plot",
+    roles: ["super_admin", "admin", "user", "vendor_organizer"],
+  },
+
+  {
     label: "Analytics",
     icon: <BarChartIcon />,
     path: "/analytics",

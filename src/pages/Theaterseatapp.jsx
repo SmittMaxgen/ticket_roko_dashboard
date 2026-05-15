@@ -56,11 +56,14 @@ import {
   selectSelectedTotal,
   selectSeatsByRow,
 } from "../features/hallSeat/seatSelectorsx";
+import Partyplote from "../components/Partyplote";
+import BookingManager from "./BookingManager";
 
 // ─────────────────────────────────────────────────────────────
 // CONSTANTS
 // ─────────────────────────────────────────────────────────────
-const MODES = ["Book Seats", "Admin: Draw Mode"];
+// const MODES = ["Book Seats", "Admin: Draw Mode", "Admin: Party Plot"];
+const MODES = ["Book Seats", "Admin: Draw Mode", "Bookings", "Party Plot"];
 
 // const DRAW_SECTIONS = [
 //   {
@@ -914,7 +917,6 @@ function DrawMode() {
         DRAW_SECTIONS.find((s) => s.id === prev) ? prev : DRAW_SECTIONS[0].id,
       );
   }, [DRAW_SECTIONS]);
-
 
   useEffect(() => {
     if (SEAT_SHAPES.length > 0)
@@ -1804,7 +1806,6 @@ export default function TheaterSeatApp({ hallId }) {
         href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap"
         rel="stylesheet"
       />
-
       {/* Top nav */}
       <div
         style={{
@@ -1898,14 +1899,41 @@ export default function TheaterSeatApp({ hallId }) {
               fontWeight: 600,
             }}
           >
-            {mode === 0 ? "Live Booking" : "Admin Mode"}
+            {/* {mode === 0 ? "Live Booking" : "Admin Mode"} */}
+            {mode === 0
+              ? "Live Booking"
+              : mode === 1
+                ? "Admin Mode"
+                : mode === 2
+                  ? "Bookings"
+                  : "Party Plot"}
           </div>
         </div>
       </div>
-
-      <div style={{ flex: 1, overflow: "hidden" }}>
+      {/* <div style={{ flex: 1, overflow: "hidden" }}>
         {mode === 0 ? <BookingView hallId={hallId} /> : <DrawMode />}
-      </div>
+      </div> */}
+
+ {/* MODE 0 */}
+        {mode === 0 && <BookingView hallId={hallId} />}
+
+        {/* MODE 1 */}
+        {mode === 1 && (
+          <DrawMode hallId={hallId} is_edit={is_edit} is_add={is_add} />
+        )}
+
+        {/* MODE 2 */}
+        {mode === 2 && <BookingManager eventId={id} />}
+
+        {/* MODE 3 */}
+        {mode === 3 && <Partyplote />}z
+
+      {/* <div style={{ flex: 1, overflow: "hidden" }}>
+        {mode === 0 && <BookingView hallId={hallId} />}
+        {mode === 1 && <DrawMode />}
+        {mode === 2 && <BookingManager />}
+        {mode === 3 && <Partyplote />}
+      </div> */}
     </div>
   );
 }

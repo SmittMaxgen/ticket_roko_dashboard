@@ -111,29 +111,58 @@ function StatCard({ title, value, icon, color }) {
   return (
     <Card
       sx={{
-        background:
-          "linear-gradient(145deg, rgba(30,41,59,.95), rgba(15,23,42,.95))",
-        border: "1px solid #1e293b",
-        // borderRadius: 4,
-        boxShadow: "0 10px 35px rgba(0,0,0,.28)",
+        background: `linear-gradient(135deg, ${color}15 0%, ${color}05 100%)`,
+        border: `1px solid ${color}40`,
+        boxShadow: `0 10px 30px ${color}15`,
+        position: "relative",
+        overflow: "hidden",
+        transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          top: "-50%",
+          right: "-50%",
+          width: "100%",
+          height: "100%",
+          background: `radial-gradient(circle, ${color}20, transparent)`,
+          transition: "all 0.6s ease",
+        },
+        "&:hover": {
+          transform: "translateY(-6px)",
+          borderColor: color,
+          boxShadow: `0 20px 40px ${color}25`,
+        },
       }}
     >
-      <CardContent>
+      <CardContent sx={{ position: "relative", zIndex: 1 }}>
         <Stack
           direction="row"
           justifyContent="space-between"
           alignItems="center"
         >
           <Box>
-            <Typography sx={{ color: "#94a3b8", fontSize: 12 }}>
+            <Typography
+              sx={{
+                color: "#a0aec0",
+                fontSize: "0.85rem",
+                fontWeight: 600,
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                mb: 0.5,
+              }}
+            >
               {title}
             </Typography>
             <Typography
               sx={{
                 color: "#fff",
                 fontWeight: 800,
-                fontSize: 28,
-                mt: 0.5,
+                fontSize: "2rem",
+                lineHeight: 1.2,
+                background: `linear-gradient(135deg, #fff, ${color})`,
+                backgroundClip: "text",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
               }}
             >
               {value}
@@ -142,13 +171,16 @@ function StatCard({ title, value, icon, color }) {
 
           <Box
             sx={{
-              width: 46,
-              height: 46,
-              borderRadius: 3,
-              background: `${color}22`,
+              width: 56,
+              height: 56,
+              borderRadius: "12px",
+              background: `${color}25`,
+              border: `1.5px solid ${color}40`,
               color,
               display: "grid",
               placeItems: "center",
+              fontSize: "1.5rem",
+              transition: "all 0.3s ease",
             }}
           >
             {icon}

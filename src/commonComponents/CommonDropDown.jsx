@@ -11,6 +11,7 @@ const CommonDropDown = ({
   required = false,
   valueKey = "id",
   labelKey = "name",
+  sx = {},
 }) => {
   return (
     <TextField
@@ -20,6 +21,27 @@ const CommonDropDown = ({
       onChange={onChange}
       fullWidth={fullWidth}
       required={required}
+      size="small"
+      sx={{
+        "& .MuiOutlinedInput-root": {
+          borderRadius: "8px",
+          transition: "all 0.3s ease",
+          "&:hover fieldset": {
+            borderColor: "rgba(100, 116, 139, 0.6)",
+          },
+          "&.Mui-focused fieldset": {
+            borderColor: "#f59e0b",
+            boxShadow: "0 0 0 3px rgba(245, 158, 11, 0.1)",
+          },
+        },
+        "& .MuiInputLabel-root": {
+          color: "#a0aec0",
+          "&.Mui-focused": {
+            color: "#f59e0b",
+          },
+        },
+        ...sx,
+      }}
     >
       {options.map((item) => (
         <MenuItem key={item[valueKey]} value={item[valueKey]}>
