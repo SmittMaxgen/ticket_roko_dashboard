@@ -1127,7 +1127,27 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
   };
 
   const snap = (n) => Math.round(n / GRID) * GRID;
+  const svgPoint = useCallback(
+    (e) => {
+      const rect = svgRef.current?.getBoundingClientRect();
+      if (!rect) return { x: 0, y: 0 };
 
+      const rawX = (e.clientX - rect.left - pan.x) / zoom;
+      const rawY = (e.clientY - rect.top - pan.y) / zoom;
+
+      return { x: snap(rawX), y: snap(rawY) };
+    },
+    [pan, zoom, snap],
+  );
+  const zoomBtn = {
+    padding: "6px 12px",
+    background: "#1e2937",
+    color: "#e2e8f0",
+    border: "none",
+    borderRadius: 6,
+    cursor: "pointer",
+    fontWeight: 600,
+  };
   const getSec = () => {
     if (DRAW_SECTIONS.length === 0)
       return { color: "#818cf8", id: "", label: "Default" };
@@ -1138,16 +1158,6 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
     SEAT_SHAPES.find((s) => s.id === shape)?.r ?? 4;
 
   const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
-
-  const svgPoint = (e) => {
-    const rect = svgRef.current?.getBoundingClientRect();
-    if (!rect) return { x: 0, y: 0 };
-
-    const rawX = (e.clientX - rect.left - pan.x) / zoom;
-    const rawY = (e.clientY - rect.top - pan.y) / zoom;
-
-    return { x: snap(rawX), y: snap(rawY) };
-  };
 
   const seatsAlongLine = (x1, y1, x2, y2) => {
     const dx = x2 - x1;
@@ -1206,36 +1216,40 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
   }, [dispatch, hallId, is_edit, is_add]);
 
   // Load existing hall for edit
+  // Load existing hall for edit
+  // Load existing hall for edit
   useEffect(() => {
     if (!is_edit || !hall?.seats || loadedEdit) return;
 
     const apiSeats = hall.seats.filter((s) => !s.is_space);
-    const mapped = apiSeats.map((seat) => {
-      const sec =
-        DRAW_SECTIONS.find(
-          (x) =>
-            x.label === seat.section_label ||
-            x.color === seat.fill ||
-            Number(x.price) === Number(seat.price),
-        ) || DRAW_SECTIONS[0];
 
-      return {
-        id: String(seat.id),
-        x: snap(Number(seat.x_pos)),
-        y: snap(Number(seat.y_pos)),
-        color: seat.fill || sec?.color,
-        sectionId: sec?.id,
-        shape: "rounded",
-        seat_name: seat.seat_name,
-        row_label: seat.row_label,
-      };
-    });
+    const mapped = apiSeats.map((seat) => ({
+      id: String(seat.id),
+      x: snap(Number(seat.x_pos)),
+      y: snap(Number(seat.y_pos)),
+      color: seat.fill || "#64748B",
+      sectionId: seat.section_id || DRAW_SECTIONS[0]?.id,
+      shape: "rounded",
+      seat_name: seat.seat_name,
+      row_label: seat.row_label,
+      customLabel: seat.section_label,
+    }));
 
     setPlacedSeats(mapped);
     setLoadedEdit(true);
-    enqueueSnackbar("Hall loaded for editing", { variant: "info" });
-  }, [hall, is_edit, loadedEdit, DRAW_SECTIONS]);
+    enqueueSnackbar(`Hall "${hall.name}" loaded for editing`, {
+      variant: "info",
+    });
+  }, [hall, is_edit, loadedEdit, DRAW_SECTIONS, snap, enqueueSnackbar]);
+  // 🔥 IMPORTANT: Reset state when hall changes (critical for switching halls)
+  useEffect(() => {
+    if (!is_edit) return;
 
+    setPlacedRows([]);
+    setPlacedSeats([]);
+    setLoadedEdit(false);
+    setSelectedSeatIds([]);
+  }, [hallId, is_edit]); // Reset when hallId changes
   // ---------------------------------------------------
   // ERASE
   // ---------------------------------------------------
@@ -1353,20 +1367,20 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
     if (dragSeatId) {
       setPlacedSeats((prev) =>
         prev?.map((s) =>
-          s.id === dragSeatId
-            ? {
-                ...s,
-                x: pos.x,
-                y: pos.y,
-              }
-            : s,
+          s.id === dragSeatId ? { ...s, x: pos.x, y: pos.y } : s,
         ),
       );
       return;
     }
 
+    // Smooth live preview - reduce vibration
     if (drawing && tool === "row") {
-      setLiveEnd(pos);
+      setLiveEnd((prev) => {
+        if (!prev || Math.hypot(prev.x - pos.x, prev.y - pos.y) > 3) {
+          return pos;
+        }
+        return prev;
+      });
     }
   };
 
@@ -1402,13 +1416,21 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
 
       if (pts.length > 0) {
         setPlacedRows((prev) => {
-          // Count existing DB rows only in edit mode
-          const dbRowCount = is_edit ? Object.keys(hall?.rows || {}).length : 0;
+          // Calculate correct next row letter
+          let dbRowCount = 0;
+          if (is_edit && hall?.seats) {
+            const letters = hall.seats
+              .map((s) => s.seat_name?.match(/^([A-Z])/))
+              .filter(Boolean)
+              .map((m) => m[1].charCodeAt(0) - 64);
+
+            dbRowCount = letters.length > 0 ? Math.max(...letters) : 0;
+          }
 
           const rowIndex = prev.length + dbRowCount;
           const rowLetter = String.fromCharCode(65 + rowIndex);
 
-          const ptsWithNames = pts?.map((p, i) => ({
+          const ptsWithNames = pts.map((p, i) => ({
             ...p,
             seat_name: `${rowLetter}${i + 1}`,
           }));
@@ -1665,7 +1687,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                 </Alert>
               )}
               <TextField
-                label="Section ID"
+                label="Section"
                 size="small"
                 fullWidth
                 value={sectionForm.id_key}
@@ -1844,63 +1866,127 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
         </div>
 
         {/* CENTER */}
+        {/* CENTER - Enhanced UI */}
         <div
           ref={wrapRef}
           style={{
-            background: "#0d0d14",
+            background: "#0a0a12",
             position: "relative",
             overflow: "hidden",
+            border: "1px solid #1e2937",
           }}
         >
-          {/* TOP BAR */}
+          {/* Top Status Bar */}
           <div
             style={{
               position: "absolute",
-              top: 14,
-              right: 14,
-              zIndex: 50,
+              top: 12,
+              left: 16,
+              zIndex: 60,
+              background: "rgba(15, 23, 42, 0.96)",
+              padding: "8px 16px",
+              borderRadius: 10,
+              fontSize: 13,
+              color: "#94a3b8",
+              border: "1px solid #334155",
               display: "flex",
-              gap: 8,
+              alignItems: "center",
+              gap: 16,
+              boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+            }}
+          >
+            <div>
+              Tool:{" "}
+              <strong style={{ color: "#60a5fa" }}>{tool.toUpperCase()}</strong>
+            </div>
+            <div>
+              Section:{" "}
+              <strong style={{ color: secColor }}>{getSec().label}</strong>
+            </div>
+            <div>
+              Next Row:{" "}
+              <strong style={{ color: "#facc15" }}>
+                {String.fromCharCode(
+                  65 +
+                    placedRows.length +
+                    (is_edit && hall?.seats
+                      ? Math.max(
+                          0,
+                          ...hall.seats.map((s) => {
+                            const match = s.seat_name?.match(/^([A-Z])/);
+                            return match ? match[1].charCodeAt(0) - 64 : 0;
+                          }),
+                        )
+                      : 0),
+                )}
+              </strong>
+            </div>
+          </div>
+
+          {/* Improved Zoom Controls */}
+          <div
+            style={{
+              position: "absolute",
+              top: 12,
+              right: 16,
+              zIndex: 60,
+              display: "flex",
+              gap: 6,
+              background: "rgba(15, 23, 42, 0.96)",
+              padding: 6,
+              borderRadius: 12,
+              border: "1px solid #334155",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
             }}
           >
             <button
               onClick={() =>
-                setZoom((z) =>
-                  clamp(Number((z - 0.1).toFixed(2)), MIN_ZOOM, MAX_ZOOM),
-                )
+                setZoom((z) => clamp(z - 0.15, MIN_ZOOM, MAX_ZOOM))
               }
+              style={zoomBtn}
             >
-              -
+              −
             </button>
-
-            <button
+            <div
               style={{
-                minWidth: 70,
+                padding: "6px 14px",
+                color: "#e2e8f0",
+                fontWeight: 700,
+                minWidth: 72,
+                textAlign: "center",
+                background: "#1e2937",
+                borderRadius: 8,
               }}
             >
               {Math.round(zoom * 100)}%
-            </button>
-
+            </div>
             <button
-              onClick={() => setZoom((z) => clamp(z + 0.1, MIN_ZOOM, MAX_ZOOM))}
+              onClick={() =>
+                setZoom((z) => clamp(z + 0.15, MIN_ZOOM, MAX_ZOOM))
+              }
+              style={zoomBtn}
             >
               +
             </button>
-
-            <button onClick={resetView}>Reset</button>
+            <button onClick={resetView} style={zoomBtn}>
+              Reset
+            </button>
           </div>
 
           <svg
             ref={svgRef}
             width="100%"
             height="100%"
-            // onWheel={handleWheel}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onContextMenu={(e) => e.preventDefault()}
             style={{
-              cursor: panning ? "grabbing" : "crosshair",
+              cursor: panning
+                ? "grabbing"
+                : tool === "erase"
+                  ? "crosshair"
+                  : "default",
             }}
           >
             <defs>
@@ -1910,16 +1996,16 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                 height={GRID}
                 patternUnits="userSpaceOnUse"
               >
-                <circle cx="1" cy="1" r="1" fill="#1e1e2a" />
+                <circle cx="1" cy="1" r="1" fill="#1e2937" />
               </pattern>
             </defs>
 
-            <rect width="100%" height="100%" fill="#0d0d14" />
+            <rect width="100%" height="100%" fill="#0a0a12" />
 
             <g transform={`translate(${pan.x},${pan.y}) scale(${zoom})`}>
-              <rect width="5000" height="4000" fill="url(#grid)" />
+              <rect width="6000" height="4000" fill="url(#grid)" />
 
-              {/* ROWS */}
+              {/* Existing Rows */}
               {placedRows.map((row, rowIndex) =>
                 row.pts.map((pt, i) => {
                   const name = pt?.seat_name || getSeatName(rowIndex, i);
@@ -1934,16 +2020,15 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                       }}
                       onClick={(e) => {
                         if (tool !== "select") return;
+                        // ... your existing onClick logic
                         e.stopPropagation();
                         if (e.ctrlKey || e.metaKey) {
-                          // Ctrl+click → single seat toggle
                           setSelectedSeatIds((prev) =>
                             prev.includes(seatKey)
                               ? prev.filter((x) => x !== seatKey)
                               : [...prev, seatKey],
                           );
                         } else {
-                          // click → toggle entire row
                           const rowKeys = row.pts.map(
                             (_, idx) => `${row.id}_${idx}`,
                           );
@@ -1964,20 +2049,18 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                         width={SEAT_SIZE}
                         height={SEAT_SIZE}
                         rx={shapeRadius(row.shape)}
-                        fill={isSel ? row.color + "99" : row.color + "30"}
+                        fill={isSel ? row.color + "dd" : row.color + "44"}
                         stroke={isSel ? "#fff" : row.color}
-                        strokeWidth={isSel ? 2 : 1}
+                        strokeWidth={isSel ? 3 : 1.5}
                       />
-
-                      {/* 👇 SEAT LABEL */}
                       <text
                         x={pt.x}
-                        y={pt.y + 4}
+                        y={pt.y + 5}
                         textAnchor="middle"
-                        fontSize="8"
+                        fontSize="9"
                         fill="#fff"
+                        fontWeight="600"
                         pointerEvents="none"
-                        style={{ userSelect: "none" }}
                       >
                         {name}
                       </text>
@@ -1986,27 +2069,11 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                 }),
               )}
 
-              {/* SEATS */}
-              {/* {placedSeats.map((seat) => (
-                <rect
-                  key={seat.id}
-                  x={seat.x - SEAT_SIZE / 2}
-                  y={seat.y - SEAT_SIZE / 2}
-                  width={SEAT_SIZE}
-                  height={SEAT_SIZE}
-                  rx={shapeRadius(seat.shape)}
-                  fill={seat.color + "30"}
-                  stroke={seat.color}
-                  onMouseDown={(e) => startSeatDrag(seat.id, e)}
-                />
-              ))} */}
-              {placedSeats.map((seat, i) => {
-                // const name = `S${i + 1}`;
-                const name =
-                  seat?.seat_name ||
-                  `${String.fromCharCode(65 + Math.floor(i / 10))}${(i % 10) + 1}`;
-
+              {/* Individual Seats */}
+              {placedSeats.map((seat) => {
                 const isSel = selectedSeatIds.includes(String(seat.id));
+                const name = seat.seat_name || "S1";
+
                 return (
                   <g key={seat.id}>
                     <rect
@@ -2015,12 +2082,9 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                       width={SEAT_SIZE}
                       height={SEAT_SIZE}
                       rx={shapeRadius(seat.shape)}
-                      fill={isSel ? seat.color + "99" : seat.color + "30"}
+                      fill={isSel ? seat.color + "dd" : seat.color + "44"}
                       stroke={isSel ? "#fff" : seat.color}
-                      strokeWidth={isSel ? 2 : 1}
-                      style={{
-                        cursor: tool === "select" ? "pointer" : "default",
-                      }}
+                      strokeWidth={isSel ? 3 : 1.5}
                       onMouseDown={(e) =>
                         tool !== "select" && startSeatDrag(seat.id, e)
                       }
@@ -2034,26 +2098,24 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                         );
                       }}
                     />
-
-                    {/* 👇 LABEL */}
                     <text
                       x={seat.x}
-                      y={seat.y + 4}
+                      y={seat.y + 5}
                       textAnchor="middle"
-                      fontSize="8"
+                      fontSize="9"
                       fill="#fff"
+                      fontWeight="600"
                       pointerEvents="none"
                     >
                       {name}
                     </text>
-                    {/* 👇 CUSTOM TITLE BADGE */}
                     {seat.customLabel && (
                       <text
                         x={seat.x}
-                        y={seat.y - SEAT_SIZE / 2 - 3}
+                        y={seat.y - 18}
                         textAnchor="middle"
-                        fontSize="7"
-                        fill="#f59e0b"
+                        fontSize="7.5"
+                        fill="#fbbf24"
                         fontWeight="700"
                         pointerEvents="none"
                       >
@@ -2063,7 +2125,8 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                   </g>
                 );
               })}
-              {/* PREVIEW */}
+
+              {/* Live Preview */}
               {previewPts.map((pt, i) => (
                 <rect
                   key={i}
@@ -2071,35 +2134,79 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                   y={pt.y - SEAT_SIZE / 2}
                   width={SEAT_SIZE}
                   height={SEAT_SIZE}
-                  rx={4}
-                  fill={secColor + "20"}
+                  rx={6}
+                  fill={secColor + "33"}
                   stroke={secColor}
-                  strokeDasharray="3 2"
+                  strokeDasharray="4 3"
+                  strokeWidth="2"
                 />
               ))}
             </g>
           </svg>
 
-          {/* MINIMAP */}
+          {/* IMPROVED MINIMAP */}
           <div
             style={{
               position: "absolute",
-              bottom: 14,
-              right: 14,
-              width: 180,
-              height: 120,
+              bottom: 16,
+              right: 16,
+              width: 210,
+              height: 140,
               background: "#111827",
-              border: "1px solid #334155",
-              borderRadius: 10,
-              padding: 8,
-              color: "#64748B",
-              fontSize: 11,
+              border: "2px solid #334155",
+              borderRadius: 12,
+              overflow: "hidden",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.6)",
+              zIndex: 50,
             }}
           >
-            MiniMap
-            <div style={{ marginTop: 6 }}>Zoom: {Math.round(zoom * 100)}%</div>
-            <div>X: {Math.round(pan.x)}</div>
-            <div>Y: {Math.round(pan.y)}</div>
+            <div
+              style={{
+                transform: `scale(0.18)`,
+                transformOrigin: "top left",
+                width: "6000px",
+                height: "4000px",
+              }}
+            >
+              <svg width="6000" height="4000" style={{ background: "#0a0a12" }}>
+                {placedRows.flatMap((row) =>
+                  row.pts.map((pt, i) => (
+                    <rect
+                      key={`mini-r-${row.id}-${i}`}
+                      x={pt.x - 12}
+                      y={pt.y - 12}
+                      width="24"
+                      height="24"
+                      rx="4"
+                      fill={row.color}
+                    />
+                  )),
+                )}
+                {placedSeats.map((seat) => (
+                  <rect
+                    key={`mini-s-${seat.id}`}
+                    x={seat.x - 12}
+                    y={seat.y - 12}
+                    width="24"
+                    height="24"
+                    rx="4"
+                    fill={seat.color}
+                  />
+                ))}
+              </svg>
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                top: 6,
+                left: 8,
+                color: "#94a3b8",
+                fontSize: 11,
+                fontWeight: 600,
+              }}
+            >
+              MINIMAP
+            </div>
           </div>
         </div>
 
@@ -2314,11 +2421,18 @@ export default function HallCreate({
 }) {
   const { id } = useParams();
   const [mode, setMode] = useState(0);
+  const dispatch = useDispatch();
+
   useEffect(() => {
     if (is_add || is_edit) {
       setMode(1); // Auto activate Admin: Draw Mode
     }
   }, [is_add, is_edit]);
+
+  useEffect(() => {
+    dispatch(clearCurrentHall()); // clear old hall first
+    dispatch(fetchHallByIdThunk({ id: hallId || id }));
+  }, [dispatch, hallId, id]);
   const [activePanel, setActivePanel] = useState("draw"); // "draw" | "partyplot"
   return (
     <div
@@ -2397,115 +2511,92 @@ export default function HallCreate({
         </div>
 
         {/* TABS */}
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            marginLeft: 18,
-          }}
-        >
-          {/* {MODES.map((m, i) => {
-            // if (is_edit && (i === 0 || i === 2)) return null;
-            const showOnlyDrawMode = is_add || is_edit;
+        {/* TABS */}
+        <div style={{ display: "flex", gap: 8, marginLeft: 18 }}>
+          {/* Main Tabs (only when not in add/edit) */}
+          {!(is_add || is_edit) && (
+            <>
+              {MODES.map((m, i) => {
+                const active = mode === i;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setMode(i);
+                      setActivePanel("draw");
+                    }}
+                    style={{
+                      padding: "10px 18px",
+                      borderRadius: 12,
+                      border: active
+                        ? "1px solid #2563EB55"
+                        : "1px solid transparent",
+                      background: active
+                        ? "linear-gradient(135deg,#1D4ED8,#2563EB)"
+                        : "transparent",
+                      color: active ? "#fff" : "#94A3B8",
+                      cursor: "pointer",
+                      fontWeight: active ? 700 : 600,
+                      fontSize: 13,
+                      transition: "all .2s ease",
+                      boxShadow: active
+                        ? "0 10px 20px rgba(37,99,235,.25)"
+                        : "none",
+                    }}
+                  >
+                    {i === 0 && "🎟 "}
+                    {i === 1 && "🛠 "}
+                    {i === 2 && "📊 "}
+                    {m}
+                  </button>
+                );
+              })}
+            </>
+          )}
 
-            if (showOnlyDrawMode && i !== 1) return null;
-
-            const active = mode === i;
-
-            return (
-              <button
-                key={i}
-                onClick={() => setMode(i)}
-                style={{
-                  padding: "10px 18px",
-                  borderRadius: 12,
-                  border: active
-                    ? "1px solid #2563EB55"
-                    : "1px solid transparent",
-                  background: active
+          {/* Draw Mode Tab (for Add/Edit mode) */}
+          {(is_add || is_edit) && (
+            <button
+              onClick={() => setActivePanel("draw")}
+              style={{
+                padding: "10px 18px",
+                borderRadius: 12,
+                background:
+                  activePanel === "draw"
                     ? "linear-gradient(135deg,#1D4ED8,#2563EB)"
                     : "transparent",
-                  color: active ? "#fff" : "#94A3B8",
-                  cursor: "pointer",
-                  fontWeight: active ? 700 : 600,
-                  fontSize: 13,
-                  transition: "all .2s ease",
-                  boxShadow: active
-                    ? "0 10px 20px rgba(37,99,235,.25)"
-                    : "none",
-                }}
-              >
-                {i === 0 && "🎟 "}
-                {i === 1 && "🛠 "}
-                {i === 2 && "📊 "}
-                {m}
-              </button>
-            );
-          })} */}
+                color: activePanel === "draw" ? "#fff" : "#94A3B8",
+                border: activePanel === "draw" ? "1px solid #2563EB55" : "none",
+                fontWeight: 700,
+                fontSize: 13,
+              }}
+            >
+              🛠 Draw Mode
+            </button>
+          )}
 
-          {MODES?.map((m, i) => {
-            const showOnlyDrawMode = is_add || is_edit;
-
-            // Hide other tabs when add/edit mode
-            if (showOnlyDrawMode && i !== 1) return null;
-
-            // Force Draw Mode active when add/edit
-            const active = showOnlyDrawMode ? i === 1 : mode === i;
-            return (
-              <>
-                <button
-                  key={i}
-                  onClick={() => setMode(i)}
-                  style={{
-                    padding: "10px 18px",
-                    borderRadius: 12,
-                    border: active
-                      ? "1px solid #2563EB55"
-                      : "1px solid transparent",
-                    background: active
-                      ? "linear-gradient(135deg,#1D4ED8,#2563EB)"
-                      : "transparent",
-                    color: active ? "#fff" : "#94A3B8",
-                    cursor: "pointer",
-                    fontWeight: active ? 700 : 600,
-                    fontSize: 13,
-                    transition: "all .2s ease",
-                    boxShadow: active
-                      ? "0 10px 20px rgba(37,99,235,.25)"
-                      : "none",
-                  }}
-                >
-                  {i === 0 && "🎟 "}
-                  {i === 1 && "🛠 "}
-                  {i === 2 && "📊 "}
-                  {m}
-                </button>
-                <button
-                  onClick={() => setActivePanel("partyplot")}
-                  style={{
-                    background:
-                      activePanel === "partyplot"
-                        ? "linear-gradient(135deg,#f59e0b,#d97706)"
-                        : "transparent",
-                    border: "2px solid #f59e0b",
-                    borderRadius: 10,
-                    padding: "8px 20px",
-                    color: "#fff",
-                    fontWeight: 700,
-                    fontSize: 13,
-                    cursor: "pointer",
-                    boxShadow:
-                      activePanel === "partyplot"
-                        ? "0 0 16px #f59e0b66"
-                        : "none",
-                    marginLeft: 8,
-                  }}
-                >
-                  🎪 Party Plot
-                </button>
-              </>
-            );
-          })}
+          {/* Party Plot Button */}
+          <button
+            onClick={() => setActivePanel("partyplot")}
+            style={{
+              background:
+                activePanel === "partyplot"
+                  ? "linear-gradient(135deg,#f59e0b,#d97706)"
+                  : "transparent",
+              border: "2px solid #f59e0b",
+              borderRadius: 10,
+              padding: "8px 20px",
+              color: "#fff",
+              fontWeight: 700,
+              fontSize: 13,
+              cursor: "pointer",
+              boxShadow:
+                activePanel === "partyplot" ? "0 0 16px #f59e0b66" : "none",
+              marginLeft: 8,
+            }}
+          >
+            🎪 Party Plot
+          </button>
         </div>
 
         {/* RIGHT */}
@@ -2614,7 +2705,9 @@ export default function HallCreate({
           </div>
         )} */}
         <div style={{ flex: 1, overflow: "hidden" }}>
-          {activePanel === "draw" && <DrawMode />}
+          {activePanel === "draw" && (
+            <DrawMode hallId={hallId} is_edit={is_edit} is_add={is_add} />
+          )}
           {activePanel === "partyplot" && <PartyPlotPanel />}
         </div>
       </div>
