@@ -12,6 +12,7 @@ import vendorReducer from "../features/vendor/vendorSlice";
 import optionsReducer from "../features/options/optionsSlice";
 import partyPlotReducer from "../features/partyPlot/partyPlotSlice";
 import partyPlotBookingsReducer from "../features/partyPlot/partyPlotBookingSlice";
+import labelReducer from "../features/labels/labelslice";
 
 export const store = configureStore({
   reducer: {
@@ -26,5 +27,6 @@ export const store = configureStore({
     options: optionsReducer,
     partyPlot: partyPlotReducer,
     partyPlotBookings: partyPlotBookingsReducer,
+    labels: labelReducer,
   },
 });

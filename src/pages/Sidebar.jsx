@@ -407,6 +407,13 @@ const NAV = [
     path: "/settings",
     roles: ["super_admin", "admin", "user", "vendor_organizer"],
   },
+
+  {
+    label: "Labels",
+    icon: <MeetingRoomIcon />,
+    path: "/labels",
+    roles: ["super_admin", "admin", "user", "vendor_organizer"],
+  },
 ];
 
 export default function Sidebar() {
