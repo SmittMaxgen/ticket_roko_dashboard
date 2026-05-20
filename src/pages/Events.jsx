@@ -20,6 +20,8 @@ import {
   Divider,
   InputAdornment,
   CircularProgress,
+  FormControlLabel,
+  Switch,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 
@@ -103,6 +105,8 @@ const EMPTY_FORM = {
   ticket_price: 0,
   total_tickets: 0,
   is_free: false,
+  is_trending: false,
+  language: "English",
   status: "draft",
   section_prices: { Premium: 0, Executive: 0, General: 0, VIP: 0 },
 };
@@ -375,7 +379,35 @@ export default function Events({ user }) {
         </Box>
       ),
     },
-
+    {
+      field: "language",
+      headerName: "Language",
+      width: 110,
+      renderCell: ({ row }) => (
+        <Chip
+          label={row.language || "English"}
+          size="small"
+          color="primary"
+          variant="outlined"
+        />
+      ),
+    },
+    {
+      field: "is_trending",
+      headerName: "Trending",
+      width: 110,
+      renderCell: ({ row }) => (
+        <Typography
+          sx={{
+            color: row.is_trending ? "#22c55e" : "#f59e0b",
+            fontWeight: 700,
+            fontSize: 12,
+          }}
+        >
+          {row.is_trending ? "YES" : "NO"}
+        </Typography>
+      ),
+    },
     {
       field: "ticket_price",
       headerName: "Price",
@@ -481,7 +513,7 @@ export default function Events({ user }) {
               />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Edit">
+          {/* <Tooltip title="Edit">
             <IconButton
               size="small"
               // onClick={() => handleNavigateToEventHall(row)}
@@ -499,6 +531,7 @@ export default function Events({ user }) {
                   category_id: row.category_id || "",
                   title: row.title || "",
                   city: row.city || "",
+                  is_trending: row.is_trending || false,
                   address: row.address || "",
                   description: row.description || "",
                   event_date: row.event_date || "",
@@ -518,8 +551,89 @@ export default function Events({ user }) {
                 fontSize="small"
               />
             </IconButton>
-          </Tooltip>
+          </Tooltip> */}
 
+          {/* <Tooltip title="Edit">
+            <IconButton
+              size="small"
+              onClick={() => {
+                // setEditing(row.id);
+                // handleNavigateToEventHall(row);
+                // Build section_prices map from API array
+                const spMap = { Premium: 0, Executive: 0, General: 0, VIP: 0 };
+                (row.sectionPrices || []).forEach((sp) => {
+                  spMap[sp.section_label] = Number(sp.price);
+                });
+                setForm({
+                  hall_id: row.hall_id || "",
+                  category_id: row.category_id || "",
+                  title: row.title || "",
+                  city: row.city || "",
+                  is_trending: row.is_trending || false,
+                  address: row.address || "",
+                  description: row.description || "",
+                  event_date: row.event_date || "",
+                  start_time: row.start_time || "",
+                  end_time: row.end_time || "",
+                  ticket_price: row.ticket_price || 0,
+                  total_tickets: row.total_tickets || 0,
+                  status: row.status || "draft",
+                  section_prices: spMap,
+                });
+                setOpen(true);
+              }}
+              sx={{ color: "#60a5fa" }}
+            >
+              <EditOutlinedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip> */}
+          <Tooltip title="Edit">
+            <IconButton
+              size="small"
+              onClick={() => {
+                const spMap = {
+                  Premium: 0,
+                  Executive: 0,
+                  General: 0,
+                  VIP: 0,
+                  Standard: 0,
+                };
+
+                (row.sectionPrices || row.EventSectionPrices || []).forEach(
+                  (sp) => {
+                    if (sp.section_label) {
+                      spMap[sp.section_label] = Number(sp.price || 0);
+                    }
+                  },
+                );
+
+                setForm({
+                  hall_id: row.hall_id || "",
+                  category_id: row.category_id || "",
+                  title: row.title || "",
+                  description: row.description || "",
+                  event_date: row.event_date || "",
+                  start_time: row.start_time || "",
+                  end_time: row.end_time || "",
+                  city: row.city || "",
+                  address: row.address || "",
+                  ticket_price: row.ticket_price || 0,
+                  total_tickets: row.total_tickets || 0,
+                  is_free: row.is_free || false,
+                  is_trending: !!row.is_trending,
+                  language: row.language || "English",
+                  status: row.status || "draft",
+                  section_prices: spMap,
+                });
+
+                setEditing(row.id); // ← THIS WAS THE MAIN PROBLEM
+                setOpen(true);
+              }}
+              sx={{ color: "#60a5fa" }}
+            >
+              <EditOutlinedIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
           <Tooltip title="Delete">
             <IconButton
               size="small"
@@ -820,6 +934,23 @@ export default function Events({ user }) {
               fullWidth
               required
             />
+            {/* ✅ Language Field */}
+            <CommonDropDown
+              label="Event Language"
+              value={form.language}
+              options={[
+                { id: "English", name: "English" },
+                { id: "Hindi", name: "Hindi" },
+                { id: "Gujarati", name: "Gujarati" },
+                { id: "Tamil", name: "Tamil" },
+                { id: "Telugu", name: "Telugu" },
+                { id: "Marathi", name: "Marathi" },
+                { id: "Bengali", name: "Bengali" },
+                { id: "Kannada", name: "Kannada" },
+              ]}
+              onChange={(e) => setForm({ ...form, language: e.target.value })}
+              required
+            />
 
             <TextField
               label="Ticket Price"
@@ -850,16 +981,23 @@ export default function Events({ user }) {
               fullWidth
               required
             />
-            <TextField
-              label="Total Tickets"
-              type="number"
-              value={form.total_tickets}
-              inputProps={{ min: 1 }}
-              onChange={(e) =>
-                setForm({ ...form, total_tickets: e.target.value })
+            {/* ✅ NEW: Is Trending Toggle */}
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={form.is_trending || false}
+                  onChange={(e) =>
+                    setForm({ ...form, is_trending: e.target.checked })
+                  }
+                  color="success"
+                />
               }
-              fullWidth
-              required
+              label={
+                <Typography>
+                  Mark as <strong>Trending Event</strong>
+                </Typography>
+              }
+              sx={{ mt: 1 }}
             />
 
             {/* ── Section Prices ── */}
