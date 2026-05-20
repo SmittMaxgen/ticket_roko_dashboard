@@ -107,6 +107,7 @@ const EMPTY_FORM = {
   is_free: false,
   is_trending: false,
   language: "English",
+  event_type: "Other",
   status: "draft",
   section_prices: { Premium: 0, Executive: 0, General: 0, VIP: 0 },
 };
@@ -622,6 +623,7 @@ export default function Events({ user }) {
                   is_free: row.is_free || false,
                   is_trending: !!row.is_trending,
                   language: row.language || "English",
+                  event_type: row.event_type || "Other",
                   status: row.status || "draft",
                   section_prices: spMap,
                 });
@@ -952,6 +954,25 @@ export default function Events({ user }) {
               required
             />
 
+            {/* Event Type */}
+            <CommonDropDown
+              label="Event Type"
+              value={form.event_type}
+              options={[
+                { id: "Drama", name: "Drama" },
+                { id: "Comedy", name: "Comedy / Laughter" },
+                { id: "Concert", name: "Concert / Music" },
+                { id: "Workshop", name: "Workshop" },
+                { id: "Meetup", name: "Meetup" },
+                { id: "Festival", name: "Festival" },
+                { id: "Sports", name: "Sports" },
+                { id: "Theatre", name: "Theatre" },
+                { id: "Dance", name: "Dance" },
+                { id: "Other", name: "Other" },
+              ]}
+              onChange={(e) => setForm({ ...form, event_type: e.target.value })}
+              required
+            />
             <TextField
               label="Ticket Price"
               type="number"
