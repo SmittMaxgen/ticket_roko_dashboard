@@ -259,6 +259,7 @@ import { meThunk } from "./features/auth/authThunks";
 import VendorRegistration from "./pages/VendorRegistration";
 import Partyplote from "./components/Partyplote";
 import PartyPlotDetails from "./pages/PartyPlotDetails";
+import PartyPlotsAll from "./pages/PartyPlotsAll";
 import Labels from "./pages/Labels";
 
 // ─────────────────────────────────────────────
@@ -454,6 +455,7 @@ function AppRoutes() {
           />
           <Route path="vendor-registration" element={<VendorRegistration />} />
 
+          <Route path="party-plots" element={<PartyPlotsAll />} />
           <Route path="party-plot" element={<Partyplote />} />
           <Route path="party-plot/:id" element={<PartyPlotDetails />} />
 

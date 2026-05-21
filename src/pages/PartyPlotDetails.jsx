@@ -189,6 +189,8 @@ function EditTab({ plot, isAdmin, actionLoading, onSave }) {
     image: plot?.image || "",
     total_tickets: plot?.total_tickets || 0,
   });
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState(null);
 
   useEffect(() => {
     if (plot) {
@@ -198,6 +200,8 @@ function EditTab({ plot, isAdmin, actionLoading, onSave }) {
         image: plot.image || "",
         total_tickets: plot.total_tickets || 0,
       });
+      setFile(null);
+      setPreview(null);
     }
   }, [plot]);
 
@@ -206,6 +210,12 @@ function EditTab({ plot, isAdmin, actionLoading, onSave }) {
       ...f,
       [key]: key === "total_tickets" ? Number(e.target.value) : e.target.value,
     }));
+
+  const handleFileChange = (e) => {
+    const selected = e.target.files?.[0] || null;
+    setFile(selected);
+    setPreview(selected ? URL.createObjectURL(selected) : null);
+  };
 
   const fieldSx = {
     "& .MuiOutlinedInput-root": {
@@ -216,6 +226,21 @@ function EditTab({ plot, isAdmin, actionLoading, onSave }) {
     },
     "& .MuiInputLabel-root": { color: "#64748B" },
     "& .MuiInputLabel-root.Mui-focused": { color: "#F59E0B" },
+  };
+
+  const handleSave = () => {
+    if (!form.name.trim()) return;
+
+    if (file) {
+      const fd = new FormData();
+      fd.append("name", form.name);
+      fd.append("description", form.description);
+      fd.append("total_tickets", String(form.total_tickets));
+      fd.append("image", file);
+      onSave(fd);
+    } else {
+      onSave(form);
+    }
   };
 
   return (
@@ -237,14 +262,55 @@ function EditTab({ plot, isAdmin, actionLoading, onSave }) {
           rows={3}
           sx={fieldSx}
         />
-        <TextField
-          label="Image URL"
-          value={form.image}
-          onChange={set("image")}
-          fullWidth
-          sx={fieldSx}
-          placeholder="https://..."
-        />
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+          <Button
+            variant="outlined"
+            component="label"
+            sx={{ color: "#F1F5F9", borderColor: "rgba(100,116,139,0.2)" }}
+          >
+            Browse Image
+            <input
+              hidden
+              accept="image/*"
+              type="file"
+              onChange={handleFileChange}
+            />
+          </Button>
+          <TextField
+            label="Or Image URL"
+            value={form.image}
+            onChange={set("image")}
+            fullWidth
+            sx={fieldSx}
+            placeholder="https://..."
+          />
+        </Box>
+        {preview ? (
+          <Box
+            component="img"
+            src={preview}
+            alt="preview"
+            sx={{
+              width: "100%",
+              height: 140,
+              objectFit: "cover",
+              borderRadius: 1,
+            }}
+          />
+        ) : form.image ? (
+          <Box
+            component="img"
+            src={form.image}
+            alt="image"
+            sx={{
+              width: "100%",
+              height: 140,
+              objectFit: "cover",
+              borderRadius: 1,
+            }}
+            onError={(e) => (e.target.style.display = "none")}
+          />
+        ) : null}
         {isAdmin && (
           <TextField
             type="number"
@@ -260,7 +326,7 @@ function EditTab({ plot, isAdmin, actionLoading, onSave }) {
           variant="contained"
           startIcon={<SaveIcon />}
           disabled={actionLoading || !form.name.trim()}
-          onClick={() => onSave(form)}
+          onClick={handleSave}
           sx={{
             alignSelf: "flex-start",
             background: "linear-gradient(135deg,#F59E0B,#D97706)",
@@ -499,16 +565,34 @@ export default function PartyPlotDetail() {
   const used = tickets.filter((t) => t.status === "used");
 
   // ── Handlers ─────────────────────────────────────────────
-  const handleSave = (form) => {
-    dispatch(updatePartyPlotThunk({ id, ...form }))
-      .unwrap()
-      .then(() => {
-        enqueueSnackbar("Party plot updated!", { variant: "success" });
-        dispatch(fetchPartyPlotByIdThunk(id));
-      })
-      .catch((err) =>
-        enqueueSnackbar(err || "Update failed.", { variant: "error" }),
-      );
+  const handleSave = (formData) => {
+    const isFormData =
+      typeof FormData !== "undefined" && formData instanceof FormData;
+
+    const payload = isFormData ? formData : { id, ...formData };
+
+    if (isFormData) {
+      formData.append("id", id);
+      dispatch(updatePartyPlotThunk(formData))
+        .unwrap()
+        .then(() => {
+          enqueueSnackbar("Party plot updated!", { variant: "success" });
+          dispatch(fetchPartyPlotByIdThunk(id));
+        })
+        .catch((err) =>
+          enqueueSnackbar(err || "Update failed.", { variant: "error" }),
+        );
+    } else {
+      dispatch(updatePartyPlotThunk({ id, ...formData }))
+        .unwrap()
+        .then(() => {
+          enqueueSnackbar("Party plot updated!", { variant: "success" });
+          dispatch(fetchPartyPlotByIdThunk(id));
+        })
+        .catch((err) =>
+          enqueueSnackbar(err || "Update failed.", { variant: "error" }),
+        );
+    }
   };
 
   const handleCreateTickets = (count) => {

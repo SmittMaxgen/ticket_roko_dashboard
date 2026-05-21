@@ -3,10 +3,24 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../api/axios";
 
 export const fetchPartyPlotsThunk = createAsyncThunk(
-  "partyPlot/fetchAll",
+  "partyPlot/fetchBookingPlots",
   async (_, { rejectWithValue }) => {
     try {
       const { data } = await api.get("/party-plot-bookings");
+      return data.data;
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to fetch party plots",
+      );
+    }
+  },
+);
+
+export const fetchAllPartyPlotsThunk = createAsyncThunk(
+  "partyPlot/fetchAllPartyPlots",
+  async (_, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get("/party-plots");
       return data.data;
     } catch (err) {
       return rejectWithValue(
@@ -46,9 +60,20 @@ export const createPartyPlotThunk = createAsyncThunk(
 
 export const updatePartyPlotThunk = createAsyncThunk(
   "partyPlot/update",
-  async ({ id, ...payload }, { rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
-      const { data } = await api.put(`/party-plots/${id}`, payload);
+      let id;
+      let body;
+
+      if (typeof FormData !== "undefined" && payload instanceof FormData) {
+        id = payload.get("id");
+        payload.delete("id");
+        body = payload;
+      } else {
+        ({ id, ...body } = payload);
+      }
+
+      const { data } = await api.put(`/party-plots/${id}`, body);
       return data;
     } catch (err) {
       return rejectWithValue(

@@ -1002,6 +1002,8 @@ import {
   Chip,
   LinearProgress,
   Skeleton,
+  Tab,
+  Tabs,
 } from "@mui/material";
 
 import AddIcon from "@mui/icons-material/Add";
@@ -1015,7 +1017,9 @@ import ImageNotSupportedIcon from "@mui/icons-material/ImageNotSupported";
 
 import {
   fetchPartyPlotsThunk,
+  fetchPartyPlotByIdThunk,
   createPartyPlotThunk,
+  createTicketsThunk,
   deletePartyPlotThunk,
 } from "../features/partyPlot/partyPlotThunks";
 
@@ -1115,13 +1119,14 @@ function SkeletonCard() {
 // ─────────────────────────────────────────────────────────────────────────────
 // Plot Card
 // ─────────────────────────────────────────────────────────────────────────────
-function PlotCard({ plot, isAdmin, onEdit, onDelete }) {
+function PlotCard({ plot, isAdmin, onEdit, onDelete, showBookAction, onBook }) {
   const total = plot?.total_tickets || 0;
   const available = plot?.partyPlot?.available_tickets || 0;
   const booked = plot?.partyPlot?.booked_tickets || 0;
   const used = plot?.partyPlot?.used_tickets || 0;
   const filledPct = pct(total - available, total);
-  console.log("plot:::>>>>", plot);
+  const primaryAction = showBookAction ? onBook : onEdit;
+  const primaryLabel = showBookAction ? "Book Tickets" : "Manage Plot";
   return (
     <Card
       variant="outlined"
@@ -1356,11 +1361,11 @@ function PlotCard({ plot, isAdmin, onEdit, onDelete }) {
           />
         </Box>
 
-        {/* ── Manage Button ── */}
+        {/* ── Primary Action Button ── */}
         <Button
           fullWidth
           variant="outlined"
-          onClick={() => onEdit(plot)}
+          onClick={() => primaryAction?.(plot)}
           sx={{
             mt: 2,
             borderColor: "rgba(245,158,11,0.25)",
@@ -1376,7 +1381,7 @@ function PlotCard({ plot, isAdmin, onEdit, onDelete }) {
             },
           }}
         >
-          Manage Plot
+          {primaryLabel}
         </Button>
       </CardContent>
     </Card>
@@ -1390,6 +1395,16 @@ const EMPTY_FORM = { name: "", description: "", image: "", total_tickets: 100 };
 
 function CreateDialog({ open, onClose, onSubmit, loading }) {
   const [form, setForm] = useState(EMPTY_FORM);
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState(null);
+
+  useEffect(() => {
+    if (!open) {
+      setForm(EMPTY_FORM);
+      setFile(null);
+      setPreview(null);
+    }
+  }, [open]);
 
   const set = (key) => (e) =>
     setForm((f) => ({
@@ -1397,14 +1412,42 @@ function CreateDialog({ open, onClose, onSubmit, loading }) {
       [key]: key === "total_tickets" ? Number(e.target.value) : e.target.value,
     }));
 
+  const handleFileChange = (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) {
+      setFile(null);
+      setPreview(null);
+      return;
+    }
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
+  };
+
   const handleClose = () => {
     setForm(EMPTY_FORM);
+    setFile(null);
+    setPreview(null);
     onClose();
   };
 
   const handleSubmit = () => {
     if (!form.name.trim()) return;
-    onSubmit(form, () => setForm(EMPTY_FORM));
+
+    if (file) {
+      const fd = new FormData();
+      fd.append("name", form.name);
+      fd.append("description", form.description);
+      fd.append("total_tickets", String(form.total_tickets));
+      fd.append("image", file);
+
+      onSubmit(fd, () => {
+        setForm(EMPTY_FORM);
+        setFile(null);
+        setPreview(null);
+      });
+    } else {
+      onSubmit(form, () => setForm(EMPTY_FORM));
+    }
   };
 
   const fieldSx = {
@@ -1471,14 +1514,59 @@ function CreateDialog({ open, onClose, onSubmit, loading }) {
           rows={2}
           sx={fieldSx}
         />
-        <TextField
-          label="Image URL"
-          value={form.image}
-          onChange={set("image")}
-          fullWidth
-          sx={fieldSx}
-          placeholder="https://..."
-        />
+
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+          <Button
+            variant="outlined"
+            component="label"
+            sx={{ color: "#F1F5F9", borderColor: "rgba(100,116,139,0.2)" }}
+          >
+            Browse Image
+            <input
+              hidden
+              accept="image/*"
+              type="file"
+              onChange={handleFileChange}
+            />
+          </Button>
+
+          <TextField
+            label="Or Image URL"
+            value={form.image}
+            onChange={set("image")}
+            fullWidth
+            sx={fieldSx}
+            placeholder="https://..."
+          />
+        </Box>
+
+        {preview ? (
+          <Box
+            component="img"
+            src={preview}
+            alt="preview"
+            sx={{
+              width: "100%",
+              height: 140,
+              objectFit: "cover",
+              borderRadius: 1,
+            }}
+          />
+        ) : form.image ? (
+          <Box
+            component="img"
+            src={form.image}
+            alt="image"
+            sx={{
+              width: "100%",
+              height: 140,
+              objectFit: "cover",
+              borderRadius: 1,
+            }}
+            onError={(e) => (e.target.style.display = "none")}
+          />
+        ) : null}
+
         <TextField
           type="number"
           label="Total Tickets"
@@ -1581,7 +1669,7 @@ function DeleteDialog({ plot, open, onClose, onConfirm, loading }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Main Component
 // ─────────────────────────────────────────────────────────────────────────────
-export default function Partyplote() {
+export default function Partyplote({ skipInitialFetch = false }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
@@ -1594,33 +1682,93 @@ export default function Partyplote() {
 
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
+  const [activeTab, setActiveTab] = useState("all");
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null); // plot object
 
   // ── Fetch on mount ────────────────────────────────────────
   useEffect(() => {
-    dispatch(fetchPartyPlotsThunk());
-  }, [dispatch]);
+    if (!skipInitialFetch) {
+      dispatch(fetchPartyPlotsThunk());
+    }
+  }, [dispatch, skipInitialFetch]);
 
   // ── Navigate to detail/edit ───────────────────────────────
   const handleEdit = (plot) => {
     navigate(`/party-plot/${plot.id}`);
   };
 
+  const handleBook = (plot) => {
+    navigate(`/party-plot/${plot.id}`);
+  };
+
+  // ── When user switches to Booking tab, ensure booking-oriented list is loaded
+  useEffect(() => {
+    if (activeTab === "booking") {
+      dispatch(fetchPartyPlotsThunk());
+    }
+  }, [activeTab, dispatch]);
+
   // ── Create ────────────────────────────────────────────────
   const handleCreate = (formData, resetForm) => {
+    // allow passing either plain object or FormData
+    const isFormData =
+      typeof FormData !== "undefined" && formData instanceof FormData;
+    // dispatch creation
     dispatch(createPartyPlotThunk(formData))
       .unwrap()
-      .then((created) => {
+      .then(async (created) => {
         enqueueSnackbar("Party plot created successfully!", {
           variant: "success",
         });
-        resetForm();
+
+        // reset UI
+        resetForm?.();
         setCreateOpen(false);
+
+        // refresh list
         dispatch(fetchPartyPlotsThunk());
-        // Navigate directly to the new plot's detail page
+
+        // determine created id
         const id = created?.id || created?.data?.id;
-        if (id) navigate(`/party-plot/${id}`);
+
+        // attempt to ensure tickets exist if user specified total_tickets
+        let desiredTickets = 0;
+        if (isFormData) {
+          desiredTickets = Number(formData.get("total_tickets") || 0);
+        } else if (formData && typeof formData === "object") {
+          desiredTickets = Number(formData.total_tickets || 0);
+        }
+
+        if (id) {
+          // fetch fresh plot data
+          try {
+            const fresh = await dispatch(fetchPartyPlotByIdThunk(id)).unwrap();
+
+            const existingTickets = (fresh?.partyPlot?.tickets || []).length;
+
+            // If there are no ticket records but desiredTickets > 0, call createTickets
+            if (desiredTickets > 0 && existingTickets === 0) {
+              await dispatch(
+                createTicketsThunk({ id, num_tickets: desiredTickets }),
+              ).unwrap();
+
+              // refresh again after ticket creation
+              await dispatch(fetchPartyPlotByIdThunk(id));
+              await dispatch(fetchPartyPlotsThunk());
+
+              enqueueSnackbar(`Created ${desiredTickets} tickets.`, {
+                variant: "success",
+              });
+            }
+          } catch (e) {
+            // non-fatal
+            console.warn("Post-create ticket sync failed", e);
+          }
+
+          // navigate to detail page
+          navigate(`/party-plot/${id}`);
+        }
       })
       .catch((err) => {
         enqueueSnackbar(err || "Failed to create party plot.", {
@@ -1644,6 +1792,8 @@ export default function Partyplote() {
       });
   };
 
+  const bookingPlots = plots;
+
   // ─────────────────────────────────────────────────────────
   // Render
   // ─────────────────────────────────────────────────────────
@@ -1651,12 +1801,11 @@ export default function Partyplote() {
     <Box sx={{ p: 0 }}>
       {/* ── Header ── */}
       <Stack
-        // direction="row"
-        // justifyContent="space-between"
-        // alignItems="center"
+        spacing={2}
         sx={{
           flexDirection: { xs: "column", sm: "row" },
           justifyContent: "space-between",
+          alignItems: { xs: "stretch", sm: "flex-start" },
           mb: 4,
           pb: 3,
           padding: "10px",
@@ -1683,31 +1832,52 @@ export default function Partyplote() {
               ? "Loading venues…"
               : `${plots.length} venue${plots.length !== 1 ? "s" : ""} available`}
           </Typography>
-        </Box>
-
-        {isAdmin && (
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setCreateOpen(true)}
+          <Tabs
+            value={activeTab}
+            onChange={(_, value) => setActiveTab(value)}
+            textColor="inherit"
+            indicatorColor="primary"
             sx={{
-              background: "linear-gradient(135deg,#F59E0B,#D97706)",
-              fontWeight: 700,
-              borderRadius: 2.5,
-              textTransform: "none",
-              px: 2.5,
-              py: 1.1,
-              fontSize: "0.875rem",
-              boxShadow: "0 4px 18px rgba(245,158,11,0.3)",
-              "&:hover": {
-                background: "linear-gradient(135deg,#D97706,#B45309)",
-                boxShadow: "0 6px 24px rgba(245,158,11,0.4)",
+              mt: 1,
+              minHeight: 0,
+              "& .MuiTab-root": {
+                minHeight: 0,
+                textTransform: "none",
+                color: "#94A3B8",
               },
+              "& .Mui-selected": { color: "#F59E0B !important" },
             }}
           >
-            Add New Plot
-          </Button>
-        )}
+            <Tab value="all" label="All Plots" />
+            <Tab value="booking" label="Booking" />
+          </Tabs>
+        </Box>
+
+        <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+          {isAdmin && (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setCreateOpen(true)}
+              sx={{
+                background: "linear-gradient(135deg,#F59E0B,#D97706)",
+                fontWeight: 700,
+                borderRadius: 2.5,
+                textTransform: "none",
+                px: 2.5,
+                py: 1.1,
+                fontSize: "0.875rem",
+                boxShadow: "0 4px 18px rgba(245,158,11,0.3)",
+                "&:hover": {
+                  background: "linear-gradient(135deg,#D97706,#B45309)",
+                  boxShadow: "0 6px 24px rgba(245,158,11,0.4)",
+                },
+              }}
+            >
+              Add New Plot
+            </Button>
+          )}
+        </Box>
       </Stack>
 
       {/* ── Error ── */}
@@ -1740,8 +1910,70 @@ export default function Partyplote() {
             <SkeletonCard key={i} />
           ))}
         </Box>
-      ) : plots.length === 0 ? (
-        /* ── Empty State ── */
+      ) : activeTab === "all" ? (
+        plots.length === 0 ? (
+          /* ── Empty State ── */
+          <Box
+            sx={{
+              textAlign: "center",
+              py: 12,
+              background:
+                "linear-gradient(135deg,rgba(30,41,59,0.4),rgba(15,23,42,0.4))",
+              borderRadius: 4,
+              border: "1px dashed rgba(100,116,139,0.25)",
+            }}
+          >
+            <Typography sx={{ fontSize: 56, mb: 2 }}>🎪</Typography>
+            <Typography
+              sx={{
+                color: "#F1F5F9",
+                fontWeight: 700,
+                fontSize: "1.2rem",
+                mb: 1,
+              }}
+            >
+              No Party Plots Yet
+            </Typography>
+            <Typography sx={{ color: "#64748B", fontSize: "0.875rem", mb: 3 }}>
+              Create your first party plot to get started.
+            </Typography>
+            {isAdmin && (
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setCreateOpen(true)}
+                sx={{
+                  background: "linear-gradient(135deg,#F59E0B,#D97706)",
+                  fontWeight: 700,
+                  borderRadius: 2,
+                  textTransform: "none",
+                  px: 3,
+                }}
+              >
+                Create First Plot
+              </Button>
+            )}
+          </Box>
+        ) : (
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill,minmax(310px,1fr))",
+              gap: 3,
+            }}
+          >
+            {plots.map((plot) => (
+              <PlotCard
+                key={plot.id}
+                plot={plot}
+                isAdmin={isAdmin}
+                onEdit={handleEdit}
+                onDelete={(p) => setDeleteTarget(p)}
+              />
+            ))}
+          </Box>
+        )
+      ) : bookingPlots.length === 0 ? (
         <Box
           sx={{
             textAlign: "center",
@@ -1752,7 +1984,7 @@ export default function Partyplote() {
             border: "1px dashed rgba(100,116,139,0.25)",
           }}
         >
-          <Typography sx={{ fontSize: 56, mb: 2 }}>🎪</Typography>
+          <Typography sx={{ fontSize: 56, mb: 2 }}>🎫</Typography>
           <Typography
             sx={{
               color: "#F1F5F9",
@@ -1761,10 +1993,10 @@ export default function Partyplote() {
               mb: 1,
             }}
           >
-            No Party Plots Yet
+            No Plots Available for Booking
           </Typography>
           <Typography sx={{ color: "#64748B", fontSize: "0.875rem", mb: 3 }}>
-            Create your first party plot to get started.
+            Create a party plot first, then book tickets from the listing.
           </Typography>
           {isAdmin && (
             <Button
@@ -1791,12 +2023,13 @@ export default function Partyplote() {
             gap: 3,
           }}
         >
-          {plots.map((plot) => (
+          {bookingPlots.map((plot) => (
             <PlotCard
               key={plot.id}
               plot={plot}
               isAdmin={isAdmin}
-              onEdit={handleEdit}
+              showBookAction
+              onBook={handleBook}
               onDelete={(p) => setDeleteTarget(p)}
             />
           ))}
