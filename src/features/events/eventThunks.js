@@ -32,7 +32,11 @@ export const createEventThunk = createAsyncThunk(
   "events/create",
   async (payload, { rejectWithValue }) => {
     try {
-      const { data } = await api.post("/events", payload);
+      const { data } = await api.post("/events", payload, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
       return data.data;
     } catch (err) {
       return rejectWithValue(
@@ -44,10 +48,15 @@ export const createEventThunk = createAsyncThunk(
 
 export const updateEventThunk = createAsyncThunk(
   "events/update",
-  async ({ id, ...payload }, { rejectWithValue }) => {
+  async ({ id, data: formData }, { rejectWithValue }) => {
     try {
-      const { data } = await api.put(`/events/${id}`, payload);
-      return data;
+      const { data } = await api.put(`/events/${id}`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      return data.data;
     } catch (err) {
       return rejectWithValue(
         err.response?.data?.message || "Failed to update event",

@@ -1,6 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { BrowserMultiFormatReader } from "@zxing/library";
-import { useDispatch } from "react-redux";
 import { useSnackbar } from "notistack";
 import {
   Box,
@@ -13,29 +12,30 @@ import {
   CircularProgress,
 } from "@mui/material";
 
-import { scanTicketThunk } from "../features/partyPlot/partyPlotThunks";
-
-const TicketScanner = ({ open, onClose }) => {
+const TicketScanner = ({ open, onClose, onScan, title = "Ticket Scanner" }) => {
   const videoRef = useRef(null);
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
-  const dispatch = useDispatch();
   const { enqueueSnackbar } = useSnackbar();
 
-  useEffect(() => {
-    if (open && videoRef.current) {
-      startScanning();
-    } else {
-      stopScanning();
-    }
+  const handleScan = useCallback(
+    async (barcode) => {
+      if (!onScan) return;
 
-    return () => {
-      stopScanning();
-    };
-  }, [open]);
+      setLoading(true);
+      try {
+        await onScan(barcode);
+      } catch (error) {
+        enqueueSnackbar(error || "Failed to scan ticket", { variant: "error" });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [onScan, enqueueSnackbar],
+  );
 
-  const startScanning = async () => {
+  const startScanning = useCallback(async () => {
     if (!videoRef.current) return;
 
     setScanning(true);
@@ -47,7 +47,7 @@ const TicketScanner = ({ open, onClose }) => {
         videoRef.current,
       );
       setResult(result.getText());
-      handleScan(result.getText());
+      await handleScan(result.getText());
     } catch (error) {
       console.error("Scanning error:", error);
       enqueueSnackbar("Scanning failed", { variant: "error" });
@@ -55,28 +55,24 @@ const TicketScanner = ({ open, onClose }) => {
       setScanning(false);
       codeReader.reset();
     }
-  };
+  }, [handleScan, enqueueSnackbar]);
 
-  const stopScanning = () => {
+  const stopScanning = useCallback(() => {
     setScanning(false);
     setResult(null);
-  };
+  }, []);
 
-  const handleScan = (barcode) => {
-    setLoading(true);
-    dispatch(scanTicketThunk(barcode))
-      .unwrap()
-      .then((data) => {
-        enqueueSnackbar("Ticket scanned successfully!", { variant: "success" });
-        onClose();
-      })
-      .catch((error) => {
-        enqueueSnackbar(error, { variant: "error" });
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  };
+  useEffect(() => {
+    if (open && videoRef.current) {
+      startScanning();
+    } else {
+      stopScanning();
+    }
+
+    return () => {
+      stopScanning();
+    };
+  }, [open, startScanning, stopScanning]);
 
   const handleManualScan = () => {
     const barcode = prompt("Enter barcode manually:");
@@ -87,7 +83,7 @@ const TicketScanner = ({ open, onClose }) => {
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Ticket Scanner</DialogTitle>
+      <DialogTitle>{title}</DialogTitle>
       <DialogContent>
         <Box sx={{ textAlign: "center" }}>
           <video

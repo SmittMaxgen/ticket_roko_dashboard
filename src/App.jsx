@@ -261,6 +261,7 @@ import Partyplote from "./components/Partyplote";
 import PartyPlotDetails from "./pages/PartyPlotDetails";
 import PartyPlotsAll from "./pages/PartyPlotsAll";
 import Labels from "./pages/Labels";
+import TicketCheckerDashboard from "./pages/TicketCheckerDashboard";
 
 // ─────────────────────────────────────────────
 // Lazy Pages
@@ -458,6 +459,14 @@ function AppRoutes() {
           <Route path="party-plots" element={<PartyPlotsAll />} />
           <Route path="party-plot" element={<Partyplote />} />
           <Route path="party-plot/:id" element={<PartyPlotDetails />} />
+          <Route
+            path="ticket-checker"
+            element={
+              <ProtectedRoute roles={["ticket_checker"]}>
+                <TicketCheckerDashboard />
+              </ProtectedRoute>
+            }
+          />
 
           <Route path="labels" element={<Labels />} />
 

@@ -311,6 +311,7 @@ import {
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import PeopleIcon from "@mui/icons-material/People";
 import EventIcon from "@mui/icons-material/Event";
+import EventAvailableIcon from "@mui/icons-material/EventAvailable";
 import ConfirmationIcon from "@mui/icons-material/ConfirmationNumber";
 import MeetingRoomIcon from "@mui/icons-material/MeetingRoom";
 import BarChartIcon from "@mui/icons-material/BarChart";
@@ -328,7 +329,20 @@ const NAV = [
     label: "Dashboard",
     icon: <DashboardIcon />,
     path: "/",
-    roles: ["super_admin", "admin", "user", "vendor_organizer"],
+    roles: [
+      "super_admin",
+      "admin",
+      "user",
+      "vendor_organizer",
+      "ticket_checker",
+    ],
+  },
+
+  {
+    label: "Ticket Checker",
+    icon: <EventAvailableIcon />,
+    path: "/ticket-checker",
+    roles: ["ticket_checker"],
   },
 
   {
@@ -412,7 +426,13 @@ const NAV = [
     label: "Settings",
     icon: <SettingsIcon />,
     path: "/settings",
-    roles: ["super_admin", "admin", "user", "vendor_organizer"],
+    roles: [
+      "super_admin",
+      "admin",
+      "user",
+      "vendor_organizer",
+      "ticket_checker",
+    ],
   },
 
   {

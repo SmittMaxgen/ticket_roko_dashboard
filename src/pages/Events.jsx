@@ -42,6 +42,7 @@ import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
 
 import CommonDropDown from "../commonComponents/CommonDropDown";
 import CommonButton from "../commonComponents/CommonButton";
+import api, { API_BASE_URL } from "../api/axios";
 
 import { useDispatch, useSelector } from "react-redux";
 import { useSnackbar } from "notistack";
@@ -55,12 +56,7 @@ import {
   deleteEventThunk,
 } from "../features/events/eventThunks";
 
-import {
-  selectHallList,
-  selectHallLoading,
-  selectHallError,
-  selectHallActionLoading,
-} from "../features/halls/hallSelectors";
+import { selectHallList } from "../features/halls/hallSelectors";
 
 import { fetchCategories } from "../features/categories/categoryThunks";
 
@@ -109,7 +105,15 @@ const EMPTY_FORM = {
   language: "English",
   event_type: "Other",
   status: "draft",
-  section_prices: { Premium: 0, Executive: 0, General: 0, VIP: 0 },
+  banner: null,
+  banner_preview: "",
+  section_prices: {
+    Premium: 0,
+    Executive: 0,
+    General: 0,
+    VIP: 0,
+    Standard: 0,
+  },
 };
 
 function StatCard({ title, value, icon, color }) {
@@ -217,6 +221,13 @@ export default function Events({ user }) {
 
   const [rejectDlg, setRejectDlg] = useState(null);
   const [rejectNote, setRejectNote] = useState("");
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [selectedEventForAssignment, setSelectedEventForAssignment] =
+    useState(null);
+  const [ticketCheckerUsers, setTicketCheckerUsers] = useState([]);
+  const [selectedTicketCheckerUserId, setSelectedTicketCheckerUserId] =
+    useState("");
+  const [assignLoading, setAssignLoading] = useState(false);
 
   const hallList = useSelector(selectHallList);
   const categoryList = useSelector(selectCategories);
@@ -241,6 +252,71 @@ export default function Events({ user }) {
     dispatch(fetchHallsThunk());
     dispatch(fetchCategories());
   }, [dispatch]);
+
+  const fetchTicketCheckerUsers = async () => {
+    if (ticketCheckerUsers.length) return;
+
+    try {
+      const { data } = await api.get("/users");
+      const checkers = (data.data || []).filter(
+        (item) => item.role === "ticket_checker",
+      );
+      setTicketCheckerUsers(checkers);
+    } catch (err) {
+      enqueueSnackbar(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to load ticket checkers",
+        { variant: "error" },
+      );
+    }
+  };
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (assignDialogOpen) {
+      fetchTicketCheckerUsers();
+    }
+  }, [assignDialogOpen]);
+
+  const openAssignDialog = (event) => {
+    setSelectedEventForAssignment(event);
+    setSelectedTicketCheckerUserId("");
+    setAssignDialogOpen(true);
+  };
+
+  const handleAssignTicketChecker = async () => {
+    if (!selectedEventForAssignment || !selectedTicketCheckerUserId) {
+      enqueueSnackbar("Please select a ticket checker.", {
+        variant: "warning",
+      });
+      return;
+    }
+
+    setAssignLoading(true);
+    try {
+      await api.post(
+        `/events/${selectedEventForAssignment.id}/assign-ticket-checker`,
+        {
+          user_id: selectedTicketCheckerUserId,
+        },
+      );
+      enqueueSnackbar("Ticket checker assigned to event.", {
+        variant: "success",
+      });
+      setAssignDialogOpen(false);
+      setSelectedEventForAssignment(null);
+      load();
+    } catch (err) {
+      enqueueSnackbar(
+        err.response?.data?.message || err.message || "Assignment failed",
+        { variant: "error" },
+      );
+    } finally {
+      setAssignLoading(false);
+    }
+  };
+
   const stats = useMemo(() => {
     const safeRows = Array.isArray(rows) ? rows : [];
 
@@ -284,14 +360,44 @@ export default function Events({ user }) {
       ([section_label, price]) => ({ section_label, price: Number(price) }),
     );
 
-    const payload = { ...form, section_prices };
+    const formData = new FormData();
+
+    formData.append("hall_id", form.hall_id);
+    formData.append("category_id", form.category_id);
+    formData.append("title", form.title);
+    formData.append("description", form.description);
+    formData.append("event_date", form.event_date);
+    formData.append("start_time", form.start_time);
+    formData.append("end_time", form.end_time);
+    formData.append("city", form.city);
+    formData.append("address", form.address);
+    formData.append("ticket_price", form.ticket_price);
+    formData.append("total_tickets", form.total_tickets);
+    formData.append("is_free", form.is_free);
+    formData.append("is_trending", form.is_trending);
+    formData.append("language", form.language);
+    formData.append("event_type", form.event_type);
+    formData.append("status", form.status);
+
+    // banner image
+    if (form.banner) {
+      formData.append("banner", form.banner);
+    }
+
+    // section prices
+    formData.append("section_prices", JSON.stringify(section_prices));
 
     let result;
 
     if (editing) {
-      result = await dispatch(updateEventThunk({ id: editing, ...payload }));
+      result = await dispatch(
+        updateEventThunk({
+          id: editing,
+          data: formData,
+        }),
+      );
     } else {
-      result = await dispatch(createEventThunk(payload));
+      result = await dispatch(createEventThunk(formData));
     }
 
     if (result.meta.requestStatus === "fulfilled") {
@@ -487,6 +593,18 @@ export default function Events({ user }) {
             </>
           )}
 
+          {user.role === "super_admin" || user.role === "admin" ? (
+            <Tooltip title="Assign Ticket Checker">
+              <IconButton
+                size="small"
+                onClick={() => openAssignDialog(row)}
+                sx={{ color: "#60a5fa" }}
+              >
+                {/* <PeopleIcon fontSize="small" /> */}
+              </IconButton>
+            </Tooltip>
+          ) : null}
+
           <Tooltip title="Edit">
             <IconButton
               size="small"
@@ -625,6 +743,9 @@ export default function Events({ user }) {
                   language: row.language || "English",
                   event_type: row.event_type || "Other",
                   status: row.status || "draft",
+                  banner: null,
+                  banner_url: row.banner_url || "",
+                  banner_preview: "",
                   section_prices: spMap,
                 });
 
@@ -1020,7 +1141,61 @@ export default function Events({ user }) {
               }
               sx={{ mt: 1 }}
             />
+            <Box>
+              <Typography
+                sx={{
+                  color: "#94a3b8",
+                  fontSize: 12,
+                  mb: 1,
+                  fontWeight: 600,
+                }}
+              >
+                EVENT BANNER
+              </Typography>
 
+              <Button variant="outlined" component="label" fullWidth>
+                Upload Banner Image
+                <input
+                  hidden
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+
+                    if (file) {
+                      setForm({
+                        ...form,
+                        banner: file,
+                        banner_preview: URL.createObjectURL(file),
+                      });
+                    }
+                  }}
+                />
+              </Button>
+
+              {(form.banner_preview || form.banner_url) && (
+                <Box
+                  mt={2}
+                  sx={{
+                    borderRadius: 2,
+                    overflow: "hidden",
+                    border: "1px solid #1e293b",
+                  }}
+                >
+                  <img
+                    src={
+                      form.banner_preview || `${API_BASE_URL}${form.banner_url}`
+                    }
+                    alt="banner"
+                    style={{
+                      width: "100%",
+                      height: 180,
+                      objectFit: "cover",
+                    }}
+                  />
+                </Box>
+              )}
+            </Box>
             {/* ── Section Prices ── */}
             <Box>
               <Typography
@@ -1090,6 +1265,53 @@ export default function Events({ user }) {
       </Dialog>
 
       {/* Reject */}
+      <Dialog
+        open={assignDialogOpen}
+        onClose={() => setAssignDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            background: "#0f172a",
+            border: "1px solid #1e293b",
+            borderRadius: 4,
+          },
+        }}
+      >
+        <DialogTitle sx={{ color: "#fff", fontWeight: 800 }}>
+          Assign Ticket Checker
+        </DialogTitle>
+
+        <DialogContent>
+          <Typography sx={{ color: "#94a3b8", mb: 2 }}>
+            Assign a ticket checker to event:{" "}
+            {selectedEventForAssignment?.title}
+          </Typography>
+
+          <CommonDropDown
+            label="Ticket Checker"
+            value={selectedTicketCheckerUserId}
+            options={ticketCheckerUsers.map((user) => ({
+              label: `${user.name || user.email} (${user.email})`,
+              value: user.id,
+            }))}
+            onChange={(e) => setSelectedTicketCheckerUserId(e.target.value)}
+            required
+          />
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setAssignDialogOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={handleAssignTicketChecker}
+            disabled={assignLoading || !selectedTicketCheckerUserId}
+          >
+            {assignLoading ? <CircularProgress size={18} /> : "Assign"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Dialog
         open={!!rejectDlg}
         onClose={() => setRejectDlg(null)}

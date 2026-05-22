@@ -8,6 +8,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSnackbar } from "notistack";
+import api from "../api/axios";
 
 import {
   Box,
@@ -28,6 +29,7 @@ import {
   DialogActions,
   LinearProgress,
   Skeleton,
+  MenuItem,
 } from "@mui/material";
 
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -552,6 +554,10 @@ export default function PartyPlotDetail() {
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
   const [tab, setTab] = useState("info");
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [ticketCheckerUsers, setTicketCheckerUsers] = useState([]);
+  const [selectedTicketCheckerId, setSelectedTicketCheckerId] = useState("");
+  const [assignLoading, setAssignLoading] = useState(false);
 
   // ── Fetch on mount / id change ────────────────────────────
   useEffect(() => {
@@ -615,6 +621,60 @@ export default function PartyPlotDetail() {
       .catch((err) =>
         enqueueSnackbar(err || "Booking failed.", { variant: "error" }),
       );
+  };
+
+  const loadTicketCheckerUsers = async () => {
+    if (ticketCheckerUsers.length) return;
+
+    try {
+      const { data } = await api.get("/users");
+      setTicketCheckerUsers(
+        (data.data || []).filter((user) => user.role === "ticket_checker"),
+      );
+    } catch (err) {
+      enqueueSnackbar(
+        err.response?.data?.message ||
+          err.message ||
+          "Failed to load ticket checkers",
+        { variant: "error" },
+      );
+    }
+  };
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (assignDialogOpen) {
+      loadTicketCheckerUsers();
+    }
+  }, [assignDialogOpen]);
+
+  const handleAssignTicketChecker = async () => {
+    if (!selectedTicketCheckerId) {
+      enqueueSnackbar("Please select a ticket checker.", {
+        variant: "warning",
+      });
+      return;
+    }
+
+    setAssignLoading(true);
+    try {
+      await api.post(`/party-plots/${id}/assign-ticket-checker`, {
+        user_id: selectedTicketCheckerId,
+      });
+      enqueueSnackbar("Ticket checker assigned successfully.", {
+        variant: "success",
+      });
+      setAssignDialogOpen(false);
+      setSelectedTicketCheckerId("");
+      dispatch(fetchPartyPlotByIdThunk(id));
+    } catch (err) {
+      enqueueSnackbar(
+        err.response?.data?.message || err.message || "Assignment failed",
+        { variant: "error" },
+      );
+    } finally {
+      setAssignLoading(false);
+    }
   };
 
   const handleScan = (barcode) => {
@@ -746,6 +806,17 @@ export default function PartyPlotDetail() {
             {plot?.description || "No description provided."}
           </Typography>
 
+          {isAdmin && (
+            <Button
+              variant="contained"
+              sx={{ mb: 2 }}
+              onClick={() => setAssignDialogOpen(true)}
+              startIcon={<PersonOutlineIcon />}
+            >
+              Assign Ticket Checker
+            </Button>
+          )}
+
           {/* Fill Rate */}
           <Box sx={{ maxWidth: 360 }}>
             <Stack direction="row" justifyContent="space-between" mb={0.5}>
@@ -814,6 +885,61 @@ export default function PartyPlotDetail() {
       </Stack>
 
       {/* ── Stats Row ── */}
+      <Dialog
+        open={assignDialogOpen}
+        onClose={() => setAssignDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            background: "#0f172a",
+            border: "1px solid #1e293b",
+            borderRadius: 4,
+          },
+        }}
+      >
+        <DialogTitle sx={{ color: "#fff", fontWeight: 800 }}>
+          Assign Ticket Checker
+        </DialogTitle>
+
+        <DialogContent>
+          <Typography sx={{ color: "#94a3b8", mb: 2 }}>
+            Assign a ticket checker to {plot?.name || "this party plot"}.
+          </Typography>
+
+          <TextField
+            select
+            label="Ticket Checker"
+            value={selectedTicketCheckerId}
+            onChange={(e) => setSelectedTicketCheckerId(e.target.value)}
+            fullWidth
+            size="small"
+          >
+            {ticketCheckerUsers.map((user) => (
+              <MenuItem key={user.id} value={user.id}>
+                {user.name || user.email} ({user.email})
+              </MenuItem>
+            ))}
+            {ticketCheckerUsers.length === 0 && (
+              <MenuItem value="" disabled>
+                No ticket checker users found
+              </MenuItem>
+            )}
+          </TextField>
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setAssignDialogOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={handleAssignTicketChecker}
+            disabled={assignLoading || !selectedTicketCheckerId}
+          >
+            {assignLoading ? <CircularProgress size={18} /> : "Assign"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Stack direction="row" flexWrap="wrap" gap={2} mb={4}>
         <StatBox
           icon={<ConfirmationNumberIcon />}

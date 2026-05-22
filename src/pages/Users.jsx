@@ -413,11 +413,13 @@ export default function Users() {
               value={form.role}
               onChange={(e) => setForm({ ...form, role: e.target.value })}
             >
-              {["user", "vendor_organizer", "admin"].map((r) => (
-                <MenuItem key={r} value={r}>
-                  {r.charAt(0).toUpperCase() + r.slice(1)}
-                </MenuItem>
-              ))}
+              {["user", "vendor_organizer", "admin", "ticket_checker"].map(
+                (r) => (
+                  <MenuItem key={r} value={r}>
+                    {r.charAt(0).toUpperCase() + r.slice(1)}
+                  </MenuItem>
+                ),
+              )}
             </Select>
           </FormControl>
         </DialogContent>
