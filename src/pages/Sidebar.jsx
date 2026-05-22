@@ -374,6 +374,13 @@ const NAV = [
   },
 
   {
+    label: "Ticket Checker Management",
+    icon: <EventAvailableIcon />,
+    path: "/ticket-checker-management",
+    roles: ["super_admin", "admin"],
+  },
+
+  {
     label: "Bookings",
     icon: <ConfirmationIcon />,
     path: "/bookings",

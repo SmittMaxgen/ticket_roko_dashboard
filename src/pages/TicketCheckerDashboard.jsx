@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+
 import {
   Box,
   Card,
@@ -16,52 +17,49 @@ import {
   Divider,
   Stack,
 } from "@mui/material";
-import { useSelector } from "react-redux";
+
+import { useDispatch, useSelector } from "react-redux";
 import { useSnackbar } from "notistack";
 
-import api from "../api/axios";
 import TicketScanner from "../components/TicketScanner";
+
 import { selectUser } from "../features/auth/authSelectors";
 
+import {
+  fetchAssignedEvents,
+  fetchAssignedPartyPlots,
+  scanTicketThunk,
+} from "../features/ticketChecker/ticketCheckerThunks";
+
+import {
+  selectAssignedEvents,
+  selectAssignedPartyPlots,
+  selectTicketCheckerLoading,
+} from "../features/ticketChecker/ticketCheckerSelectors";
+
 export default function TicketCheckerDashboard() {
+  const dispatch = useDispatch();
+
   const user = useSelector(selectUser);
+
+  const assignedEvents = useSelector(selectAssignedEvents);
+
+  const assignedPartyPlots = useSelector(selectAssignedPartyPlots);
+
+  const loading = useSelector(selectTicketCheckerLoading);
+
   const { enqueueSnackbar } = useSnackbar();
 
-  const [assignedEvents, setAssignedEvents] = useState([]);
-  const [assignedPartyPlots, setAssignedPartyPlots] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [scanOpen, setScanOpen] = useState(false);
+
   const [scanContext, setScanContext] = useState(null);
 
-  const fetchAssignments = useCallback(async () => {
-    setLoading(true);
-
-    try {
-      const [eventResponse, partyPlotResponse] = await Promise.all([
-        api.get("/events/assigned"),
-        api.get("/party-plots/assigned"),
-      ]);
-
-      setAssignedEvents(eventResponse.data.data || []);
-      setAssignedPartyPlots(partyPlotResponse.data.data || []);
-    } catch (err) {
-      enqueueSnackbar(
-        err.response?.data?.message ||
-          err.message ||
-          "Failed to load assignments",
-        { variant: "error" },
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [enqueueSnackbar]);
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     if (user?.role === "ticket_checker") {
-      fetchAssignments();
+      dispatch(fetchAssignedEvents());
+      dispatch(fetchAssignedPartyPlots());
     }
-  }, [user, fetchAssignments]);
+  }, [dispatch, user]);
 
   const openScanner = (type, item) => {
     setScanContext({ type, item });
@@ -74,23 +72,28 @@ export default function TicketCheckerDashboard() {
   };
 
   const handleScan = async (barcode) => {
-    if (!scanContext) return;
-
-    const url =
-      scanContext.type === "event"
-        ? "/events/scan-ticket"
-        : "/party-plots/scan-ticket";
-
     try {
-      await api.post(url, { barcode });
-      enqueueSnackbar("Ticket scanned successfully.", { variant: "success" });
+      await dispatch(
+        scanTicketThunk({
+          type: scanContext?.type,
+          barcode,
+        }),
+      ).unwrap();
+
+      enqueueSnackbar("Ticket scanned successfully", {
+        variant: "success",
+      });
+
       closeScanner();
-      fetchAssignments();
-    } catch (err) {
-      const message =
-        err.response?.data?.message || err.message || "Scan failed";
-      enqueueSnackbar(message, { variant: "error" });
-      throw message;
+
+      dispatch(fetchAssignedEvents());
+      dispatch(fetchAssignedPartyPlots());
+    } catch (error) {
+      enqueueSnackbar(error || "Scan failed", {
+        variant: "error",
+      });
+
+      throw error;
     }
   };
 
@@ -104,11 +107,13 @@ export default function TicketCheckerDashboard() {
             <TableCell sx={{ color: "#E2E8F0" }}>Hall</TableCell>
             <TableCell sx={{ color: "#E2E8F0" }}>Organizer</TableCell>
             <TableCell sx={{ color: "#E2E8F0" }}>Status</TableCell>
+
             <TableCell sx={{ color: "#E2E8F0" }} align="right">
               Action
             </TableCell>
           </TableRow>
         </TableHead>
+
         <TableBody>
           {assignedEvents.length === 0 ? (
             <TableRow>
@@ -120,16 +125,21 @@ export default function TicketCheckerDashboard() {
             assignedEvents.map((event) => (
               <TableRow key={event.id}>
                 <TableCell sx={{ color: "#F8FAFC" }}>{event.title}</TableCell>
+
                 <TableCell sx={{ color: "#CBD5E1" }}>
                   {event.event_date}
                 </TableCell>
+
                 <TableCell sx={{ color: "#CBD5E1" }}>
-                  {event.hall?.name || event.hall?.title || "-"}
+                  {event.hall?.name || "-"}
                 </TableCell>
+
                 <TableCell sx={{ color: "#CBD5E1" }}>
                   {event.organizer?.name || "-"}
                 </TableCell>
+
                 <TableCell sx={{ color: "#CBD5E1" }}>{event.status}</TableCell>
+
                 <TableCell align="right">
                   <Button
                     size="small"
@@ -153,14 +163,19 @@ export default function TicketCheckerDashboard() {
         <TableHead>
           <TableRow>
             <TableCell sx={{ color: "#E2E8F0" }}>Party Plot</TableCell>
+
             <TableCell sx={{ color: "#E2E8F0" }}>Creator</TableCell>
+
             <TableCell sx={{ color: "#E2E8F0" }}>Total Tickets</TableCell>
+
             <TableCell sx={{ color: "#E2E8F0" }}>Available</TableCell>
+
             <TableCell sx={{ color: "#E2E8F0" }} align="right">
               Action
             </TableCell>
           </TableRow>
         </TableHead>
+
         <TableBody>
           {assignedPartyPlots.length === 0 ? (
             <TableRow>
@@ -172,15 +187,19 @@ export default function TicketCheckerDashboard() {
             assignedPartyPlots.map((plot) => (
               <TableRow key={plot.id}>
                 <TableCell sx={{ color: "#F8FAFC" }}>{plot.name}</TableCell>
+
                 <TableCell sx={{ color: "#CBD5E1" }}>
                   {plot.creator?.name || "-"}
                 </TableCell>
+
                 <TableCell sx={{ color: "#CBD5E1" }}>
                   {plot.total_tickets}
                 </TableCell>
+
                 <TableCell sx={{ color: "#CBD5E1" }}>
                   {plot.available_tickets}
                 </TableCell>
+
                 <TableCell align="right">
                   <Button
                     size="small"
@@ -204,37 +223,49 @@ export default function TicketCheckerDashboard() {
         <Typography variant="h4" sx={{ color: "#fff", mb: 1 }}>
           Ticket Checker Dashboard
         </Typography>
+
         <Typography sx={{ color: "#94A3B8" }}>
-          View only the events and party plots assigned to you. Scan tickets
-          directly from the ticket scanner.
+          View assigned events and party plots.
         </Typography>
       </Box>
 
       <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
         <Card
-          sx={{ flex: 1, background: "#111827", border: "1px solid #334155" }}
+          sx={{
+            flex: 1,
+            background: "#111827",
+            border: "1px solid #334155",
+          }}
         >
           <CardContent>
             <Typography variant="h6" sx={{ color: "#fff", mb: 1 }}>
               Assigned Events
             </Typography>
+
             <Typography sx={{ color: "#94A3B8", mb: 2 }}>
-              {assignedEvents.length} event(s) assigned to you
+              {assignedEvents.length} assigned event(s)
             </Typography>
+
             {loading ? <CircularProgress /> : renderEventsTable()}
           </CardContent>
         </Card>
 
         <Card
-          sx={{ flex: 1, background: "#111827", border: "1px solid #334155" }}
+          sx={{
+            flex: 1,
+            background: "#111827",
+            border: "1px solid #334155",
+          }}
         >
           <CardContent>
             <Typography variant="h6" sx={{ color: "#fff", mb: 1 }}>
               Assigned Party Plots
             </Typography>
+
             <Typography sx={{ color: "#94A3B8", mb: 2 }}>
-              {assignedPartyPlots.length} party plot(s) assigned to you
+              {assignedPartyPlots.length} assigned party plot(s)
             </Typography>
+
             {loading ? <CircularProgress /> : renderPartyPlotsTable()}
           </CardContent>
         </Card>

@@ -270,6 +270,9 @@ const Login = lazy(() => import("./pages/Login"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Users = lazy(() => import("./pages/Users"));
 const Events = lazy(() => import("./pages/Events"));
+const TicketCheckerManagement = lazy(
+  () => import("./pages/TicketCheckerManagement"),
+);
 const Bookings = lazy(() => import("./pages/Bookings"));
 const HallCreate = lazy(() => import("./pages/HallCreate"));
 const Analytics = lazy(() => import("./pages/Analytics"));
@@ -464,6 +467,14 @@ function AppRoutes() {
             element={
               <ProtectedRoute roles={["ticket_checker"]}>
                 <TicketCheckerDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ticket-checker-management"
+            element={
+              <ProtectedRoute roles={["super_admin", "admin"]}>
+                <TicketCheckerManagement />
               </ProtectedRoute>
             }
           />
