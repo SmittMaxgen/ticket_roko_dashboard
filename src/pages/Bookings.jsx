@@ -633,6 +633,7 @@ import EventSeatIcon from "@mui/icons-material/EventSeat";
 import ConfirmationNumberIcon from "@mui/icons-material/ConfirmationNumber";
 
 import { useDispatch, useSelector } from "react-redux";
+import { useSearchParams } from "react-router-dom";
 
 import { useSnackbar } from "notistack";
 
@@ -690,6 +691,7 @@ export default function Bookings({ myPage = false, userId = null }) {
   const { enqueueSnackbar } = useSnackbar();
 
   const user = useSelector((state) => state.auth.user);
+  const [searchParams] = useSearchParams();
 
   /* BOOKING TYPE */
   const [bookingType, setBookingType] = useState("hall");
@@ -700,6 +702,28 @@ export default function Bookings({ myPage = false, userId = null }) {
   const [search, setSearch] = useState("");
 
   const [tab, setTab] = useState("all");
+  const eventId = searchParams.get("event_id");
+  const partyPlotId = searchParams.get("party_plot_id");
+  const queryBookingType = searchParams.get("bookingType");
+
+  useEffect(() => {
+    if (queryBookingType === "hall" || queryBookingType === "party_plot") {
+      setBookingType(queryBookingType);
+      setPage(0);
+      return;
+    }
+
+    if (eventId) {
+      setBookingType("hall");
+      setPage(0);
+      return;
+    }
+
+    if (partyPlotId) {
+      setBookingType("party_plot");
+      setPage(0);
+    }
+  }, [eventId, partyPlotId, queryBookingType]);
 
   /* =========================
         HALL BOOKING STATE
@@ -750,6 +774,14 @@ export default function Bookings({ myPage = false, userId = null }) {
 
     if (tab !== "all") {
       params.status = tab;
+    }
+
+    if (bookingType === "hall" && eventId) {
+      params.event_id = eventId;
+    }
+
+    if (bookingType === "party_plot" && partyPlotId) {
+      params.party_plot_id = partyPlotId;
     }
 
     /* =========================

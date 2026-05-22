@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import {
   Box,
@@ -49,6 +50,7 @@ export default function TicketCheckerDashboard() {
   const loading = useSelector(selectTicketCheckerLoading);
 
   const { enqueueSnackbar } = useSnackbar();
+  const navigate = useNavigate();
 
   const [scanOpen, setScanOpen] = useState(false);
 
@@ -141,13 +143,26 @@ export default function TicketCheckerDashboard() {
                 <TableCell sx={{ color: "#CBD5E1" }}>{event.status}</TableCell>
 
                 <TableCell align="right">
-                  <Button
-                    size="small"
-                    variant="contained"
-                    onClick={() => openScanner("event", event)}
-                  >
-                    Scan Ticket
-                  </Button>
+                  <Stack direction="row" spacing={1} justifyContent="flex-end">
+                    <Button
+                      size="small"
+                      variant="contained"
+                      onClick={() => openScanner("event", event)}
+                    >
+                      Scan Ticket
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() =>
+                        navigate(
+                          `/bookings?bookingType=hall&event_id=${event.id}`,
+                        )
+                      }
+                    >
+                      View Bookings
+                    </Button>
+                  </Stack>
                 </TableCell>
               </TableRow>
             ))
@@ -201,13 +216,26 @@ export default function TicketCheckerDashboard() {
                 </TableCell>
 
                 <TableCell align="right">
-                  <Button
-                    size="small"
-                    variant="contained"
-                    onClick={() => openScanner("party_plot", plot)}
-                  >
-                    Scan Ticket
-                  </Button>
+                  <Stack direction="row" spacing={1} justifyContent="flex-end">
+                    <Button
+                      size="small"
+                      variant="contained"
+                      onClick={() => openScanner("party_plot", plot)}
+                    >
+                      Scan Ticket
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() =>
+                        navigate(
+                          `/bookings?bookingType=party_plot&party_plot_id=${plot.id}`,
+                        )
+                      }
+                    >
+                      View Bookings
+                    </Button>
+                  </Stack>
                 </TableCell>
               </TableRow>
             ))
