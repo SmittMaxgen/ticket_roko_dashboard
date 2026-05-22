@@ -336,10 +336,10 @@ function LabelForm({ initial, onSubmit, loading }) {
     <Box component="form" onSubmit={handleSubmit}>
       <Grid container spacing={2.5}>
         {/* Basic Info */}
-        <Grid item xs={12}>
+        {/* <Grid item xs={12}>
           <SectionLabel>Basic Info</SectionLabel>
           <Divider sx={{ mb: 2 }} />
-        </Grid>
+        </Grid> */}
 
         <Grid item xs={12} md={6}>
           <TextField
@@ -390,10 +390,10 @@ function LabelForm({ initial, onSubmit, loading }) {
         </Grid>
 
         {/* Display */}
-        <Grid item xs={12} sx={{ mt: 1 }}>
+        {/* <Grid item xs={12} sx={{ mt: 1 }}>
           <SectionLabel>Display & Offer</SectionLabel>
           <Divider sx={{ mb: 2 }} />
-        </Grid>
+        </Grid> */}
 
         <Grid item xs={12} md={6}>
           <TextField
@@ -452,10 +452,10 @@ function LabelForm({ initial, onSubmit, loading }) {
         </Grid>
 
         {/* Style */}
-        <Grid item xs={12} sx={{ mt: 1 }}>
+        {/* <Grid item xs={12} sx={{ mt: 1 }}>
           <SectionLabel>Style & Ordering</SectionLabel>
           <Divider sx={{ mb: 2 }} />
-        </Grid>
+        </Grid> */}
 
         <Grid item xs={12} md={4}>
           <TextField
@@ -468,7 +468,6 @@ function LabelForm({ initial, onSubmit, loading }) {
         </Grid>
         <Grid item xs={12} md={4}>
           <TextField
-            fullWidth
             type="color"
             label="Background Color"
             value={form.bg_color}
@@ -478,6 +477,7 @@ function LabelForm({ initial, onSubmit, loading }) {
               ...inputSx,
               "& input[type=color]": {
                 height: 40,
+                width: "140px",
                 cursor: "pointer",
                 padding: "4px 8px",
               },
@@ -496,10 +496,10 @@ function LabelForm({ initial, onSubmit, loading }) {
         </Grid>
 
         {/* Images */}
-        <Grid item xs={12} sx={{ mt: 1 }}>
+        {/* <Grid item xs={12} sx={{ mt: 1 }}>
           <SectionLabel>Media</SectionLabel>
           <Divider sx={{ mb: 2 }} />
-        </Grid>
+        </Grid> */}
 
         {["image", "thumb"].map((type) => {
           const preview = type === "image" ? imagePreview : thumbPreview;
@@ -522,7 +522,7 @@ function LabelForm({ initial, onSubmit, loading }) {
                       component="img"
                       src={preview}
                       sx={{
-                        width: "100%",
+                        width: "240px",
                         height: 160,
                         objectFit: "cover",
                         display: "block",
