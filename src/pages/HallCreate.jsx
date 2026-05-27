@@ -62,7 +62,8 @@ import BookingManager from "./BookingManager";
 import Partyplote from "../components/Partyplote";
 import { clearCurrentHall } from "../features/halls/hallSlice";
 import PartyPlotPanel from "../components/Partyplote";
-
+import { io as socketIO } from "socket.io-client";
+import { API_BASE_URL } from "../api/axios";
 // ─────────────────────────────────────────────────────────────
 // CONSTANTS
 // ─────────────────────────────────────────────────────────────
@@ -388,6 +389,35 @@ function BookingView({ hallId }) {
       setLocalSeats(hall?.seats?.map((s) => ({ ...s })));
     }
   }, [hall]);
+
+  // ── Real-time: mark seats sold instantly when another user books ──
+  useEffect(() => {
+    const event_id = id; // event id from URL params
+    if (!event_id) return;
+
+    const socket = socketIO(
+      // import.meta.env?.VITE_API_URL ||
+      //   process.env?.REACT_APP_API_URL ||
+      API_BASE_URL,
+    );
+
+    socket.emit("join:event", event_id);
+
+    socket.on("seats:booked", ({ seat_ids }) => {
+      setLocalSeats((prev) =>
+        prev.map((seat) =>
+          seat_ids.includes(seat.id)
+            ? { ...seat, status: "sold" } // mark sold immediately
+            : seat,
+        ),
+      );
+    });
+
+    return () => {
+      socket.emit("leave:event", event_id);
+      socket.disconnect();
+    };
+  }, [id]);
 
   // ─────────────────────────────────────────────
   // Toggle Seat

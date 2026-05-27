@@ -27,6 +27,8 @@ import {
 } from "../features/options/optionsThunks";
 import { selectSections } from "../features/options/optionsSelectors";
 import { useSnackbar } from "notistack";
+import { io as socketIO } from "socket.io-client";
+import { API_BASE_URL } from "../api/axios";
 
 export default function BookingManager({ eventId }) {
   const dispatch = useDispatch();
@@ -81,6 +83,33 @@ export default function BookingManager({ eventId }) {
       dispatch(fetchBookingLayoutThunk(event_id));
     }
     dispatch(fetchSectionsThunk());
+  }, [dispatch, eventId, id]);
+
+  // Toggle Seat Selection
+  // ── Real-time: join event room, listen for booked seats ──────────
+  useEffect(() => {
+    const event_id = eventId || id;
+    if (!event_id) return;
+
+    const socket = socketIO(
+      // import.meta.env?.VITE_API_URL || // Vite
+      //   process.env?.REACT_APP_API_URL || // CRA
+      API_BASE_URL,
+    );
+
+    socket.emit("join:event", event_id);
+
+    socket.on("seats:booked", ({ seat_ids }) => {
+      // deselect any seats that just got booked by someone else
+      setSelectedSeats((prev) => prev.filter((sid) => !seat_ids.includes(sid)));
+      // refresh full layout so sold status is accurate
+      dispatch(fetchBookingLayoutThunk(event_id));
+    });
+
+    return () => {
+      socket.emit("leave:event", event_id);
+      socket.disconnect();
+    };
   }, [dispatch, eventId, id]);
 
   // Toggle Seat Selection
