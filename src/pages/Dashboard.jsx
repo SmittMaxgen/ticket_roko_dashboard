@@ -3316,6 +3316,16 @@ import {
   fetchCategoryStatsThunk,
   fetchAllDashboardThunk,
 } from "../features/dashboard/dashboardThunks";
+
+import {
+  fetchEventsThunk,
+  createEventThunk,
+  updateEventThunk,
+  approveEventThunk,
+  rejectEventThunk,
+  deleteEventThunk,
+} from "../features/events/eventThunks";
+
 import {
   selectDashboardOverview,
   selectDashboardRevenueChart,
@@ -3333,6 +3343,8 @@ import {
   selectIsAdmin,
   selectUserRole,
 } from "../features/auth/authSelectors";
+import EventCalendar from "../commonComponents/EventCalendar";
+import { selectEventList } from "../features/events/eventSelectors";
 
 // ─────────────────────────────────────────────────────────────
 // HELPERS
@@ -3743,10 +3755,12 @@ export default function Dashboard() {
   const pendingEvt = useSelector(selectPendingEventCount);
   const pendingKyc = useSelector(selectPendingKycCount);
   const hallStats = useSelector(selectHallStats);
+  const rows = useSelector(selectEventList);
 
   const [period, setPeriod] = useState(30);
 
   const load = () => {
+    dispatch(fetchEventsThunk());
     dispatch(fetchAllDashboardThunk());
     dispatch(fetchHallStatsThunk());
   };
@@ -3909,21 +3923,23 @@ export default function Dashboard() {
             </IconButton>
           </Tooltip>
           {isAdmin && (
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<EventOutlinedIcon />}
-              onClick={() => navigate("/events")}
-              sx={{
-                fontSize: 12,
-                borderRadius: "8px",
-                background: "linear-gradient(135deg,#2563EB,#1D4ED8)",
-                boxShadow: "0 4px 12px rgba(37,99,235,0.3)",
-                "&:hover": { boxShadow: "0 6px 18px rgba(37,99,235,0.45)" },
-              }}
-            >
-              Manage Events
-            </Button>
+            <>
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<EventOutlinedIcon />}
+                onClick={() => navigate("/events")}
+                sx={{
+                  fontSize: 12,
+                  borderRadius: "8px",
+                  background: "linear-gradient(135deg,#2563EB,#1D4ED8)",
+                  boxShadow: "0 4px 12px rgba(37,99,235,0.3)",
+                  "&:hover": { boxShadow: "0 6px 18px rgba(37,99,235,0.45)" },
+                }}
+              >
+                Manage Events
+              </Button>
+            </>
           )}
         </Box>
       </Box>
@@ -4595,7 +4611,13 @@ export default function Dashboard() {
           </Grid>
         )}
       </Grid>
-
+      {isAdmin && (
+        <EventCalendar
+          events={Array.isArray(rows) ? rows : []}
+          user={user}
+          onEventClick={(ev) => navigate(`/events/${ev.id}`)}
+        />
+      )}
       {/* ── ADMIN: HALL STATS STRIP ─────────────────────────── */}
       {isAdmin && hallStats && (
         <Card sx={{ background: "#1E293B", border: "1px solid #334155" }}>

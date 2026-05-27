@@ -26,6 +26,9 @@ import {
 import { DataGrid } from "@mui/x-data-grid";
 
 import AddIcon from "@mui/icons-material/Add";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import ViewListIcon from "@mui/icons-material/ViewList";
+import EventCalendar from "../commonComponents/EventCalendar";
 import SearchIcon from "@mui/icons-material/Search";
 // import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
@@ -47,14 +50,7 @@ import api, { API_BASE_URL } from "../api/axios";
 import { useDispatch, useSelector } from "react-redux";
 import { useSnackbar } from "notistack";
 
-import {
-  fetchEventsThunk,
-  createEventThunk,
-  updateEventThunk,
-  approveEventThunk,
-  rejectEventThunk,
-  deleteEventThunk,
-} from "../features/events/eventThunks";
+import { fetchEventsThunk } from "../features/events/eventThunks";
 
 import { selectHallList } from "../features/halls/hallSelectors";
 
@@ -219,6 +215,7 @@ export default function Events({ user }) {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
 
+  const [view, setView] = useState("list"); // "list" | "calendar"
   const [rejectDlg, setRejectDlg] = useState(null);
   const [rejectNote, setRejectNote] = useState("");
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
@@ -805,7 +802,7 @@ export default function Events({ user }) {
               : "Our All Events You can Book Your Seat for Listed Events !"}
           </Typography>
         </Box>
-        {(user.role === "super_admin" || user.role === "admin") && (
+        {/* {(user.role === "super_admin" || user.role === "admin") && (
           <CommonButton
             startIcon={<AddIcon />}
             onClick={() => {
@@ -816,7 +813,45 @@ export default function Events({ user }) {
           >
             Add Event
           </CommonButton>
-        )}
+        )}  */}
+        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+          <IconButton
+            onClick={() => setView("list")}
+            sx={{
+              border: `1px solid ${view === "list" ? "#2563EB" : "#334155"}`,
+              borderRadius: "8px",
+              color: view === "list" ? "#2563EB" : "#64748B",
+              background: view === "list" ? "#2563EB10" : "transparent",
+              "&:hover": { borderColor: "#2563EB55", color: "#2563EB" },
+            }}
+          >
+            <ViewListIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            onClick={() => setView("calendar")}
+            sx={{
+              border: `1px solid ${view === "calendar" ? "#2563EB" : "#334155"}`,
+              borderRadius: "8px",
+              color: view === "calendar" ? "#2563EB" : "#64748B",
+              background: view === "calendar" ? "#2563EB10" : "transparent",
+              "&:hover": { borderColor: "#2563EB55", color: "#2563EB" },
+            }}
+          >
+            <CalendarMonthIcon fontSize="small" />
+          </IconButton>
+          {(user.role === "super_admin" || user.role === "admin") && (
+            <CommonButton
+              startIcon={<AddIcon />}
+              onClick={() => {
+                setEditing(null);
+                setForm(EMPTY_FORM);
+                setOpen(true);
+              }}
+            >
+              Add Event
+            </CommonButton>
+          )}
+        </Box>
       </Stack>
       {/* )} */}
 
@@ -862,10 +897,22 @@ export default function Events({ user }) {
       ) : (
         <></>
       )}
+      {/* Calendar View */}
+      {view === "calendar" && (
+        <Box sx={{ mt: 2 }}>
+          <EventCalendar
+            events={Array.isArray(rows) ? rows : []}
+            user={user}
+            onEventClick={(ev) => navigate(`/events/${ev.id}`)}
+          />
+        </Box>
+      )}
+
       {/* Main Card */}
       <Card
         sx={{
           marginTop: "15px",
+          display: view === "calendar" ? "none" : "block",
           background:
             "linear-gradient(145deg, rgba(30,41,59,.96), rgba(15,23,42,.96))",
           border: "1px solid #1e293b",
