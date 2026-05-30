@@ -1020,17 +1020,22 @@ export default function Events({ user }) {
         <DialogTitle sx={{ color: "#fff", fontWeight: 800 }}>
           {editing ? "Edit Event" : "Create Event"}
         </DialogTitle>
-        <DialogTitle sx={{ color: "#fff", fontWeight: 800 }}>
-          {editing ? (
-            <>
-              <CommonButton
-                startIcon={<AddIcon />}
-                onClick={() => navigate("/hall")}
-              >
-                Create Hall
-              </CommonButton>
-            </>
-          ) : null}
+        <DialogTitle
+          sx={{
+            display: "flex",
+            justifyContent: "flex-end",
+            color: "#fff",
+            fontWeight: 800,
+          }}
+        >
+          <>
+            <CommonButton
+              startIcon={<AddIcon />}
+              onClick={() => navigate("/hall")}
+            >
+              Create Hall
+            </CommonButton>
+          </>
         </DialogTitle>
 
         <DialogContent>
