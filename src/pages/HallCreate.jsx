@@ -1490,6 +1490,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
           color: sec.color,
           sectionId: sec.id,
           shape: seatShape,
+          seat_name: `S${prev.length + 1}`,
         },
       ]);
     }
@@ -2158,18 +2159,43 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
 
               {/* Live Preview */}
               {previewPts.map((pt, i) => (
-                <rect
-                  key={i}
-                  x={pt.x - SEAT_SIZE / 2}
-                  y={pt.y - SEAT_SIZE / 2}
-                  width={SEAT_SIZE}
-                  height={SEAT_SIZE}
-                  rx={6}
-                  fill={secColor + "33"}
-                  stroke={secColor}
-                  strokeDasharray="4 3"
-                  strokeWidth="2"
-                />
+                <g key={i}>
+                  <rect
+                    x={pt.x - SEAT_SIZE / 2}
+                    y={pt.y - SEAT_SIZE / 2}
+                    width={SEAT_SIZE}
+                    height={SEAT_SIZE}
+                    rx={6}
+                    fill={secColor + "33"}
+                    stroke={secColor}
+                    strokeDasharray="4 3"
+                    strokeWidth="2"
+                  />
+                  <text
+                    x={pt.x}
+                    y={pt.y + 5}
+                    textAnchor="middle"
+                    fontSize="9"
+                    fill={secColor}
+                    fontWeight="600"
+                    pointerEvents="none"
+                  >
+                    {String.fromCharCode(
+                      65 +
+                        placedRows.length +
+                        (is_edit && hall?.seats
+                          ? Math.max(
+                              0,
+                              ...hall.seats.map((s) => {
+                                const m = s.seat_name?.match(/^([A-Z])/);
+                                return m ? m[1].charCodeAt(0) - 64 : 0;
+                              }),
+                            )
+                          : 0),
+                    )}
+                    {i + 1}
+                  </text>
+                </g>
               ))}
             </g>
           </svg>

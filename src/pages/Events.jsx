@@ -50,7 +50,10 @@ import api, { API_BASE_URL } from "../api/axios";
 import { useDispatch, useSelector } from "react-redux";
 import { useSnackbar } from "notistack";
 
-import { fetchEventsThunk } from "../features/events/eventThunks";
+import {
+  fetchEventsThunk,
+  updateEventThunk,
+} from "../features/events/eventThunks";
 
 import { selectHallList } from "../features/halls/hallSelectors";
 
@@ -1016,6 +1019,18 @@ export default function Events({ user }) {
       >
         <DialogTitle sx={{ color: "#fff", fontWeight: 800 }}>
           {editing ? "Edit Event" : "Create Event"}
+        </DialogTitle>
+        <DialogTitle sx={{ color: "#fff", fontWeight: 800 }}>
+          {editing ? (
+            <>
+              <CommonButton
+                startIcon={<AddIcon />}
+                onClick={() => navigate("/hall")}
+              >
+                Create Hall
+              </CommonButton>
+            </>
+          ) : null}
         </DialogTitle>
 
         <DialogContent>
