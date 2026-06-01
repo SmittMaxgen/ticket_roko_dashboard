@@ -31,7 +31,6 @@ import {
   Divider,
   alpha,
   InputAdornment,
-  Badge,
 } from "@mui/material";
 
 import { createTheme, ThemeProvider } from "@mui/material/styles";
@@ -40,38 +39,37 @@ import AddIcon from "@mui/icons-material/Add";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import SearchIcon from "@mui/icons-material/Search";
-import LabelIcon from "@mui/icons-material/Label";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import StarRoundedIcon from "@mui/icons-material/StarRounded";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import ImageIcon from "@mui/icons-material/Image";
 import CloseIcon from "@mui/icons-material/Close";
-import LocalOfferIcon from "@mui/icons-material/LocalOffer";
+import CampaignIcon from "@mui/icons-material/Campaign";
+import LinkIcon from "@mui/icons-material/Link";
 
 import { useEffect, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import {
-  fetchLabels,
-  createLabel,
-  updateLabel,
-  deleteLabel,
-  toggleLabelStatus,
-  reorderLabels,
-} from "../features/labels/labelThunks";
+  fetchAdvertisements,
+  createAdvertisement,
+  updateAdvertisement,
+  deleteAdvertisement,
+  toggleAdvertisementStatus,
+} from "../features/advertisement/advertisementthunks";
 
 import {
-  selectAllLabels,
-  selectLabelsLoading,
-  selectLabelsActionLoading,
-  selectLabelsError,
-  selectLabelsTotal,
-  selectLabelsTotalPages,
-  selectLabelsPage,
-} from "../features/labels/labelSelectors";
+  selectAllAdvertisements,
+  selectAdvertisementsLoading,
+  selectAdvertisementsActionLoading,
+  selectAdvertisementsError,
+  selectAdvertisementsTotal,
+  selectAdvertisementsTotalPages,
+  selectAdvertisementsPage,
+} from "../features/advertisement/advertisementSelectors";
+
 import { API_BASE_URL } from "../api/axios";
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
@@ -130,11 +128,7 @@ const theme = createTheme({
         },
       },
     },
-    MuiSelect: {
-      styleOverrides: {
-        root: { borderRadius: 10 },
-      },
-    },
+    MuiSelect: { styleOverrides: { root: { borderRadius: 10 } } },
     MuiSwitch: {
       styleOverrides: {
         root: { padding: 8 },
@@ -178,20 +172,29 @@ const theme = createTheme({
         paper: { borderRadius: 20, boxShadow: "0 25px 50px rgba(0,0,0,0.12)" },
       },
     },
-    MuiChip: {
-      styleOverrides: {
-        root: { fontWeight: 600, borderRadius: 8 },
-      },
-    },
+    MuiChip: { styleOverrides: { root: { fontWeight: 600, borderRadius: 8 } } },
   },
 });
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const imgSrc = (path) => (path ? `${API_BASE_URL}/${path}` : null);
+const imgSrc = (path) => {
+  if (!path) return null;
+  if (path.startsWith("http")) return path;
+  return `${API_BASE_URL}/${path}`;
+};
+
+const PLACEMENTS = [
+  "home_top",
+  "home_mid",
+  "home_bottom",
+  "sidebar",
+  "popup",
+  "other",
+];
 
 const EMPTY_FORM = {
-  name: "",
+  title: "",
   slug: "",
   tagline: "",
   description: "",
@@ -199,7 +202,9 @@ const EMPTY_FORM = {
   discount_text: "",
   terms_text: "",
   tags: "",
-  age_rating: "",
+  placement: "home_top",
+  starts_at: "",
+  ends_at: "",
   url_link: "",
   cta_text: "Book Now",
   bg_color: "#6C63FF",
@@ -215,7 +220,7 @@ function StatCard({ label, value, color, icon }) {
     <Card
       elevation={0}
       sx={{
-        color: "white",
+        color: color,
         border: "1px solid",
         borderColor: alpha(color, 0.15),
         background: `linear-gradient(135deg, ${alpha(color, 0.07)} 0%, ${alpha(color, 0.02)} 100%)`,
@@ -226,17 +231,17 @@ function StatCard({ label, value, color, icon }) {
     >
       <CardContent sx={{ py: 2.5, px: 3, "&:last-child": { pb: 2.5 } }}>
         <Stack
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+          }}
           direction="row"
           justifyContent="space-between"
           alignItems="flex-start"
         >
           <Box>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              fontWeight={500}
-              mb={0.5}
-            >
+            <Typography variant="body2" color="white" fontWeight={500} mb={0.5}>
               {label}
             </Typography>
             <Typography variant="h5" fontWeight={800} color={color}>
@@ -263,29 +268,9 @@ function StatCard({ label, value, color, icon }) {
   );
 }
 
-// ─── Section Label ─────────────────────────────────────────────────────────────
+// ─── Advertisement Form ───────────────────────────────────────────────────────
 
-function SectionLabel({ children }) {
-  return (
-    <Typography
-      variant="caption"
-      fontWeight={700}
-      color="text.secondary"
-      sx={{
-        textTransform: "uppercase",
-        letterSpacing: "0.08em",
-        mb: 1,
-        display: "block",
-      }}
-    >
-      {children}
-    </Typography>
-  );
-}
-
-// ─── Label Form ───────────────────────────────────────────────────────────────
-
-function LabelForm({ initial, onSubmit, loading }) {
+function AdvertisementForm({ initial, onSubmit, loading }) {
   const [form, setForm] = useState(initial || EMPTY_FORM);
   const [imageFile, setImageFile] = useState(null);
   const [thumbFile, setThumbFile] = useState(null);
@@ -313,7 +298,9 @@ function LabelForm({ initial, onSubmit, loading }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     const fd = new FormData();
-    Object.entries(form).forEach(([k, v]) => fd.append(k, v));
+    Object.entries(form).forEach(([k, v]) => {
+      if (v !== null && v !== undefined) fd.append(k, v);
+    });
     if (imageFile) fd.append("image_url", imageFile);
     if (thumbFile) fd.append("thumbnail_url", thumbFile);
     fd.set(
@@ -335,24 +322,19 @@ function LabelForm({ initial, onSubmit, loading }) {
   return (
     <Box component="form" onSubmit={handleSubmit}>
       <Grid container spacing={2.5}>
-        {/* Basic Info */}
-        {/* <Grid item xs={12}>
-          <SectionLabel>Basic Info</SectionLabel>
-          <Divider sx={{ mb: 2 }} />
-        </Grid> */}
-
+        {/* Title & Slug */}
         <Grid item xs={12} md={6}>
           <TextField
             fullWidth
-            label="Name"
-            value={form.name}
-            onChange={(e) => set("name", e.target.value)}
+            label="Title"
+            value={form.title}
+            onChange={(e) => set("title", e.target.value)}
             required
             sx={inputSx}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <LocalOfferIcon sx={{ color: "#6C63FF", fontSize: 18 }} />
+                  <CampaignIcon sx={{ color: "#6C63FF", fontSize: 18 }} />
                 </InputAdornment>
               ),
             }}
@@ -365,9 +347,11 @@ function LabelForm({ initial, onSubmit, loading }) {
             value={form.slug}
             onChange={(e) => set("slug", e.target.value)}
             sx={inputSx}
-            helperText="URL-friendly identifier"
+            helperText="Auto-generated if left empty"
           />
         </Grid>
+
+        {/* Tagline & Description */}
         <Grid item xs={12}>
           <TextField
             fullWidth
@@ -389,12 +373,7 @@ function LabelForm({ initial, onSubmit, loading }) {
           />
         </Grid>
 
-        {/* Display */}
-        {/* <Grid item xs={12} sx={{ mt: 1 }}>
-          <SectionLabel>Display & Offer</SectionLabel>
-          <Divider sx={{ mb: 2 }} />
-        </Grid> */}
-
+        {/* Badge & Discount */}
         <Grid item xs={12} md={6}>
           <TextField
             fullWidth
@@ -407,21 +386,14 @@ function LabelForm({ initial, onSubmit, loading }) {
         <Grid item xs={12} md={6}>
           <TextField
             fullWidth
-            label="Age Rating"
-            value={form.age_rating}
-            onChange={(e) => set("age_rating", e.target.value)}
-            sx={inputSx}
-          />
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <TextField
-            fullWidth
             label="Discount Text"
             value={form.discount_text}
             onChange={(e) => set("discount_text", e.target.value)}
             sx={inputSx}
           />
         </Grid>
+
+        {/* Terms & Tags */}
         <Grid item xs={12} md={6}>
           <TextField
             fullWidth
@@ -438,25 +410,69 @@ function LabelForm({ initial, onSubmit, loading }) {
             value={form.tags}
             onChange={(e) => set("tags", e.target.value)}
             sx={inputSx}
-            placeholder="MUSIC, LIVE, TRENDING"
+            placeholder="OFFER, FEATURED, NEW"
+          />
+        </Grid>
+
+        {/* Placement & URL */}
+        <Grid item xs={12} md={6}>
+          <FormControl fullWidth sx={inputSx}>
+            <InputLabel>Placement</InputLabel>
+            <Select
+              value={form.placement}
+              label="Placement"
+              onChange={(e) => set("placement", e.target.value)}
+            >
+              {PLACEMENTS.map((p) => (
+                <MenuItem key={p} value={p}>
+                  {p}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <TextField
+            fullWidth
+            label="URL Link"
+            value={form.url_link}
+            onChange={(e) => set("url_link", e.target.value)}
+            sx={inputSx}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <LinkIcon sx={{ color: "#6C63FF", fontSize: 18 }} />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Grid>
+
+        {/* Schedule */}
+        <Grid item xs={12} md={6}>
+          <TextField
+            fullWidth
+            type="datetime-local"
+            label="Starts At"
+            value={form.starts_at}
+            onChange={(e) => set("starts_at", e.target.value)}
+            sx={inputSx}
+            InputLabelProps={{ shrink: true }}
           />
         </Grid>
         <Grid item xs={12} md={6}>
           <TextField
             fullWidth
-            label="Booking URL"
-            value={form.url_link}
-            onChange={(e) => set("url_link", e.target.value)}
+            type="datetime-local"
+            label="Ends At"
+            value={form.ends_at}
+            onChange={(e) => set("ends_at", e.target.value)}
             sx={inputSx}
+            InputLabelProps={{ shrink: true }}
           />
         </Grid>
 
-        {/* Style */}
-        {/* <Grid item xs={12} sx={{ mt: 1 }}>
-          <SectionLabel>Style & Ordering</SectionLabel>
-          <Divider sx={{ mb: 2 }} />
-        </Grid> */}
-
+        {/* CTA, Color, Sort */}
         <Grid item xs={12} md={4}>
           <TextField
             fullWidth
@@ -496,11 +512,6 @@ function LabelForm({ initial, onSubmit, loading }) {
         </Grid>
 
         {/* Images */}
-        {/* <Grid item xs={12} sx={{ mt: 1 }}>
-          <SectionLabel>Media</SectionLabel>
-          <Divider sx={{ mb: 2 }} />
-        </Grid> */}
-
         {["image", "thumb"].map((type) => {
           const preview = type === "image" ? imagePreview : thumbPreview;
           const label = type === "image" ? "Banner Image" : "Thumbnail";
@@ -522,7 +533,7 @@ function LabelForm({ initial, onSubmit, loading }) {
                       component="img"
                       src={preview}
                       sx={{
-                        width: "240px",
+                        width: "100%",
                         height: 160,
                         objectFit: "cover",
                         display: "block",
@@ -641,7 +652,7 @@ function LabelForm({ initial, onSubmit, loading }) {
             {loading ? (
               <CircularProgress size={22} color="inherit" />
             ) : (
-              "Save Label"
+              "Save Advertisement"
             )}
           </Button>
         </Grid>
@@ -652,18 +663,26 @@ function LabelForm({ initial, onSubmit, loading }) {
 
 // ─── View Modal ───────────────────────────────────────────────────────────────
 
-function LabelViewModal({ label }) {
-  if (!label) return null;
+function AdvertisementViewModal({ ad }) {
+  if (!ad) return null;
+
   const fields = [
-    ["Slug", label.slug],
-    ["Tagline", label.tagline],
-    ["Badge", label.badge_text],
-    ["Age Rating", label.age_rating],
-    ["Discount", label.discount_text],
-    ["Terms", label.terms_text],
-    ["CTA", label.cta_text],
-    ["URL", label.url_link],
-    ["Sort Order", label.sort_order],
+    ["Slug", ad.slug],
+    ["Tagline", ad.tagline],
+    ["Badge", ad.badge_text],
+    ["Placement", ad.placement],
+    ["Discount", ad.discount_text],
+    ["Terms", ad.terms_text],
+    ["CTA", ad.cta_text],
+    ["URL", ad.url_link],
+    ["Sort Order", ad.sort_order],
+    [
+      "Starts At",
+      ad.starts_at ? new Date(ad.starts_at).toLocaleString() : null,
+    ],
+    ["Ends At", ad.ends_at ? new Date(ad.ends_at).toLocaleString() : null],
+    ["Clicks", ad.click_count],
+    ["Impressions", ad.impression_count],
   ].filter(([, v]) => v != null && v !== "");
 
   return (
@@ -675,13 +694,13 @@ function LabelViewModal({ label }) {
           overflow: "hidden",
           position: "relative",
           height: 180,
-          bgcolor: label.bg_color || "#6C63FF",
+          bgcolor: ad.bg_color || "#6C63FF",
         }}
       >
-        {label.image_url && (
+        {ad.image_url && (
           <Box
             component="img"
-            src={imgSrc(label.image_url)}
+            src={imgSrc(ad.image_url)}
             sx={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
         )}
@@ -696,22 +715,21 @@ function LabelViewModal({ label }) {
         <Box sx={{ position: "absolute", bottom: 16, left: 16, right: 16 }}>
           <Stack direction="row" alignItems="center" spacing={2}>
             <Avatar
-              src={imgSrc(label.thumbnail_url)}
+              src={imgSrc(ad.thumbnail_url)}
               variant="rounded"
               sx={{
                 width: 52,
                 height: 52,
-                // bgcolor: alpha("#fff", 0.2),
                 border: "2px solid rgba(255,255,255,0.4)",
               }}
             />
             <Box>
               <Typography variant="h6" color="white" fontWeight={800}>
-                {label.name}
+                {ad.title}
               </Typography>
-              {label.tagline && (
+              {ad.tagline && (
                 <Typography variant="body2" color="rgba(255,255,255,0.8)">
-                  {label.tagline}
+                  {ad.tagline}
                 </Typography>
               )}
             </Box>
@@ -720,9 +738,9 @@ function LabelViewModal({ label }) {
       </Box>
 
       {/* Tags */}
-      {Array.isArray(label.tags) && label.tags.length > 0 && (
+      {Array.isArray(ad.tags) && ad.tags.length > 0 && (
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-          {label.tags.map((tag) => (
+          {ad.tags.map((tag) => (
             <Chip
               key={tag}
               label={tag}
@@ -737,20 +755,20 @@ function LabelViewModal({ label }) {
         </Stack>
       )}
 
-      {/* Badges */}
+      {/* Status badges */}
       <Stack direction="row" spacing={2}>
         <Chip
-          icon={label.is_active ? <CheckCircleIcon /> : <CancelIcon />}
-          label={label.is_active ? "Active" : "Inactive"}
+          icon={ad.is_active ? <CheckCircleIcon /> : <CancelIcon />}
+          label={ad.is_active ? "Active" : "Inactive"}
           sx={{
-            bgcolor: label.is_active
+            bgcolor: ad.is_active
               ? alpha("#22C55E", 0.1)
               : alpha("#EF4444", 0.1),
-            color: label.is_active ? "#22C55E" : "#EF4444",
+            color: ad.is_active ? "#22C55E" : "#EF4444",
             fontWeight: 700,
           }}
         />
-        {label.is_featured && (
+        {ad.is_featured && (
           <Chip
             icon={<StarRoundedIcon />}
             label="Featured"
@@ -763,8 +781,8 @@ function LabelViewModal({ label }) {
         )}
       </Stack>
 
-      {/* Fields */}
-      {label.description && (
+      {/* Description */}
+      {ad.description && (
         <Box sx={{ borderRadius: 2, p: 2 }}>
           <Typography
             variant="caption"
@@ -775,11 +793,12 @@ function LabelViewModal({ label }) {
             Description
           </Typography>
           <Typography variant="body2" mt={0.5}>
-            {label.description}
+            {ad.description}
           </Typography>
         </Box>
       )}
 
+      {/* Fields grid */}
       <Grid container spacing={1.5}>
         {fields.map(([key, val]) => (
           <Grid item xs={6} key={key}>
@@ -822,12 +841,12 @@ function LabelViewModal({ label }) {
                   width: 16,
                   height: 16,
                   borderRadius: 1,
-                  bgcolor: label.bg_color,
+                  bgcolor: ad.bg_color,
                   border: "1px solid rgba(0,0,0,0.1)",
                 }}
               />
               <Typography variant="body2" fontWeight={600}>
-                {label.bg_color}
+                {ad.bg_color}
               </Typography>
             </Stack>
           </Box>
@@ -839,33 +858,33 @@ function LabelViewModal({ label }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-export default function Labels() {
+export default function Advertisements() {
   const dispatch = useDispatch();
 
-  const labels = useSelector(selectAllLabels);
-  const loading = useSelector(selectLabelsLoading);
-  const actionLoading = useSelector(selectLabelsActionLoading);
-  const error = useSelector(selectLabelsError);
-  const total = useSelector(selectLabelsTotal);
-  const totalPages = useSelector(selectLabelsTotalPages);
-  const currentPage = useSelector(selectLabelsPage);
+  const advertisements = useSelector(selectAllAdvertisements);
+  const loading = useSelector(selectAdvertisementsLoading);
+  const actionLoading = useSelector(selectAdvertisementsActionLoading);
+  const error = useSelector(selectAdvertisementsError);
+  const total = useSelector(selectAdvertisementsTotal);
+  const totalPages = useSelector(selectAdvertisementsTotalPages);
+  const currentPage = useSelector(selectAdvertisementsPage);
 
   const [modal, setModal] = useState(null);
   const [target, setTarget] = useState(null);
   const [search, setSearch] = useState("");
   const [filterActive, setFilterActive] = useState("");
   const [filterFeatured, setFilterFeatured] = useState("");
+  const [filterPlacement, setFilterPlacement] = useState("");
   const [page, setPage] = useState(1);
-  const [dragId, setDragId] = useState(null);
-  const [dragOver, setDragOver] = useState(null);
 
   const load = useCallback(() => {
     const params = { page, limit: 10 };
     if (search) params.search = search;
     if (filterActive) params.is_active = filterActive;
     if (filterFeatured) params.is_featured = filterFeatured;
-    dispatch(fetchLabels(params));
-  }, [dispatch, page, search, filterActive, filterFeatured]);
+    if (filterPlacement) params.placement = filterPlacement;
+    dispatch(fetchAdvertisements(params));
+  }, [dispatch, page, search, filterActive, filterFeatured, filterPlacement]);
 
   useEffect(() => {
     load();
@@ -877,50 +896,33 @@ export default function Labels() {
   };
 
   const handleCreate = async (fd) => {
-    const res = await dispatch(createLabel(fd));
+    const res = await dispatch(createAdvertisement(fd));
     if (!res.error) closeModal();
   };
 
   const handleUpdate = async (fd) => {
-    const res = await dispatch(updateLabel({ id: target.id, formData: fd }));
+    const res = await dispatch(
+      updateAdvertisement({ id: target.id, formData: fd }),
+    );
     if (!res.error) closeModal();
   };
 
   const handleDelete = async () => {
-    const res = await dispatch(deleteLabel(target.id));
+    const res = await dispatch(deleteAdvertisement(target.id));
     if (!res.error) closeModal();
   };
 
-  const handleToggle = (l) => dispatch(toggleLabelStatus(l.id));
+  const handleToggle = (ad) => dispatch(toggleAdvertisementStatus(ad.id));
 
-  const handleDragStart = (id) => setDragId(id);
-  const handleDragOver = (e, id) => {
-    e.preventDefault();
-    setDragOver(id);
-  };
-  const handleDrop = (targetId) => {
-    setDragOver(null);
-    if (dragId === targetId) return;
-    const reordered = [...labels];
-    const from = reordered.findIndex((l) => l.id === dragId);
-    const to = reordered.findIndex((l) => l.id === targetId);
-    const [moved] = reordered.splice(from, 1);
-    reordered.splice(to, 0, moved);
-    dispatch(
-      reorderLabels(reordered.map((l, i) => ({ id: l.id, sort_order: i }))),
-    );
-    setDragId(null);
-  };
-
-  const activeCount = labels.filter((l) => l.is_active).length;
-  const featuredCount = labels.filter((l) => l.is_featured).length;
+  const activeCount = advertisements.filter((a) => a.is_active).length;
+  const featuredCount = advertisements.filter((a) => a.is_featured).length;
 
   return (
     <ThemeProvider theme={theme}>
       <Box
         sx={{ p: { xs: 2, md: 3.5 }, bgcolor: "#0f172a", minHeight: "100vh" }}
       >
-        {/* ── Header ─────────────────────────────────────────────── */}
+        {/* ── Header ───────────────────────────────────────────── */}
         <Stack
           sx={{
             display: "flex",
@@ -944,12 +946,12 @@ export default function Labels() {
                   boxShadow: "0 4px 12px rgba(108,99,255,0.35)",
                 }}
               >
-                <LabelIcon sx={{ color: "white", fontSize: 20 }} />
+                <CampaignIcon sx={{ color: "white", fontSize: 20 }} />
               </Box>
-              <Typography variant="h4">Labels</Typography>
+              <Typography variant="h4">Advertisements</Typography>
             </Stack>
             <Typography variant="body2" color="text.secondary" pl={0.5}>
-              Manage and organise your label collection
+              Manage and organise your advertisement banners
             </Typography>
           </Box>
 
@@ -962,17 +964,17 @@ export default function Labels() {
             }}
             sx={{ px: 3, py: 1.2 }}
           >
-            New Label
+            New Advertisement
           </Button>
         </Stack>
 
-        {/* ── Stats ──────────────────────────────────────────────── */}
+        {/* ── Stats ────────────────────────────────────────────── */}
         <Stack direction="row" spacing={2} mb={3} flexWrap="wrap" useFlexGap>
           <StatCard
-            label="Total Labels"
+            label="Total Ads"
             value={total}
-            color="#6C63FF"
-            icon={<LabelIcon fontSize="small" />}
+            color="#548701"
+            icon={<CampaignIcon fontSize="small" />}
           />
           <StatCard
             label="Active"
@@ -994,7 +996,7 @@ export default function Labels() {
           />
         </Stack>
 
-        {/* ── Error ──────────────────────────────────────────────── */}
+        {/* ── Error ────────────────────────────────────────────── */}
         {error && (
           <Paper
             elevation={0}
@@ -1015,17 +1017,10 @@ export default function Labels() {
           </Paper>
         )}
 
-        {/* ── Filters ────────────────────────────────────────────── */}
+        {/* ── Filters ──────────────────────────────────────────── */}
         <Card
           elevation={0}
-          sx={{
-            color: "white",
-            // bgcolor: "#5a70a4",
-            mt: 2.5,
-            mb: 2.5,
-            border: "1px solid #E5E7EB",
-            // borderRadius: 3,
-          }}
+          sx={{ mt: 2.5, mb: 2.5, border: "1px solid #E5E7EB" }}
         >
           <CardContent sx={{ py: 2, "&:last-child": { pb: 2 } }}>
             <Stack direction="row" alignItems="center" spacing={1} mb={1.5}>
@@ -1039,10 +1034,10 @@ export default function Labels() {
               </Typography>
             </Stack>
             <Grid container spacing={2}>
-              <Grid item xs={12} md={5}>
+              <Grid item xs={12} md={4}>
                 <TextField
                   fullWidth
-                  placeholder="Search labels…"
+                  placeholder="Search advertisements…"
                   value={search}
                   onChange={(e) => {
                     setSearch(e.target.value);
@@ -1058,11 +1053,10 @@ export default function Labels() {
                   }}
                 />
               </Grid>
-              <Grid item xs={6} md={3}>
-                <FormControl fullWidth size="small">
+              <Grid item xs={6} md={2}>
+                <FormControl sx={{ width: "200px" }} size="small">
                   <InputLabel>Status</InputLabel>
                   <Select
-                    sx={{ width: "200px" }}
                     value={filterActive}
                     label="Status"
                     onChange={(e) => {
@@ -1076,11 +1070,10 @@ export default function Labels() {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={6} md={3}>
-                <FormControl fullWidth size="small">
+              <Grid item xs={6} md={2}>
+                <FormControl sx={{ width: "200px" }} size="small">
                   <InputLabel>Featured</InputLabel>
                   <Select
-                    sx={{ width: "200px" }}
                     value={filterFeatured}
                     label="Featured"
                     onChange={(e) => {
@@ -1094,28 +1087,43 @@ export default function Labels() {
                   </Select>
                 </FormControl>
               </Grid>
+              <Grid item xs={6} md={3}>
+                <FormControl sx={{ width: "200px" }} size="small">
+                  <InputLabel>Placement</InputLabel>
+                  <Select
+                    value={filterPlacement}
+                    label="Placement"
+                    onChange={(e) => {
+                      setFilterPlacement(e.target.value);
+                      setPage(1);
+                    }}
+                  >
+                    <MenuItem value="">All</MenuItem>
+                    {PLACEMENTS.map((p) => (
+                      <MenuItem key={p} value={p}>
+                        {p}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
             </Grid>
           </CardContent>
         </Card>
 
-        {/* ── Table ──────────────────────────────────────────────── */}
+        {/* ── Table ────────────────────────────────────────────── */}
         <Card
           elevation={0}
-          sx={{
-            border: "1px solid #E5E7EB",
-            // borderRadius: ,
-            overflow: "hidden",
-          }}
+          sx={{ border: "1px solid #E5E7EB", overflow: "hidden" }}
         >
           <TableContainer>
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell width={48} />
-                  <TableCell>Label</TableCell>
+                  <TableCell>Advertisement</TableCell>
+                  <TableCell>Placement</TableCell>
                   <TableCell>Tags</TableCell>
                   <TableCell>Badge</TableCell>
-                  <TableCell>Age</TableCell>
                   <TableCell>Featured</TableCell>
                   <TableCell>Status</TableCell>
                   <TableCell align="right">Actions</TableCell>
@@ -1125,13 +1133,13 @@ export default function Labels() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={8} align="center" sx={{ py: 8 }}>
+                    <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
                       <CircularProgress sx={{ color: "#6C63FF" }} />
                     </TableCell>
                   </TableRow>
-                ) : labels.length === 0 ? (
+                ) : advertisements.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} align="center" sx={{ py: 8 }}>
+                    <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
                       <Stack alignItems="center" spacing={1.5}>
                         <Box
                           sx={{
@@ -1144,43 +1152,24 @@ export default function Labels() {
                             justifyContent: "center",
                           }}
                         >
-                          <LabelIcon sx={{ color: "#6C63FF", fontSize: 28 }} />
+                          <CampaignIcon
+                            sx={{ color: "#6C63FF", fontSize: 28 }}
+                          />
                         </Box>
                         <Typography fontWeight={700} color="text.secondary">
-                          No labels found
+                          No advertisements found
                         </Typography>
                         <Typography variant="body2" color="text.disabled">
-                          Try adjusting your filters or create a new label
+                          Try adjusting your filters or create a new
+                          advertisement
                         </Typography>
                       </Stack>
                     </TableCell>
                   </TableRow>
                 ) : (
-                  labels.map((l) => (
-                    <TableRow
-                      key={l.id}
-                      draggable
-                      onDragStart={() => handleDragStart(l.id)}
-                      onDragOver={(e) => handleDragOver(e, l.id)}
-                      onDrop={() => handleDrop(l.id)}
-                      sx={{
-                        cursor: "grab",
-                        outline:
-                          dragOver === l.id ? "2px solid #6C63FF" : "none",
-                        outlineOffset: -2,
-                        "&:active": { cursor: "grabbing" },
-                      }}
-                    >
-                      <TableCell>
-                        <DragIndicatorIcon
-                          sx={{
-                            color: "#D1D5DB",
-                            display: "block",
-                            mx: "auto",
-                          }}
-                        />
-                      </TableCell>
-
+                  advertisements.map((ad) => (
+                    <TableRow key={ad.id}>
+                      {/* Title + thumbnail */}
                       <TableCell>
                         <Stack
                           direction="row"
@@ -1188,38 +1177,53 @@ export default function Labels() {
                           alignItems="center"
                         >
                           <Avatar
-                            src={imgSrc(l.thumbnail_url)}
+                            src={imgSrc(ad.thumbnail_url)}
                             variant="rounded"
                             sx={{
                               width: 44,
                               height: 44,
-                              bgcolor: l.bg_color || "#6C63FF",
+                              bgcolor: ad.bg_color || "#6C63FF",
                               border: "2px solid",
-                              borderColor: alpha(l.bg_color || "#6C63FF", 0.3),
+                              borderColor: alpha(ad.bg_color || "#6C63FF", 0.3),
                               fontSize: 16,
                               fontWeight: 700,
                             }}
                           >
-                            {l.name?.[0]}
+                            {ad.title?.[0]}
                           </Avatar>
                           <Box>
                             <Typography fontWeight={700} fontSize="0.875rem">
-                              {l.name}
+                              {ad.title}
                             </Typography>
-                            {l.tagline && (
+                            {ad.tagline && (
                               <Typography
                                 variant="caption"
                                 color="text.secondary"
                                 noWrap
                                 sx={{ maxWidth: 200, display: "block" }}
                               >
-                                {l.tagline}
+                                {ad.tagline}
                               </Typography>
                             )}
                           </Box>
                         </Stack>
                       </TableCell>
 
+                      {/* Placement */}
+                      <TableCell>
+                        <Chip
+                          label={ad.placement || "—"}
+                          size="small"
+                          sx={{
+                            bgcolor: alpha("#6C63FF", 0.08),
+                            color: "#6C63FF",
+                            fontSize: "0.7rem",
+                            height: 22,
+                          }}
+                        />
+                      </TableCell>
+
+                      {/* Tags */}
                       <TableCell>
                         <Stack
                           direction="row"
@@ -1227,7 +1231,7 @@ export default function Labels() {
                           flexWrap="wrap"
                           useFlexGap
                         >
-                          {(Array.isArray(l.tags) ? l.tags : [])
+                          {(Array.isArray(ad.tags) ? ad.tags : [])
                             .slice(0, 3)
                             .map((tag) => (
                               <Chip
@@ -1242,9 +1246,10 @@ export default function Labels() {
                                 }}
                               />
                             ))}
-                          {(Array.isArray(l.tags) ? l.tags : []).length > 3 && (
+                          {(Array.isArray(ad.tags) ? ad.tags : []).length >
+                            3 && (
                             <Chip
-                              label={`+${l.tags.length - 3}`}
+                              label={`+${ad.tags.length - 3}`}
                               size="small"
                               sx={{
                                 bgcolor: "#F3F4F6",
@@ -1257,10 +1262,11 @@ export default function Labels() {
                         </Stack>
                       </TableCell>
 
+                      {/* Badge */}
                       <TableCell>
-                        {l.badge_text ? (
+                        {ad.badge_text ? (
                           <Chip
-                            label={l.badge_text}
+                            label={ad.badge_text}
                             size="small"
                             sx={{
                               bgcolor: alpha("#F59E0B", 0.1),
@@ -1274,31 +1280,9 @@ export default function Labels() {
                         )}
                       </TableCell>
 
+                      {/* Featured */}
                       <TableCell>
-                        {l.age_rating ? (
-                          <Box
-                            sx={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              width: 36,
-                              height: 24,
-                              borderRadius: 1.5,
-                              border: "1.5px solid #E5E7EB",
-                              bgcolor: "#F9FAFB",
-                            }}
-                          >
-                            <Typography variant="caption" fontWeight={700}>
-                              {l.age_rating}
-                            </Typography>
-                          </Box>
-                        ) : (
-                          <Typography color="text.disabled">—</Typography>
-                        )}
-                      </TableCell>
-
-                      <TableCell>
-                        {l.is_featured ? (
+                        {ad.is_featured ? (
                           <Chip
                             icon={
                               <StarRoundedIcon
@@ -1320,14 +1304,16 @@ export default function Labels() {
                         )}
                       </TableCell>
 
+                      {/* Status toggle */}
                       <TableCell>
                         <Switch
-                          checked={l.is_active}
-                          onChange={() => handleToggle(l)}
+                          checked={ad.is_active}
+                          onChange={() => handleToggle(ad)}
                           size="small"
                         />
                       </TableCell>
 
+                      {/* Actions */}
                       <TableCell align="right">
                         <Stack
                           direction="row"
@@ -1339,7 +1325,7 @@ export default function Labels() {
                               tip: "View",
                               icon: <VisibilityIcon fontSize="small" />,
                               action: () => {
-                                setTarget(l);
+                                setTarget(ad);
                                 setModal("view");
                               },
                               color: "default",
@@ -1348,7 +1334,7 @@ export default function Labels() {
                               tip: "Edit",
                               icon: <EditIcon fontSize="small" />,
                               action: () => {
-                                setTarget(l);
+                                setTarget(ad);
                                 setModal("edit");
                               },
                               color: "default",
@@ -1357,7 +1343,7 @@ export default function Labels() {
                               tip: "Delete",
                               icon: <DeleteIcon fontSize="small" />,
                               action: () => {
-                                setTarget(l);
+                                setTarget(ad);
                                 setModal("delete");
                               },
                               color: "error",
@@ -1413,9 +1399,6 @@ export default function Labels() {
               justifyContent: "space-between",
               padding: "5px",
             }}
-            // direction="row"
-            // justifyContent="space-between"
-            // alignItems="center"
             px={3}
             py={1.8}
           >
@@ -1455,7 +1438,7 @@ export default function Labels() {
           </Stack>
         </Card>
 
-        {/* ── Create Dialog ──────────────────────────────────────── */}
+        {/* ── Create Dialog ─────────────────────────────────────── */}
         <Dialog
           open={modal === "create"}
           onClose={closeModal}
@@ -1483,7 +1466,7 @@ export default function Labels() {
                 >
                   <AddIcon sx={{ color: "white", fontSize: 18 }} />
                 </Box>
-                <Typography variant="h6">Create Label</Typography>
+                <Typography variant="h6">Create Advertisement</Typography>
               </Stack>
               <IconButton onClick={closeModal} size="small">
                 <CloseIcon fontSize="small" />
@@ -1492,11 +1475,14 @@ export default function Labels() {
           </DialogTitle>
           <Divider sx={{ mt: 2 }} />
           <DialogContent sx={{ pt: 3 }}>
-            <LabelForm onSubmit={handleCreate} loading={actionLoading} />
+            <AdvertisementForm
+              onSubmit={handleCreate}
+              loading={actionLoading}
+            />
           </DialogContent>
         </Dialog>
 
-        {/* ── Edit Dialog ────────────────────────────────────────── */}
+        {/* ── Edit Dialog ───────────────────────────────────────── */}
         <Dialog
           open={modal === "edit"}
           onClose={closeModal}
@@ -1524,7 +1510,7 @@ export default function Labels() {
                 >
                   <EditIcon sx={{ color: "white", fontSize: 18 }} />
                 </Box>
-                <Typography variant="h6">Edit Label</Typography>
+                <Typography variant="h6">Edit Advertisement</Typography>
               </Stack>
               <IconButton onClick={closeModal} size="small">
                 <CloseIcon fontSize="small" />
@@ -1533,10 +1519,16 @@ export default function Labels() {
           </DialogTitle>
           <Divider sx={{ mt: 2 }} />
           <DialogContent sx={{ pt: 3 }}>
-            <LabelForm
+            <AdvertisementForm
               initial={{
                 ...target,
                 tags: Array.isArray(target?.tags) ? target.tags.join(", ") : "",
+                starts_at: target?.starts_at
+                  ? new Date(target.starts_at).toISOString().slice(0, 16)
+                  : "",
+                ends_at: target?.ends_at
+                  ? new Date(target.ends_at).toISOString().slice(0, 16)
+                  : "",
               }}
               onSubmit={handleUpdate}
               loading={actionLoading}
@@ -1544,7 +1536,7 @@ export default function Labels() {
           </DialogContent>
         </Dialog>
 
-        {/* ── View Dialog ────────────────────────────────────────── */}
+        {/* ── View Dialog ───────────────────────────────────────── */}
         <Dialog
           open={modal === "view"}
           onClose={closeModal}
@@ -1557,7 +1549,7 @@ export default function Labels() {
               justifyContent="space-between"
               alignItems="center"
             >
-              <Typography variant="h6">Label Details</Typography>
+              <Typography variant="h6">Advertisement Details</Typography>
               <IconButton onClick={closeModal} size="small">
                 <CloseIcon fontSize="small" />
               </IconButton>
@@ -1565,11 +1557,11 @@ export default function Labels() {
           </DialogTitle>
           <Divider sx={{ mt: 2 }} />
           <DialogContent sx={{ pt: 3 }}>
-            <LabelViewModal label={target} />
+            <AdvertisementViewModal ad={target} />
           </DialogContent>
         </Dialog>
 
-        {/* ── Delete Dialog ──────────────────────────────────────── */}
+        {/* ── Delete Dialog ─────────────────────────────────────── */}
         <Dialog
           open={modal === "delete"}
           onClose={closeModal}
@@ -1582,7 +1574,7 @@ export default function Labels() {
               justifyContent="space-between"
               alignItems="center"
             >
-              <Typography variant="h6">Delete Label</Typography>
+              <Typography variant="h6">Delete Advertisement</Typography>
               <IconButton onClick={closeModal} size="small">
                 <CloseIcon fontSize="small" />
               </IconButton>
@@ -1609,10 +1601,10 @@ export default function Labels() {
                     bgcolor: target?.bg_color || "#6C63FF",
                   }}
                 >
-                  {target?.name?.[0]}
+                  {target?.title?.[0]}
                 </Avatar>
                 <Box>
-                  <Typography fontWeight={700}>{target?.name}</Typography>
+                  <Typography fontWeight={700}>{target?.title}</Typography>
                   {target?.tagline && (
                     <Typography variant="body2" color="text.secondary">
                       {target.tagline}
@@ -1622,8 +1614,8 @@ export default function Labels() {
               </Stack>
             </Box>
             <Typography variant="body2" color="text.secondary" mt={1.5}>
-              This action cannot be undone. All data associated with this label
-              will be permanently removed.
+              This action cannot be undone. All data associated with this
+              advertisement will be permanently removed.
             </Typography>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
@@ -1652,7 +1644,7 @@ export default function Labels() {
               {actionLoading ? (
                 <CircularProgress size={20} color="inherit" />
               ) : (
-                "Delete Label"
+                "Delete Advertisement"
               )}
             </Button>
           </DialogActions>

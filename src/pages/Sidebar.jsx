@@ -448,6 +448,12 @@ const NAV = [
     path: "/labels",
     roles: ["super_admin", "admin", "user", "vendor_organizer"],
   },
+  {
+    label: "Advertisements",
+    icon: <MeetingRoomIcon />,
+    path: "/Advertisements",
+    roles: ["super_admin", "admin", "user", "vendor_organizer"],
+  },
 ];
 
 export default function Sidebar() {
