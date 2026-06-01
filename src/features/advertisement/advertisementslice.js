@@ -7,7 +7,7 @@ import {
   updateAdvertisement,
   deleteAdvertisement,
   toggleAdvertisementStatus,
-} from "./advertisementThunks";
+} from "./advertisementthunks.js";
 
 const initialState = {
   items: [],
