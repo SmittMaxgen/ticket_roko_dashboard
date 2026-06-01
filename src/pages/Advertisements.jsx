@@ -58,7 +58,7 @@ import {
   updateAdvertisement,
   deleteAdvertisement,
   toggleAdvertisementStatus,
-} from "../features/advertisement/advertisementthunks";
+} from "../features/advertisement/advertisementThunks";
 
 import {
   selectAllAdvertisements,
