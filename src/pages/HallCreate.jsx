@@ -1445,54 +1445,107 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
       const pts = seatsAlongLine(startPos.x, startPos.y, pos.x, pos.y);
 
       if (pts.length > 0) {
-        setPlacedRows((prev) => {
-          // Calculate correct next row letter
-          let dbRowCount = 0;
-          if (is_edit && hall?.seats) {
-            const letters = hall.seats
-              .map((s) => s.seat_name?.match(/^([A-Z])/))
-              .filter(Boolean)
-              .map((m) => m[1].charCodeAt(0) - 64);
+        // Build a map of existing occupied points (x_y)
+        const existing = {};
 
-            dbRowCount = letters.length > 0 ? Math.max(...letters) : 0;
-          }
+        // seats from API when editing
+        if (is_edit && hall?.seats) {
+          hall.seats
+            .filter((s) => !s.is_space)
+            .forEach((s) => {
+              const key = `${snap(Number(s.x_pos))}_${snap(Number(s.y_pos))}`;
+              existing[key] = true;
+            });
+        }
 
-          const rowIndex = prev.length + dbRowCount;
-          const rowLetter = String.fromCharCode(65 + rowIndex);
-
-          const ptsWithNames = pts.map((p, i) => ({
-            ...p,
-            seat_name: `${rowLetter}${i + 1}`,
-          }));
-
-          return [
-            ...prev,
-            {
-              id: `r_${Date.now()}`,
-              pts: ptsWithNames,
-              color: sec.color,
-              sectionId: sec.id,
-              shape: seatShape,
-              rowLetter,
-            },
-          ];
+        // placed single seats
+        placedSeats.forEach((s) => {
+          const key = `${s.x}_${s.y}`;
+          existing[key] = true;
         });
+
+        // placed rows pts
+        placedRows.forEach((r) =>
+          r.pts.forEach((p) => (existing[`${p.x}_${p.y}`] = true)),
+        );
+
+        // if any of the new pts collide, show validation error and abort
+        const collides = pts.some((p) => existing[`${p.x}_${p.y}`]);
+        if (collides) {
+          enqueueSnackbar("Cannot override existing seat", {
+            variant: "error",
+          });
+        } else {
+          setPlacedRows((prev) => {
+            // Calculate correct next row letter
+            let dbRowCount = 0;
+            if (is_edit && hall?.seats) {
+              const letters = hall.seats
+                .map((s) => s.seat_name?.match(/^([A-Z])/))
+                .filter(Boolean)
+                .map((m) => m[1].charCodeAt(0) - 64);
+
+              dbRowCount = letters.length > 0 ? Math.max(...letters) : 0;
+            }
+
+            const rowIndex = prev.length + dbRowCount;
+            const rowLetter = String.fromCharCode(65 + rowIndex);
+
+            const ptsWithNames = pts.map((p, i) => ({
+              ...p,
+              seat_name: `${rowLetter}${i + 1}`,
+            }));
+
+            return [
+              ...prev,
+              {
+                id: `r_${Date.now()}`,
+                pts: ptsWithNames,
+                color: sec.color,
+                sectionId: sec.id,
+                shape: seatShape,
+                rowLetter,
+              },
+            ];
+          });
+        }
       }
     }
 
     if (tool === "seat") {
-      setPlacedSeats((prev) => [
-        ...prev,
-        {
-          id: `s_${Date.now()}`,
-          x: pos.x,
-          y: pos.y,
-          color: sec.color,
-          sectionId: sec.id,
-          shape: seatShape,
-          seat_name: `S${prev.length + 1}`,
-        },
-      ]);
+      // Validation: do not allow adding a seat on top of existing
+      const key = `${pos.x}_${pos.y}`;
+      const existing = {};
+      if (is_edit && hall?.seats) {
+        hall.seats
+          .filter((s) => !s.is_space)
+          .forEach(
+            (s) =>
+              (existing[`${snap(Number(s.x_pos))}_${snap(Number(s.y_pos))}`] =
+                true),
+          );
+      }
+      placedSeats.forEach((s) => (existing[`${s.x}_${s.y}`] = true));
+      placedRows.forEach((r) =>
+        r.pts.forEach((p) => (existing[`${p.x}_${p.y}`] = true)),
+      );
+
+      if (existing[key]) {
+        enqueueSnackbar("Cannot override existing seat", { variant: "error" });
+      } else {
+        setPlacedSeats((prev) => [
+          ...prev,
+          {
+            id: `s_${Date.now()}`,
+            x: pos.x,
+            y: pos.y,
+            color: sec.color,
+            sectionId: sec.id,
+            shape: seatShape,
+            seat_name: `S${prev.length + 1}`,
+          },
+        ]);
+      }
     }
 
     setDrawing(false);
