@@ -47,6 +47,7 @@ import {
   fetchDrawToolsThunk,
   fetchSeatShapesThunk,
   createSectionThunk,
+  updateSectionThunk,
   deleteSectionThunk,
   updateSeatLabelThunk,
 } from "../features/options/optionsThunks";
@@ -1145,6 +1146,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
     seat_type: "standard",
   });
   const [sectionError, setSectionError] = useState("");
+  const [editingSection, setEditingSection] = useState(null);
 
   const resetSectionForm = () => {
     setSectionForm({
@@ -1155,6 +1157,62 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
       seat_type: "standard",
     });
     setSectionError("");
+    setEditingSection(null);
+  };
+
+  const openSectionDialog = (section = null) => {
+    setSectionError("");
+    if (section) {
+      setSectionForm({
+        id_key: section.id_key || section.id,
+        label: section.label || section.id,
+        color: section.color || "#818cf8",
+        price: section.price || "",
+        seat_type: section.seat_type || "standard",
+      });
+      setEditingSection(section);
+    } else {
+      resetSectionForm();
+    }
+    setSectionDialogOpen(true);
+  };
+
+  const handleDeleteSection = async (section) => {
+    const confirmed = window.confirm(
+      `Delete section "${section.label || section.id_key || section.id}"?`,
+    );
+    if (!confirmed) return;
+    await dispatch(deleteSectionThunk(section.id_key || section.id));
+    if (activeSec === (section.id_key || section.id)) {
+      setActiveSec(DRAW_SECTIONS[0]?.id || "");
+    }
+  };
+
+  const handleSaveSection = () => {
+    const id_key = sectionForm.id_key?.trim().toLowerCase();
+    if (!id_key) {
+      setSectionError("Section ID is required");
+      return;
+    }
+
+    const label = sectionForm.label?.trim() || id_key;
+    const price = Number(sectionForm.price) || 0;
+    const seat_type = sectionForm.seat_type || "standard";
+    const payload = {
+      id_key,
+      label,
+      color: sectionForm.color || "#818cf8",
+      price,
+      seat_type,
+    };
+
+    if (editingSection) {
+      dispatch(updateSectionThunk(payload));
+    } else {
+      dispatch(createSectionThunk(payload));
+    }
+    setSectionDialogOpen(false);
+    if (!editingSection) resetSectionForm();
   };
 
   const snap = (n) => Math.round(n / GRID) * GRID;
@@ -1745,32 +1803,73 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
           }}
         >
           {DRAW_SECTIONS.map((sec) => (
-            <button
+            <div
               key={sec.id}
-              onClick={() => setActiveSec(sec.id)}
               style={{
-                width: "100%",
-                padding: 10,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 8,
                 marginBottom: 6,
+                padding: "6px 8px",
                 borderRadius: 8,
                 border:
                   activeSec === sec.id
                     ? `1px solid ${sec.color}`
                     : "1px solid #1e1e2a",
                 background: activeSec === sec.id ? sec.color + "20" : "#0d0d14",
-                color: "#fff",
               }}
             >
-              {sec.label}
-            </button>
+              <button
+                onClick={() => setActiveSec(sec.id)}
+                style={{
+                  flex: 1,
+                  border: "none",
+                  background: "transparent",
+                  color: "#fff",
+                  textAlign: "left",
+                  padding: 0,
+                  cursor: "pointer",
+                  fontSize: 14,
+                }}
+              >
+                {sec.label}
+              </button>
+              <div style={{ display: "flex", gap: 6 }}>
+                <button
+                  onClick={() => openSectionDialog(sec)}
+                  style={{
+                    padding: "6px 8px",
+                    borderRadius: 8,
+                    border: "1px solid #334155",
+                    background: "#0b1220",
+                    color: "#94A3B8",
+                    cursor: "pointer",
+                    fontSize: 12,
+                  }}
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDeleteSection(sec)}
+                  style={{
+                    padding: "6px 8px",
+                    borderRadius: 8,
+                    border: "1px solid #4b223d",
+                    background: "#220b12",
+                    color: "#fca5a5",
+                    cursor: "pointer",
+                    fontSize: 12,
+                  }}
+                >
+                  Del
+                </button>
+              </div>
+            </div>
           ))}
 
-          {/* <hr style={{ margin: "14px 0", borderColor: "#1e1e2a" }} /> */}
           <button
-            onClick={() => {
-              resetSectionForm();
-              setSectionDialogOpen(true);
-            }}
+            onClick={() => openSectionDialog()}
             style={{
               width: "100%",
               padding: "10px 12px",
@@ -1786,6 +1885,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
           >
             + Add Section
           </button>
+
           <Dialog
             open={sectionDialogOpen}
             onClose={() => setSectionDialogOpen(false)}
@@ -1802,7 +1902,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
             <DialogTitle
               sx={{ color: "#F8FAFC", fontWeight: 700, fontSize: 16 }}
             >
-              Add Section
+              {editingSection ? "Edit Section" : "Add Section"}
             </DialogTitle>
             <DialogContent sx={{ pt: 1, pb: 2, background: "#0c1220" }}>
               {sectionError && (
@@ -1826,6 +1926,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                 onChange={(e) =>
                   setSectionForm({ ...sectionForm, id_key: e.target.value })
                 }
+                InputProps={{ readOnly: Boolean(editingSection) }}
                 sx={{
                   mb: 2,
                   "& .MuiOutlinedInput-root fieldset": {
@@ -1946,33 +2047,14 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
               </Button>
               <Button
                 variant="contained"
-                onClick={() => {
-                  const id_key = sectionForm.id_key?.trim().toLowerCase();
-                  if (!id_key) {
-                    setSectionError("Section ID is required");
-                    return;
-                  }
-                  const label = sectionForm.label?.trim() || id_key;
-                  const price = Number(sectionForm.price) || 0;
-                  const seat_type = sectionForm.seat_type || "standard";
-                  dispatch(
-                    createSectionThunk({
-                      id_key,
-                      label,
-                      color: sectionForm.color || "#818cf8",
-                      price,
-                      seat_type,
-                    }),
-                  );
-                  setSectionDialogOpen(false);
-                }}
+                onClick={handleSaveSection}
                 sx={{
                   background: "linear-gradient(135deg,#2563EB,#1D4ED8)",
                   "&:hover": { background: "#1D4ED8" },
                   minWidth: 92,
                 }}
               >
-                Add
+                {editingSection ? "Save" : "Add"}
               </Button>
             </DialogActions>
           </Dialog>

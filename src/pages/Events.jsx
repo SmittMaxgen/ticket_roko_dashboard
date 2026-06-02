@@ -88,6 +88,7 @@ const SECTION_LABELS = [
 ];
 
 const EMPTY_FORM = {
+  organizer_id: "",
   hall_id: "",
   category_id: "",
   title: "",
@@ -227,6 +228,7 @@ export default function Events({ user }) {
   const [ticketCheckerUsers, setTicketCheckerUsers] = useState([]);
   const [selectedTicketCheckerUserId, setSelectedTicketCheckerUserId] =
     useState("");
+  const [vendorOrganizers, setVendorOrganizers] = useState([]);
   const [assignLoading, setAssignLoading] = useState(false);
 
   const hallList = useSelector(selectHallList);
@@ -239,7 +241,13 @@ export default function Events({ user }) {
       search,
     };
 
-    if (tab !== "all") params.status = tab;
+    if (tab !== "all") {
+      params.period = tab;
+    }
+
+    if (user?.role === "vendor_organizer") {
+      params.organizer_id = user.id;
+    }
 
     dispatch(fetchEventsThunk(params));
   };
@@ -272,12 +280,35 @@ export default function Events({ user }) {
     }
   };
 
+  const fetchVendorOrganizers = async () => {
+    if (vendorOrganizers.length) return;
+
+    try {
+      const { data } = await api.get("/users", {
+        params: {
+          role: "vendor_organizer",
+          limit: 200,
+        },
+      });
+      setVendorOrganizers(data.data || []);
+    } catch (err) {
+      enqueueSnackbar(
+        err.response?.data?.message || err.message || "Failed to load vendors",
+        { variant: "error" },
+      );
+    }
+  };
+
   // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => {
     if (assignDialogOpen) {
       fetchTicketCheckerUsers();
     }
   }, [assignDialogOpen]);
+
+  useEffect(() => {
+    fetchVendorOrganizers();
+  }, []);
 
   const openAssignDialog = (event) => {
     setSelectedEventForAssignment(event);
@@ -362,6 +393,7 @@ export default function Events({ user }) {
 
     const formData = new FormData();
 
+    formData.append("organizer_id", form.organizer_id);
     formData.append("hall_id", form.hall_id);
     formData.append("category_id", form.category_id);
     formData.append("title", form.title);
@@ -482,6 +514,28 @@ export default function Events({ user }) {
             }}
           >
             {row.organizer_name || "Organizer"} • {row.city || "—"}
+          </Typography>
+        </Box>
+      ),
+    },
+    {
+      field: "event_date",
+      headerName: "Date",
+      width: 170,
+      renderCell: ({ row }) => (
+        <Box>
+          <Typography sx={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>
+            {row.event_date
+              ? new Date(row.event_date).toLocaleDateString("en-IN", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })
+              : "—"}
+          </Typography>
+          <Typography sx={{ color: "#64748b", fontSize: 11 }}>
+            {(row.start_time || "") +
+              (row.end_time ? ` - ${row.end_time}` : "")}
           </Typography>
         </Box>
       ),
@@ -743,7 +797,7 @@ export default function Events({ user }) {
                   language: row.language || "English",
                   event_type: row.event_type || "Other",
                   status: row.status || "draft",
-                  banner: null,
+                  organizer_id: row.organizer?.id || row.organizer_id || "",
                   banner_url: row.banner_url || "",
                   banner_preview: "",
                   section_prices: spMap,
@@ -945,30 +999,32 @@ export default function Events({ user }) {
 
             <Tabs
               value={tab}
-              onChange={(_, v) => setTab(v)}
+              onChange={(_, value) => setTab(value)}
               sx={{
                 "& .MuiTab-root": {
                   color: "#64748b",
-                  textTransform: "capitalize",
+                  textTransform: "none",
                 },
                 "& .Mui-selected": {
                   color: "#3b82f6 !important",
                 },
               }}
             >
-              {[
-                "all",
-                "pending_approval",
-                "approved",
-                "rejected",
-                "cancelled",
-              ].map((x) => (
-                <Tab key={x} value={x} label={x.replace("_", " ")} />
-              ))}
+              <Tab value="all" label="All" />
+              <Tab value="upcoming" label="Upcoming Events" />
+              <Tab value="past" label="Past Events" />
             </Tabs>
           </Stack>
 
           <Divider sx={{ borderColor: "#1e293b", mb: 2 }} />
+
+          <Typography sx={{ color: "#94a3b8", fontWeight: 600, mb: 2 }}>
+            {tab === "all"
+              ? "Showing all events"
+              : tab === "upcoming"
+                ? "Showing upcoming events"
+                : "Showing past events"}
+          </Typography>
 
           <DataGrid
             style={{ width: "100%" }}
@@ -1057,6 +1113,19 @@ export default function Events({ user }) {
                 setForm({ ...form, category_id: e.target.value })
               }
               required
+            />
+
+            <CommonDropDown
+              label="Assign Event Organizer"
+              options={vendorOrganizers.map((vendor) => ({
+                id: vendor.id,
+                name: vendor.name || vendor.email || `Vendor ${vendor.id}`,
+              }))}
+              value={form.organizer_id}
+              onChange={(e) =>
+                setForm({ ...form, organizer_id: e.target.value })
+              }
+              required={false}
             />
 
             <TextField

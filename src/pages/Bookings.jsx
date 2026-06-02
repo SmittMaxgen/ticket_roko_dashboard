@@ -622,6 +622,7 @@ import {
   Button,
   Divider,
   Grid,
+  MenuItem,
 } from "@mui/material";
 
 import { DataGrid } from "@mui/x-data-grid";
@@ -636,6 +637,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { useSearchParams } from "react-router-dom";
 
 import { useSnackbar } from "notistack";
+
+import { fetchEventsThunk } from "../features/events/eventThunks";
+import { selectEventList } from "../features/events/eventSelectors";
 
 /* HALL BOOKING THUNKS */
 import {
@@ -691,7 +695,7 @@ export default function Bookings({ myPage = false, userId = null }) {
   const { enqueueSnackbar } = useSnackbar();
 
   const user = useSelector((state) => state.auth.user);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   /* BOOKING TYPE */
   const [bookingType, setBookingType] = useState("hall");
@@ -705,6 +709,7 @@ export default function Bookings({ myPage = false, userId = null }) {
   const eventId = searchParams.get("event_id");
   const partyPlotId = searchParams.get("party_plot_id");
   const queryBookingType = searchParams.get("bookingType");
+  const [selectedEventId, setSelectedEventId] = useState(eventId || "all");
 
   useEffect(() => {
     if (queryBookingType === "hall" || queryBookingType === "party_plot") {
@@ -715,6 +720,7 @@ export default function Bookings({ myPage = false, userId = null }) {
 
     if (eventId) {
       setBookingType("hall");
+      setSelectedEventId(eventId);
       setPage(0);
       return;
     }
@@ -724,6 +730,18 @@ export default function Bookings({ myPage = false, userId = null }) {
       setPage(0);
     }
   }, [eventId, partyPlotId, queryBookingType]);
+
+  useEffect(() => {
+    if (eventId) {
+      setSelectedEventId(eventId);
+    } else if (!selectedEventId) {
+      setSelectedEventId("all");
+    }
+  }, [eventId]);
+
+  useEffect(() => {
+    dispatch(fetchEventsThunk({ page: 1, limit: 100 }));
+  }, [dispatch]);
 
   /* =========================
         HALL BOOKING STATE
@@ -736,6 +754,8 @@ export default function Bookings({ myPage = false, userId = null }) {
   const hallDetail = useSelector(selectCurrentBooking);
 
   const hallLoading = useSelector(selectBookingLoading);
+
+  const eventList = useSelector(selectEventList);
 
   /* =========================
       PARTY PLOT STATE
@@ -776,8 +796,12 @@ export default function Bookings({ myPage = false, userId = null }) {
       params.status = tab;
     }
 
-    if (bookingType === "hall" && eventId) {
-      params.event_id = eventId;
+    if (
+      bookingType === "hall" &&
+      selectedEventId &&
+      selectedEventId !== "all"
+    ) {
+      params.event_id = selectedEventId;
     }
 
     if (bookingType === "party_plot" && partyPlotId) {
@@ -803,7 +827,17 @@ export default function Bookings({ myPage = false, userId = null }) {
     if (bookingType === "party_plot") {
       dispatch(fetchPartyPlotBookingsThunk(params));
     }
-  }, [dispatch, page, search, tab, bookingType, myPage, user]);
+  }, [
+    dispatch,
+    page,
+    search,
+    tab,
+    bookingType,
+    myPage,
+    user,
+    selectedEventId,
+    partyPlotId,
+  ]);
 
   useEffect(() => {
     loadBookings();
@@ -1111,6 +1145,40 @@ export default function Bookings({ myPage = false, userId = null }) {
               <Tab value="party_plot" label="Party Plot Bookings" />
             </Tabs>
           </Box>
+
+          {/* EVENT FILTER */}
+
+          {bookingType === "hall" && (
+            <TextField
+              fullWidth
+              select
+              size="small"
+              label="Filter by event"
+              value={selectedEventId}
+              onChange={(e) => {
+                const nextEventId = e.target.value;
+                setSelectedEventId(nextEventId);
+                setPage(0);
+
+                const nextParams = new URLSearchParams(searchParams);
+                if (nextEventId === "all") {
+                  nextParams.delete("event_id");
+                } else {
+                  nextParams.set("event_id", nextEventId);
+                }
+                nextParams.set("bookingType", "hall");
+                setSearchParams(nextParams);
+              }}
+              sx={{ mb: 2 }}
+            >
+              <MenuItem value="all">All Events</MenuItem>
+              {(eventList || []).map((event) => (
+                <MenuItem key={event.id} value={String(event.id)}>
+                  {event.title}
+                </MenuItem>
+              ))}
+            </TextField>
+          )}
 
           {/* SEARCH */}
 
