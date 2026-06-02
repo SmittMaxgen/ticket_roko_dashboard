@@ -1134,6 +1134,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [panning, setPanning] = useState(false);
   const [panStart, setPanStart] = useState(null);
+  const [persistentRow, setPersistentRow] = useState("");
 
   const [sectionDialogOpen, setSectionDialogOpen] = useState(false);
   const [sectionForm, setSectionForm] = useState({
@@ -1477,23 +1478,11 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
           });
         } else {
           setPlacedRows((prev) => {
-            // Calculate correct next row letter
-            let dbRowCount = 0;
-            if (is_edit && hall?.seats) {
-              const letters = hall.seats
-                .map((s) => s.seat_name?.match(/^([A-Z])/))
-                .filter(Boolean)
-                .map((m) => m[1].charCodeAt(0) - 64);
-
-              dbRowCount = letters.length > 0 ? Math.max(...letters) : 0;
-            }
-
-            const rowIndex = prev.length + dbRowCount;
-            const rowLetter = String.fromCharCode(65 + rowIndex);
+            const { rowLetter, startIndex } = getNewRowMeta();
 
             const ptsWithNames = pts.map((p, i) => ({
               ...p,
-              seat_name: `${rowLetter}${i + 1}`,
+              seat_name: `${rowLetter}${startIndex + i}`,
             }));
 
             return [
@@ -1655,6 +1644,65 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
     placedRows?.reduce((a, r) => a + r.pts.length, 0) + placedSeats?.length;
 
   const secColor = getSec().color;
+
+  const getExistingRowCodes = () => {
+    const codes = new Set();
+
+    if (is_edit && hall?.seats) {
+      hall.seats
+        .map((s) => s.seat_name?.match(/^([A-Z])/))
+        .filter(Boolean)
+        .forEach((m) => codes.add(m[1].charCodeAt(0) - 64));
+    }
+
+    placedRows.forEach((row) => {
+      if (row.rowLetter) {
+        codes.add(row.rowLetter.charCodeAt(0) - 64);
+      } else {
+        row.pts.forEach((p) => {
+          const match = String(p.seat_name || "").match(/^([A-Z])/);
+          if (match) codes.add(match[1].charCodeAt(0) - 64);
+        });
+      }
+    });
+
+    return Array.from(codes.values());
+  };
+
+  const getMaxExistingRowCode = () => {
+    const codes = getExistingRowCodes();
+    return codes.length ? Math.max(...codes) : 0;
+  };
+
+  const getNewRowMeta = () => {
+    const rowLetter =
+      persistentRow && persistentRow.trim()
+        ? persistentRow.trim().toUpperCase().slice(0, 1)
+        : String.fromCharCode(65 + getMaxExistingRowCode());
+
+    let existingMax = 0;
+    if (is_edit && hall?.seats) {
+      hall.seats
+        .filter((s) => !s.is_space && s.seat_name?.startsWith(rowLetter))
+        .forEach((s) => {
+          const m = String(s.seat_name || "").match(/(\d+)$/);
+          if (m) existingMax = Math.max(existingMax, Number(m[1]));
+        });
+    }
+
+    placedRows.forEach((r) => {
+      if (r.rowLetter === rowLetter) {
+        r.pts.forEach((p) => {
+          const m = String(p.seat_name || "").match(/(\d+)$/);
+          if (m) existingMax = Math.max(existingMax, Number(m[1]));
+        });
+      }
+    });
+
+    return { rowLetter, startIndex: existingMax + 1 };
+  };
+
+  const nextRowChar = getNewRowMeta().rowLetter;
 
   // ---------------------------------------------------
   // LOADING
@@ -1987,23 +2035,48 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
               Section:{" "}
               <strong style={{ color: secColor }}>{getSec().label}</strong>
             </div>
-            <div>
-              Next Row:{" "}
-              <strong style={{ color: "#facc15" }}>
-                {String.fromCharCode(
-                  65 +
-                    placedRows.length +
-                    (is_edit && hall?.seats
-                      ? Math.max(
-                          0,
-                          ...hall.seats.map((s) => {
-                            const match = s.seat_name?.match(/^([A-Z])/);
-                            return match ? match[1].charCodeAt(0) - 64 : 0;
-                          }),
-                        )
-                      : 0),
-                )}
-              </strong>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div>
+                Next Row:{" "}
+                <strong style={{ color: "#facc15" }}>{nextRowChar}</strong>
+              </div>
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <input
+                  aria-label="persistent-row"
+                  placeholder="Persistent row (A)"
+                  value={persistentRow}
+                  onChange={(ev) =>
+                    setPersistentRow(
+                      ev.target.value
+                        .replace(/[^A-Za-z]/g, "")
+                        .toUpperCase()
+                        .slice(0, 1),
+                    )
+                  }
+                  style={{
+                    width: 52,
+                    padding: 6,
+                    borderRadius: 6,
+                    border: "1px solid #233046",
+                    background: "#071022",
+                    color: "#fff",
+                  }}
+                />
+                <button
+                  onClick={() => setPersistentRow("")}
+                  title="Clear persistent row"
+                  style={{
+                    padding: "6px 8px",
+                    borderRadius: 6,
+                    background: "#0b1220",
+                    color: "#94A3B8",
+                    border: "1px solid #233046",
+                    cursor: "pointer",
+                  }}
+                >
+                  Clear
+                </button>
+              </div>
             </div>
           </div>
 
@@ -2233,20 +2306,10 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                     fontWeight="600"
                     pointerEvents="none"
                   >
-                    {String.fromCharCode(
-                      65 +
-                        placedRows.length +
-                        (is_edit && hall?.seats
-                          ? Math.max(
-                              0,
-                              ...hall.seats.map((s) => {
-                                const m = s.seat_name?.match(/^([A-Z])/);
-                                return m ? m[1].charCodeAt(0) - 64 : 0;
-                              }),
-                            )
-                          : 0),
-                    )}
-                    {i + 1}
+                    {(() => {
+                      const { rowLetter, startIndex } = getNewRowMeta();
+                      return `${rowLetter}${startIndex + i}`;
+                    })()}
                   </text>
                 </g>
               ))}
