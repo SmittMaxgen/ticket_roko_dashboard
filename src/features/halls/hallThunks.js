@@ -278,7 +278,11 @@ export const fetchHallByIdThunk = createAsyncThunk(
     try {
       const params = event_id ? { event_id } : {};
       const { data } = await api.get(`/halls/${id}`, { params });
-      return data.data; // { id, name, seats:[], rows:{} }
+      const hall = data.data;
+      return {
+        ...hall,
+        seats: Array.isArray(hall?.seats) ? hall.seats : [],
+      };
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || "Hall not found");
     }
@@ -362,7 +366,7 @@ export const fetchBookingLayoutThunk = createAsyncThunk(
       // Return in same shape as fetchHallByIdThunk so BookingView works unchanged
       return {
         ...layout.hall,
-        seats: layout.seats,
+        seats: Array.isArray(layout.seats) ? layout.seats : [],
         rows,
       };
     } catch (err) {
