@@ -279,6 +279,7 @@ export const fetchHallByIdThunk = createAsyncThunk(
       const params = event_id ? { event_id } : {};
       const { data } = await api.get(`/halls/${id}`, { params });
       const hall = data.data;
+      return { ...hall, seats: Array.isArray(hall?.seats) ? hall.seats : [] };
       return {
         ...hall,
         seats: Array.isArray(hall?.seats) ? hall.seats : [],
