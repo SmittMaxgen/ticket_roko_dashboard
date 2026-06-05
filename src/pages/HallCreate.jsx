@@ -2553,7 +2553,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                       const { seats = [], updated_count } = result.payload;
 
                       // ── Update placedSeats in UI immediately ──
-                      if (seats.length > 0) {
+                      if (Array.isArray(seats) && seats.length > 0) {
                         setPlacedSeats((prev) =>
                           prev.map((s) => {
                             const updated = Array.isArray(seats)
