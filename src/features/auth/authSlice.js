@@ -41,6 +41,7 @@ const authSlice = createSlice({
       })
       .addCase(loginThunk.fulfilled, (state, action) => {
         state.loading = false;
+        if (!action.payload) return;
         state.user = action.payload.user;
         state.token = action.payload.accessToken;
         localStorage.setItem("token", action.payload.accessToken);
