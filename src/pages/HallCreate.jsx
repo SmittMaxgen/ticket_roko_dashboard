@@ -1107,10 +1107,14 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
   const saving = useSelector(selectHallActionLoading);
   const loading = useSelector(selectHallLoading);
 
-  // Safe defaults
-  const DRAW_SECTIONS = useSelector(selectSections) || [];
-  const DRAW_TOOLS = useSelector(selectDrawTools) || [];
-  const SEAT_SHAPES = useSelector(selectSeatShapes) || [];
+  // Safe defaults (prevents "find is not a function")
+  const rawSections = useSelector(selectSections);
+  const rawTools = useSelector(selectDrawTools);
+  const rawShapes = useSelector(selectSeatShapes);
+
+  const DRAW_SECTIONS = Array.isArray(rawSections) ? rawSections : [];
+  const DRAW_TOOLS = Array.isArray(rawTools) ? rawTools : [];
+  const SEAT_SHAPES = Array.isArray(rawShapes) ? rawShapes : [];
 
   const svgRef = useRef(null);
   const wrapRef = useRef(null);
@@ -1242,7 +1246,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
     fontWeight: 600,
   };
   const getSec = () => {
-    if (DRAW_SECTIONS.length === 0)
+    if (!Array.isArray(DRAW_SECTIONS) || DRAW_SECTIONS.length === 0)
       return { color: "#818cf8", id: "", label: "Default" };
     return DRAW_SECTIONS.find((s) => s.id === activeSec) || DRAW_SECTIONS[0];
   };
@@ -1281,7 +1285,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
   }, [dispatch]);
 
   useEffect(() => {
-    if (DRAW_SECTIONS.length > 0) {
+    if (Array.isArray(DRAW_SECTIONS) && DRAW_SECTIONS.length > 0) {
       setActiveSec((prev) =>
         DRAW_SECTIONS.some((s) => s.id === prev) ? prev : DRAW_SECTIONS[0].id,
       );
@@ -1289,7 +1293,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
   }, [DRAW_SECTIONS]);
 
   useEffect(() => {
-    if (SEAT_SHAPES.length > 0) {
+    if (Array.isArray(SEAT_SHAPES) && SEAT_SHAPES.length > 0) {
       setSeatShape((prev) =>
         SEAT_SHAPES.some((s) => s.id === prev) ? prev : SEAT_SHAPES[0].id,
       );
