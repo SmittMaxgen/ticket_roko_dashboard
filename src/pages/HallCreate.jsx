@@ -915,7 +915,7 @@ function BookingView({ hallId }) {
               Click seats to select
             </div>
           ) : (
-            selectedSeats?.map((seat) => (
+            selectedSeats.map((seat) => (
               <div
                 key={seat.id}
                 style={{
@@ -1542,7 +1542,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
           setPlacedRows((prev) => {
             const { rowLetter, startIndex } = getNewRowMeta();
 
-            const ptsWithNames = pts?.map((p, i) => ({
+            const ptsWithNames = pts.map((p, i) => ({
               ...p,
               seat_name: `${rowLetter}${startIndex + i}`,
             }));
@@ -1712,7 +1712,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
 
     if (is_edit && hall?.seats) {
       hall.seats
-        ?.map((s) => s.seat_name?.match(/^([A-Z])/))
+        .map((s) => s.seat_name?.match(/^([A-Z])/))
         .filter(Boolean)
         .forEach((m) => codes.add(m[1].charCodeAt(0) - 64));
     }
@@ -1806,7 +1806,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
             padding: 14,
           }}
         >
-          {DRAW_SECTIONS?.map((sec) => (
+          {DRAW_SECTIONS.map((sec) => (
             <div
               key={sec.id}
               style={{
@@ -2063,24 +2063,25 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
             </DialogActions>
           </Dialog>
           <hr style={{ margin: "14px 0", borderColor: "#1e1e2a" }} />
-          {DRAW_TOOLS?.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTool(t.id)}
-              style={{
-                width: "100%",
-                padding: 10,
-                marginBottom: 6,
-                borderRadius: 8,
-                border:
-                  tool === t.id ? "1px solid #2563EB" : "1px solid #1e1e2a",
-                background: tool === t.id ? "#1e293b" : "#0d0d14",
-                color: "#fff",
-              }}
-            >
-              {t.label}
-            </button>
-          ))}
+          {DRAW_TOOLS &&
+            DRAW_TOOLS.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setTool(t.id)}
+                style={{
+                  width: "100%",
+                  padding: 10,
+                  marginBottom: 6,
+                  borderRadius: 8,
+                  border:
+                    tool === t.id ? "1px solid #2563EB" : "1px solid #1e1e2a",
+                  background: tool === t.id ? "#1e293b" : "#0d0d14",
+                  color: "#fff",
+                }}
+              >
+                {t.label}
+              </button>
+            ))}
         </div>
 
         {/* CENTER */}
@@ -2249,56 +2250,103 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
               <rect width="6000" height="4000" fill="url(#grid)" />
 
               {/* Existing Rows */}
-              {placedRows?.map((row, rowIndex) =>
-                row.pts.map((pt, i) => {
-                  const name = pt?.seat_name || getSeatName(rowIndex, i);
-                  const seatKey = `${row?.id}_${i}`;
-                  const isSel = selectedSeatIds.includes(seatKey);
+              {placedRows &&
+                placedRows.map((row, rowIndex) =>
+                  row.pts.map((pt, i) => {
+                    const name = pt?.seat_name || getSeatName(rowIndex, i);
+                    const seatKey = `${row?.id}_${i}`;
+                    const isSel = selectedSeatIds.includes(seatKey);
+
+                    return (
+                      <g
+                        key={seatKey}
+                        style={{
+                          cursor: tool === "select" ? "pointer" : "default",
+                        }}
+                        onClick={(e) => {
+                          if (tool !== "select") return;
+                          // ... your existing onClick logic
+                          e.stopPropagation();
+                          if (e.ctrlKey || e.metaKey) {
+                            setSelectedSeatIds((prev) =>
+                              prev.includes(seatKey)
+                                ? prev.filter((x) => x !== seatKey)
+                                : [...prev, seatKey],
+                            );
+                          } else {
+                            const rowKeys = row.pts.map(
+                              (_, idx) => `${row.id}_${idx}`,
+                            );
+                            const allSel = rowKeys.every((k) =>
+                              selectedSeatIds.includes(k),
+                            );
+                            setSelectedSeatIds((prev) =>
+                              allSel
+                                ? prev.filter((k) => !rowKeys.includes(k))
+                                : [...new Set([...prev, ...rowKeys])],
+                            );
+                          }
+                        }}
+                      >
+                        <rect
+                          x={pt.x - SEAT_SIZE / 2}
+                          y={pt.y - SEAT_SIZE / 2}
+                          width={SEAT_SIZE}
+                          height={SEAT_SIZE}
+                          rx={shapeRadius(row.shape)}
+                          fill={isSel ? row.color + "dd" : row.color + "44"}
+                          stroke={isSel ? "#fff" : row.color}
+                          strokeWidth={isSel ? 3 : 1.5}
+                        />
+                        <text
+                          x={pt.x}
+                          y={pt.y + 5}
+                          textAnchor="middle"
+                          fontSize="9"
+                          fill="#fff"
+                          fontWeight="600"
+                          pointerEvents="none"
+                        >
+                          {name}
+                        </text>
+                      </g>
+                    );
+                  }),
+                )}
+
+              {/* Individual Seats */}
+              {placedSeats &&
+                placedSeats.map((seat) => {
+                  const isSel = selectedSeatIds.includes(String(seat.id));
+                  const name = seat.seat_name || "S1";
 
                   return (
-                    <g
-                      key={seatKey}
-                      style={{
-                        cursor: tool === "select" ? "pointer" : "default",
-                      }}
-                      onClick={(e) => {
-                        if (tool !== "select") return;
-                        // ... your existing onClick logic
-                        e.stopPropagation();
-                        if (e.ctrlKey || e.metaKey) {
-                          setSelectedSeatIds((prev) =>
-                            prev.includes(seatKey)
-                              ? prev.filter((x) => x !== seatKey)
-                              : [...prev, seatKey],
-                          );
-                        } else {
-                          const rowKeys = row.pts.map(
-                            (_, idx) => `${row.id}_${idx}`,
-                          );
-                          const allSel = rowKeys.every((k) =>
-                            selectedSeatIds.includes(k),
-                          );
-                          setSelectedSeatIds((prev) =>
-                            allSel
-                              ? prev.filter((k) => !rowKeys.includes(k))
-                              : [...new Set([...prev, ...rowKeys])],
-                          );
-                        }
-                      }}
-                    >
+                    <g key={seat.id}>
                       <rect
-                        x={pt.x - SEAT_SIZE / 2}
-                        y={pt.y - SEAT_SIZE / 2}
+                        x={seat.x - SEAT_SIZE / 2}
+                        y={seat.y - SEAT_SIZE / 2}
                         width={SEAT_SIZE}
                         height={SEAT_SIZE}
-                        rx={shapeRadius(row.shape)}
-                        fill={isSel ? row.color + "dd" : row.color + "44"}
-                        stroke={isSel ? "#fff" : row.color}
+                        rx={shapeRadius(seat.shape)}
+                        fill={isSel ? seat.color + "dd" : seat.color + "44"}
+                        stroke={isSel ? "#fff" : seat.color}
                         strokeWidth={isSel ? 3 : 1.5}
+                        onMouseDown={(e) =>
+                          tool !== "select" && startSeatDrag(seat.id, e)
+                        }
+                        onClick={(e) => {
+                          if (tool !== "select") return;
+                          e.stopPropagation();
+                          setSelectedSeatIds((prev) =>
+                            prev.includes(String(seat.id))
+                              ? prev.filter((x) => x !== String(seat.id))
+                              : [...prev, String(seat.id)],
+                          );
+                        }}
                       />
                       <text
-                        x={pt.x}
-                        y={pt.y + 5}
+                        x={seat.x}
+                        y={seat.y + 5}
                         textAnchor="middle"
                         fontSize="9"
                         fill="#fff"
@@ -2307,98 +2355,54 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                       >
                         {name}
                       </text>
+                      {seat.customLabel && (
+                        <text
+                          x={seat.x}
+                          y={seat.y - 18}
+                          textAnchor="middle"
+                          fontSize="7.5"
+                          fill="#fbbf24"
+                          fontWeight="700"
+                          pointerEvents="none"
+                        >
+                          {seat.customLabel}
+                        </text>
+                      )}
                     </g>
                   );
-                }),
-              )}
+                })}
 
-              {/* Individual Seats */}
-              {placedSeats?.map((seat) => {
-                const isSel = selectedSeatIds.includes(String(seat.id));
-                const name = seat.seat_name || "S1";
-
-                return (
-                  <g key={seat.id}>
+              {/* Live Preview */}
+              {previewPts &&
+                previewPts.map((pt, i) => (
+                  <g key={i}>
                     <rect
-                      x={seat.x - SEAT_SIZE / 2}
-                      y={seat.y - SEAT_SIZE / 2}
+                      x={pt.x - SEAT_SIZE / 2}
+                      y={pt.y - SEAT_SIZE / 2}
                       width={SEAT_SIZE}
                       height={SEAT_SIZE}
-                      rx={shapeRadius(seat.shape)}
-                      fill={isSel ? seat.color + "dd" : seat.color + "44"}
-                      stroke={isSel ? "#fff" : seat.color}
-                      strokeWidth={isSel ? 3 : 1.5}
-                      onMouseDown={(e) =>
-                        tool !== "select" && startSeatDrag(seat.id, e)
-                      }
-                      onClick={(e) => {
-                        if (tool !== "select") return;
-                        e.stopPropagation();
-                        setSelectedSeatIds((prev) =>
-                          prev.includes(String(seat.id))
-                            ? prev.filter((x) => x !== String(seat.id))
-                            : [...prev, String(seat.id)],
-                        );
-                      }}
+                      rx={6}
+                      fill={secColor + "33"}
+                      stroke={secColor}
+                      strokeDasharray="4 3"
+                      strokeWidth="2"
                     />
                     <text
-                      x={seat.x}
-                      y={seat.y + 5}
+                      x={pt.x}
+                      y={pt.y + 5}
                       textAnchor="middle"
                       fontSize="9"
-                      fill="#fff"
+                      fill={secColor}
                       fontWeight="600"
                       pointerEvents="none"
                     >
-                      {name}
+                      {(() => {
+                        const { rowLetter, startIndex } = getNewRowMeta();
+                        return `${rowLetter}${startIndex + i}`;
+                      })()}
                     </text>
-                    {seat.customLabel && (
-                      <text
-                        x={seat.x}
-                        y={seat.y - 18}
-                        textAnchor="middle"
-                        fontSize="7.5"
-                        fill="#fbbf24"
-                        fontWeight="700"
-                        pointerEvents="none"
-                      >
-                        {seat.customLabel}
-                      </text>
-                    )}
                   </g>
-                );
-              })}
-
-              {/* Live Preview */}
-              {previewPts?.map((pt, i) => (
-                <g key={i}>
-                  <rect
-                    x={pt.x - SEAT_SIZE / 2}
-                    y={pt.y - SEAT_SIZE / 2}
-                    width={SEAT_SIZE}
-                    height={SEAT_SIZE}
-                    rx={6}
-                    fill={secColor + "33"}
-                    stroke={secColor}
-                    strokeDasharray="4 3"
-                    strokeWidth="2"
-                  />
-                  <text
-                    x={pt.x}
-                    y={pt.y + 5}
-                    textAnchor="middle"
-                    fontSize="9"
-                    fill={secColor}
-                    fontWeight="600"
-                    pointerEvents="none"
-                  >
-                    {(() => {
-                      const { rowLetter, startIndex } = getNewRowMeta();
-                      return `${rowLetter}${startIndex + i}`;
-                    })()}
-                  </text>
-                </g>
-              ))}
+                ))}
             </g>
           </svg>
 
@@ -2427,19 +2431,20 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
               }}
             >
               <svg width="6000" height="4000" style={{ background: "#0a0a12" }}>
-                {placedRows?.flatMap((row) =>
-                  row.pts?.map((pt, i) => (
-                    <rect
-                      key={`mini-r-${row.id}-${i}`}
-                      x={pt.x - 12}
-                      y={pt.y - 12}
-                      width="24"
-                      height="24"
-                      rx="4"
-                      fill={row.color}
-                    />
-                  )),
-                )}
+                {placedRows &&
+                  placedRows.flatMap((row) =>
+                    row.pts?.map((pt, i) => (
+                      <rect
+                        key={`mini-r-${row.id}-${i}`}
+                        x={pt.x - 12}
+                        y={pt.y - 12}
+                        width="24"
+                        height="24"
+                        rx="4"
+                        fill={row.color}
+                      />
+                    )),
+                  )}
                 {placedSeats?.map((seat) => (
                   <rect
                     key={`mini-s-${seat.id}`}
@@ -2550,10 +2555,10 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                       // ── Update placedSeats in UI immediately ──
                       if (seats.length > 0) {
                         setPlacedSeats((prev) =>
-                          prev?.map((s) => {
-                            const updated = seats?.find(
-                              (u) => String(u.id) === String(s.id),
-                            );
+                          prev.map((s) => {
+                            const updated = Array.isArray(seats)
+                              ? seats.find((u) => String(u.id) === String(s.id))
+                              : undefined;
                             return updated
                               ? { ...s, customLabel: updated.section_label }
                               : s;
