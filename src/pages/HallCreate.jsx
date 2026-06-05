@@ -387,7 +387,9 @@ function BookingView({ hallId }) {
   }, [dispatch, hallId, id]);
   useEffect(() => {
     if (Array.isArray(hall?.seats)) {
-      setLocalSeats(hall?.seats?.map((s) => ({ ...s })));
+      setLocalSeats(
+        Array.isArray(hall?.seats) ? hall.seats.map((s) => ({ ...s })) : [],
+      );
     }
   }, [hall]);
 
@@ -715,43 +717,44 @@ function BookingView({ hallId }) {
 
               <rect width="100%" height="100%" fill="url(#seatgrid)" />
 
-              {localSeats?.map((seat) => {
-                if (seat.is_space) return null;
+              {Array.isArray(localSeats) &&
+                localSeats.map((seat) => {
+                  if (seat.is_space) return null;
 
-                const x = Number(seat.x_pos) - SEAT / 2;
-                const y = Number(seat.y_pos) - SEAT / 2;
+                  const x = Number(seat.x_pos) - SEAT / 2;
+                  const y = Number(seat.y_pos) - SEAT / 2;
 
-                return (
-                  <rect
-                    key={seat.id}
-                    data-seat="1"
-                    x={x}
-                    y={y}
-                    width={SEAT}
-                    height={SEAT}
-                    rx={seat.status === "selected" ? 11 : 6}
-                    ry={seat.status === "selected" ? 11 : 6}
-                    fill={seatBg(seat)}
-                    stroke={seatBorder(seat)}
-                    strokeWidth={1.5}
-                    style={{
-                      cursor:
-                        seat.status === "sold" ? "not-allowed" : "pointer",
-                      transition: "all .15s ease",
-                      filter: seatGlow(seat),
-                    }}
-                    onMouseEnter={(e) =>
-                      setTooltip({
-                        seat,
-                        x: e.clientX,
-                        y: e.clientY,
-                      })
-                    }
-                    onMouseLeave={() => setTooltip(null)}
-                    onClick={() => toggleSeat(seat.id)}
-                  />
-                );
-              })}
+                  return (
+                    <rect
+                      key={seat.id}
+                      data-seat="1"
+                      x={x}
+                      y={y}
+                      width={SEAT}
+                      height={SEAT}
+                      rx={seat.status === "selected" ? 11 : 6}
+                      ry={seat.status === "selected" ? 11 : 6}
+                      fill={seatBg(seat)}
+                      stroke={seatBorder(seat)}
+                      strokeWidth={1.5}
+                      style={{
+                        cursor:
+                          seat.status === "sold" ? "not-allowed" : "pointer",
+                        transition: "all .15s ease",
+                        filter: seatGlow(seat),
+                      }}
+                      onMouseEnter={(e) =>
+                        setTooltip({
+                          seat,
+                          x: e.clientX,
+                          y: e.clientY,
+                        })
+                      }
+                      onMouseLeave={() => setTooltip(null)}
+                      onClick={() => toggleSeat(seat.id)}
+                    />
+                  );
+                })}
             </svg>
           </div>
         </div>
@@ -781,21 +784,22 @@ function BookingView({ hallId }) {
             <svg width={canvasW} height={canvasH}>
               <rect width="100%" height="100%" fill="#040612" />
 
-              {localSeats?.map((seat) => {
-                if (seat.is_space) return null;
+              {Array.isArray(localSeats) &&
+                localSeats.map((seat) => {
+                  if (seat.is_space) return null;
 
-                return (
-                  <rect
-                    key={seat.id}
-                    x={seat.x_pos - 10}
-                    y={seat.y_pos - 10}
-                    width={20}
-                    height={20}
-                    rx="4"
-                    fill={seat.fill || "#64748B"}
-                  />
-                );
-              })}
+                  return (
+                    <rect
+                      key={seat.id}
+                      x={seat.x_pos - 10}
+                      y={seat.y_pos - 10}
+                      width={20}
+                      height={20}
+                      rx="4"
+                      fill={seat.fill || "#64748B"}
+                    />
+                  );
+                })}
             </svg>
           </div>
         </div>
@@ -845,7 +849,7 @@ function BookingView({ hallId }) {
               marginTop: 16,
             }}
           >
-            {Object.values(sectionSummary)?.map((sec) => (
+            {Object.values(sectionSummary).map((sec) => (
               <div
                 key={sec.label}
                 style={{
@@ -1538,7 +1542,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
           setPlacedRows((prev) => {
             const { rowLetter, startIndex } = getNewRowMeta();
 
-            const ptsWithNames = pts.map((p, i) => ({
+            const ptsWithNames = pts?.map((p, i) => ({
               ...p,
               seat_name: `${rowLetter}${startIndex + i}`,
             }));
@@ -1708,7 +1712,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
 
     if (is_edit && hall?.seats) {
       hall.seats
-        .map((s) => s.seat_name?.match(/^([A-Z])/))
+        ?.map((s) => s.seat_name?.match(/^([A-Z])/))
         .filter(Boolean)
         .forEach((m) => codes.add(m[1].charCodeAt(0) - 64));
     }
@@ -1802,7 +1806,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
             padding: 14,
           }}
         >
-          {DRAW_SECTIONS.map((sec) => (
+          {DRAW_SECTIONS?.map((sec) => (
             <div
               key={sec.id}
               style={{
@@ -2059,7 +2063,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
             </DialogActions>
           </Dialog>
           <hr style={{ margin: "14px 0", borderColor: "#1e1e2a" }} />
-          {DRAW_TOOLS.map((t) => (
+          {DRAW_TOOLS?.map((t) => (
             <button
               key={t.id}
               onClick={() => setTool(t.id)}
@@ -2245,7 +2249,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
               <rect width="6000" height="4000" fill="url(#grid)" />
 
               {/* Existing Rows */}
-              {placedRows.map((row, rowIndex) =>
+              {placedRows?.map((row, rowIndex) =>
                 row.pts.map((pt, i) => {
                   const name = pt?.seat_name || getSeatName(rowIndex, i);
                   const seatKey = `${row?.id}_${i}`;
@@ -2309,7 +2313,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
               )}
 
               {/* Individual Seats */}
-              {placedSeats.map((seat) => {
+              {placedSeats?.map((seat) => {
                 const isSel = selectedSeatIds.includes(String(seat.id));
                 const name = seat.seat_name || "S1";
 
@@ -2366,7 +2370,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
               })}
 
               {/* Live Preview */}
-              {previewPts.map((pt, i) => (
+              {previewPts?.map((pt, i) => (
                 <g key={i}>
                   <rect
                     x={pt.x - SEAT_SIZE / 2}
@@ -2423,8 +2427,8 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
               }}
             >
               <svg width="6000" height="4000" style={{ background: "#0a0a12" }}>
-                {placedRows.flatMap((row) =>
-                  row.pts.map((pt, i) => (
+                {placedRows?.flatMap((row) =>
+                  row.pts?.map((pt, i) => (
                     <rect
                       key={`mini-r-${row.id}-${i}`}
                       x={pt.x - 12}
@@ -2436,7 +2440,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                     />
                   )),
                 )}
-                {placedSeats.map((seat) => (
+                {placedSeats?.map((seat) => (
                   <rect
                     key={`mini-s-${seat.id}`}
                     x={seat.x - 12}
@@ -2570,7 +2574,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                   }
 
                   // 2️⃣ Add mode: update placedRows locally
-                  if (rowKeys.length > 0) {
+                  if (rowKeys?.length > 0) {
                     const rowIds = [
                       ...new Set(
                         rowKeys.map((k) => k.split("_").slice(0, 2).join("_")),
