@@ -30,7 +30,7 @@ import CommonButton from "../commonComponents/CommonButton";
 const HallDesk = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const halls = useSelector(selectHallList);
+  const halls = useSelector(selectHallList) ?? [];
   const loading = useSelector(selectHallLoading);
   const actionLoading = useSelector(selectHallActionLoading);
   const error = useSelector(selectHallError);
