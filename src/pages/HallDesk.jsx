@@ -45,8 +45,15 @@ const HallDesk = () => {
     }
   };
 
+  // const handleNavigate = (hall) => {
+  //   navigate(`/hall-desk/${hall?.id || null}`);
+  // };
   const handleNavigate = (hall) => {
-    navigate(`/hall-desk/${hall?.id || null}`);
+    if (!hall?.id) {
+      console.warn("Hall ID missing", hall);
+      return;
+    }
+    navigate(`/hall-desk/${hall.id}`);
   };
   const handleAddHall = () => {
     navigate(`/hall`);
