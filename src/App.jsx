@@ -52,6 +52,7 @@ const TicketCheckerDashboard = lazy(
 const HallDesk = lazy(() => import("./pages/HallDesk"));
 const BookingManager = lazy(() => import("./pages/BookingManager"));
 const Advertisements = lazy(() => import("./pages/Advertisements"));
+const ScanTicketPage = lazy(() => import("./pages/ScanTicketPage"));
 
 // ─────────────────────────────────────────────
 // Loader
@@ -257,6 +258,7 @@ function AppRoutes() {
 
           <Route path="labels" element={<Labels />} />
           <Route path="Advertisements" element={<Advertisements />} />
+          <Route path="/scan-ticket/:barcode" element={<ScanTicketPage />} />
 
           {/* Inner 404 */}
           <Route path="*" element={<NotFound />} />
