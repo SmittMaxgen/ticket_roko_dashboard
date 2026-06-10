@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import api from "../api/axios";
+import api, { API_BASE_URL } from "../api/axios";
 
 export default function ScanTicketPage() {
   const { barcode } = useParams();
@@ -8,15 +8,24 @@ export default function ScanTicketPage() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    api
-      .post("/scan-ticket", { barcode })
-      .then(() => {
-        setStatus("success");
-        setMessage("Ticket validated!");
+    fetch(`${API_BASE_URL}/scan-ticket`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ barcode }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setStatus("success");
+          setMessage("Ticket validated!");
+        } else {
+          setStatus("error");
+          setMessage(data.message || "Invalid ticket.");
+        }
       })
-      .catch((err) => {
+      .catch(() => {
         setStatus("error");
-        setMessage(err.response?.data?.message || "Invalid ticket.");
+        setMessage("Network error.");
       });
   }, [barcode]);
 
