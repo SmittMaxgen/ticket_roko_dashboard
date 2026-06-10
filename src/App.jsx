@@ -46,6 +46,7 @@ const Partyplote = lazy(() => import("./components/Partyplote"));
 const PartyPlotDetails = lazy(() => import("./pages/PartyPlotDetails"));
 const PartyPlotsAll = lazy(() => import("./pages/PartyPlotsAll"));
 const Labels = lazy(() => import("./pages/Labels"));
+const Categories = lazy(() => import("./pages/Category"));
 const TicketCheckerDashboard = lazy(
   () => import("./pages/TicketCheckerDashboard"),
 );
@@ -257,13 +258,14 @@ function AppRoutes() {
           />
 
           <Route path="labels" element={<Labels />} />
+          <Route path="categories" element={<Categories />} />
           <Route path="Advertisements" element={<Advertisements />} />
 
           {/* Inner 404 */}
           <Route path="*" element={<NotFound />} />
         </Route>
 
-          <Route path="/scan-ticket/:barcode" element={<ScanTicketPage />} />
+        <Route path="/scan-ticket/:barcode" element={<ScanTicketPage />} />
         {/* Root 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
