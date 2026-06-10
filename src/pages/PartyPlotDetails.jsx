@@ -6,7 +6,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import api from "../api/axios";
 
@@ -31,6 +31,8 @@ import {
   Skeleton,
   MenuItem,
 } from "@mui/material";
+
+import QRCode from "react-qr-code";
 
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import SaveIcon from "@mui/icons-material/Save";
@@ -150,7 +152,7 @@ function BookingCard({ ticket }) {
 
       <Divider sx={{ borderColor: "rgba(30,41,59,1)", mb: 1.5 }} />
 
-      <Stack gap={0.8}>
+      {/* <Stack gap={0.8}>
         <Stack direction="row" justifyContent="space-between">
           <Typography sx={{ color: "#475569", fontSize: 11 }}>
             Ticket #
@@ -174,6 +176,30 @@ function BookingCard({ ticket }) {
             {ticket.barcode}
           </Typography>
         </Stack>
+      </Stack> */}
+      <Stack alignItems="center" spacing={1} sx={{ mt: 1 }}>
+        <QRCode
+          value={`${window.location.origin}/scan-ticket/${ticket.barcode}`}
+          size={120}
+          style={{
+            background: "#fff",
+            padding: 8,
+            borderRadius: 8,
+          }}
+        />
+
+        <Typography
+          sx={{
+            color: "#38BDF8",
+            fontWeight: 700,
+            fontSize: 10,
+            fontFamily: "monospace",
+            textAlign: "center",
+            wordBreak: "break-all",
+          }}
+        >
+          {ticket.barcode}
+        </Typography>
       </Stack>
     </Box>
   );
@@ -558,7 +584,7 @@ export default function PartyPlotDetail() {
   const [ticketCheckerUsers, setTicketCheckerUsers] = useState([]);
   const [selectedTicketCheckerId, setSelectedTicketCheckerId] = useState("");
   const [assignLoading, setAssignLoading] = useState(false);
-
+  const [searchParams] = useSearchParams();
   // ── Fetch on mount / id change ────────────────────────────
   useEffect(() => {
     if (id) dispatch(fetchPartyPlotByIdThunk(id));
@@ -678,14 +704,16 @@ export default function PartyPlotDetail() {
   };
 
   const handleScan = (barcode) => {
-    dispatch(scanTicketThunk(barcode))
-      .unwrap()
+    api
+      .post("/scan-ticket", { barcode })
       .then(() => {
         enqueueSnackbar("Ticket validated!", { variant: "success" });
         dispatch(fetchPartyPlotByIdThunk(id));
       })
       .catch((err) =>
-        enqueueSnackbar(err || "Invalid ticket.", { variant: "error" }),
+        enqueueSnackbar(err.response?.data?.message || "Invalid ticket.", {
+          variant: "error",
+        }),
       );
   };
 
