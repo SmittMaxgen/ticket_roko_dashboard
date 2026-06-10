@@ -258,12 +258,12 @@ function AppRoutes() {
 
           <Route path="labels" element={<Labels />} />
           <Route path="Advertisements" element={<Advertisements />} />
-          <Route path="/scan-ticket/:barcode" element={<ScanTicketPage />} />
 
           {/* Inner 404 */}
           <Route path="*" element={<NotFound />} />
         </Route>
 
+          <Route path="/scan-ticket/:barcode" element={<ScanTicketPage />} />
         {/* Root 404 */}
         <Route path="*" element={<NotFound />} />
       </Routes>
