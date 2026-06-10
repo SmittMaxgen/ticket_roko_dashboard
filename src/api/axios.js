@@ -1,14 +1,14 @@
 // src/api/axios.js
 import axios from "axios";
 
-export const API_BASE_URL = "http://localhost:4000/api"; // ✅ use env variable in real apps
+export const API_BASE_URL = "api.ticketroko.retailian.in";
 
 const api = axios.create({
-  baseURL: "http://localhost:4000/api", // ✅ remove the full domain
+  baseURL: "/api", // ✅ remove the full domain
 });
 
 // attach token
-api.interceptors.request.use((config) => {  
+api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
 
   if (token) {
