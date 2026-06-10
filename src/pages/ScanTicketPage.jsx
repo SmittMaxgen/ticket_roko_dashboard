@@ -23,7 +23,8 @@ export default function ScanTicketPage() {
           setMessage(data.message || "Invalid ticket.");
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error("Error scanning ticket:", err);
         setStatus("error");
         setMessage("Network error.");
       });
