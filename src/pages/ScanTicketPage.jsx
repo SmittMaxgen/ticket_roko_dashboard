@@ -8,7 +8,7 @@ export default function ScanTicketPage() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    fetch(`https://api.ticketroko.retailian.in/api/scan-ticket`, {
+    fetch(`https://api.ticketroko.retailian.in/api/party-plots/scan-ticket`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ barcode }),
