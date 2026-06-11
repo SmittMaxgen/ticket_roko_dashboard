@@ -129,6 +129,42 @@ export const bookTicketsThunk = createAsyncThunk(
   },
 );
 
+export const bookEventTicketsThunk = createAsyncThunk(
+  "partyPlot/bookEventTickets",
+  async ({ eventId, num_tickets }, { rejectWithValue }) => {
+    try {
+      const { data } = await api.post(`/party-plots/${eventId}/book-tickets`, {
+        num_tickets,
+      });
+      return data;
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to book event tickets",
+      );
+    }
+  },
+);
+export const fetchPPBookingsThunk = createAsyncThunk(
+  "partyPlot/fetchPPBookings",
+  async (
+    { party_plot_id, event_id, pp_only, page = 1, limit = 20 } = {},
+    { rejectWithValue },
+  ) => {
+    try {
+      const params = { page, limit };
+      if (party_plot_id) params.party_plot_id = party_plot_id;
+      if (event_id) params.event_id = event_id;
+      if (pp_only) params.pp_only = "true";
+      const { data } = await api.get("/party-plot-bookings", { params });
+      return data;
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data?.message || "Failed to fetch bookings",
+      );
+    }
+  },
+);
+
 export const scanTicketThunk = createAsyncThunk(
   "partyPlot/scanTicket",
   async (barcode, { rejectWithValue }) => {

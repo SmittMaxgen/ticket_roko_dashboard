@@ -394,12 +394,12 @@ const NAV = [
     roles: ["super_admin", "admin"],
   },
 
-  {
-    label: "Hall Create",
-    icon: <MeetingRoomIcon />,
-    path: "/hall",
-    roles: ["super_admin", "admin"],
-  },
+  // {
+  //   label: "Hall Create",
+  //   icon: <MeetingRoomIcon />,
+  //   path: "/hall",
+  //   roles: ["super_admin", "admin"],
+  // },
 
   {
     label: "All Party Plots",
@@ -408,12 +408,12 @@ const NAV = [
     roles: ["super_admin", "admin", "user", "vendor_organizer"],
   },
 
-  {
-    label: "Booked Party Plots",
-    icon: <MeetingRoomIcon />,
-    path: "/party-plot",
-    roles: ["super_admin", "admin", "user", "vendor_organizer"],
-  },
+  // {
+  //   label: "Booked Party Plots",
+  //   icon: <MeetingRoomIcon />,
+  //   path: "/party-plot",
+  //   roles: ["super_admin", "admin", "user", "vendor_organizer"],
+  // },
 
   {
     label: "Analytics",

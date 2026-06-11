@@ -2738,6 +2738,35 @@ export default function HallCreate({
             minWidth: 230,
           }}
         >
+          <span
+            onClick={() => window.history.back()}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(100,116,139,0.15)";
+              e.currentTarget.style.borderColor = "#475569";
+              e.currentTarget.style.color = "#F1F5F9";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "transparent";
+              e.currentTarget.style.borderColor = "#334155";
+              e.currentTarget.style.color = "#94A3B8";
+            }}
+            style={{
+              cursor: "pointer",
+              color: "#94A3B8",
+              fontSize: 14,
+              lineHeight: 1,
+              userSelect: "none",
+              border: "1px solid #334155",
+              borderRadius: 6,
+              padding: "4px 8px",
+              display: "inline-flex",
+              alignItems: "center",
+              transition: "all 0.2s ease",
+              background: "transparent",
+            }}
+          >
+            ←
+          </span>
           <div
             style={{
               width: 38,
@@ -2755,14 +2784,16 @@ export default function HallCreate({
           </div>
 
           <div>
-            <div
-              style={{
-                fontWeight: 800,
-                fontSize: 15,
-                color: "#F8FAFC",
-              }}
-            >
-              HallDesk Pro
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div
+                style={{
+                  fontWeight: 800,
+                  fontSize: 15,
+                  color: "#F8FAFC",
+                }}
+              >
+                HallDesk Pro
+              </div>
             </div>
 
             <div
@@ -2876,7 +2907,7 @@ export default function HallCreate({
           }}
         >
           {/* HALL ID */}
-          <div
+          {/* <div
             style={{
               padding: "8px 14px",
               borderRadius: 999,
@@ -2888,10 +2919,10 @@ export default function HallCreate({
             }}
           >
             Hall #{hallId || "—"}
-          </div>
+          </div> */}
 
           {/* EVENT */}
-          <div
+          {/* <div
             style={{
               padding: "8px 14px",
               borderRadius: 999,
@@ -2903,7 +2934,7 @@ export default function HallCreate({
             }}
           >
             Event #{id || "—"}
-          </div>
+          </div> */}
 
           {/* LIVE */}
           <div

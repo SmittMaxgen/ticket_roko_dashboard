@@ -33,9 +33,9 @@ export function Analytics() {
 
   useEffect(() => {
     Promise.all([
-      api.get("/dashboard/revenue-chart?period=30"),
-      api.get("/dashboard/top-events"),
-      api.get("/dashboard/category-stats"),
+      api.get("/admin/revenue-chart?period=30"),
+      api.get("/admin/top-events"),
+      api.get("/admin/category-stats"),
     ])
       .then(([rv, te, cs]) => {
         setRevenue(

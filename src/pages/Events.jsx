@@ -51,6 +51,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useSnackbar } from "notistack";
 
 import {
+  createEventThunk,
   fetchEventsThunk,
   updateEventThunk,
 } from "../features/events/eventThunks";
@@ -91,6 +92,8 @@ const EMPTY_FORM = {
   organizer_id: "",
   hall_id: "",
   category_id: "",
+  party_plot_id: "",
+  venue_type: "hall", // ← add this — "hall" | "party_plot"
   title: "",
   description: "",
   event_date: "",
@@ -260,6 +263,21 @@ export default function Events({ user }) {
     dispatch(fetchHallsThunk());
     dispatch(fetchCategories());
   }, [dispatch]);
+  // add state near other states
+  const [partyPlots, setPartyPlots] = useState([]);
+
+  // add this useEffect near other useEffects
+  useEffect(() => {
+    const fetchPartyPlots = async () => {
+      try {
+        const { data } = await api.get("/party-plots");
+        setPartyPlots(data.data || []);
+      } catch (err) {
+        console.error("Failed to load party plots", err);
+      }
+    };
+    fetchPartyPlots();
+  }, []);
 
   const fetchTicketCheckerUsers = async () => {
     if (ticketCheckerUsers.length) return;
@@ -367,7 +385,8 @@ export default function Events({ user }) {
 
   const handleSave = async () => {
     if (
-      !form.hall_id ||
+      (form.venue_type === "hall" && !form.hall_id) ||
+      (form.venue_type === "party_plot" && !form.party_plot_id) ||
       !form.category_id ||
       !form.title.trim() ||
       !form.description.trim() ||
@@ -376,11 +395,14 @@ export default function Events({ user }) {
       !form.end_time ||
       !form.city.trim() ||
       !form.address.trim() ||
-      Number(form.ticket_price) <= 0 ||
-      Number(form.total_tickets) <= 0
+      // ← only validate price & tickets for hall events
+      (form.venue_type === "hall" && Number(form.ticket_price) <= 0) ||
+      (form.venue_type === "hall" && Number(form.total_tickets) <= 0)
     ) {
       enqueueSnackbar(
-        "All fields required. Price & Total Tickets must be greater than 0",
+        form.venue_type === "hall"
+          ? "All fields required. Price & Total Tickets must be greater than 0"
+          : "All fields required. Please fill in all event details.",
         { variant: "error" },
       );
       return;
@@ -395,6 +417,7 @@ export default function Events({ user }) {
 
     formData.append("organizer_id", form.organizer_id);
     formData.append("hall_id", form.hall_id);
+    formData.append("party_plot_id", form.party_plot_id || "");
     formData.append("category_id", form.category_id);
     formData.append("title", form.title);
     formData.append("description", form.description);
@@ -782,6 +805,7 @@ export default function Events({ user }) {
 
                 setForm({
                   hall_id: row.hall_id || "",
+                  party_plot_id: row.party_plot_id || "",
                   category_id: row.category_id || "",
                   title: row.title || "",
                   description: row.description || "",
@@ -1096,14 +1120,88 @@ export default function Events({ user }) {
 
         <DialogContent>
           <Stack spacing={2} mt={1}>
-            <CommonDropDown
+            {/* <CommonDropDown
               label="Select Hall"
               value={form.hall_id}
               options={hallList}
               onChange={(e) => setForm({ ...form, hall_id: e.target.value })}
               required
-            />
+            /> */}
+            {/* VENUE TYPE TOGGLE */}
+            <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+              <Button
+                fullWidth
+                variant={form.venue_type === "hall" ? "contained" : "outlined"}
+                onClick={() =>
+                  setForm({ ...form, venue_type: "hall", party_plot_id: "" })
+                }
+                sx={{
+                  borderRadius: 2,
+                  fontWeight: 700,
+                  background:
+                    form.venue_type === "hall" ? "#2563eb" : "transparent",
+                  borderColor: "#2563eb",
+                  color: form.venue_type === "hall" ? "#fff" : "#2563eb",
+                }}
+              >
+                🏟️ Hall
+              </Button>
 
+              <Button
+                fullWidth
+                variant={
+                  form.venue_type === "party_plot" ? "contained" : "outlined"
+                }
+                onClick={() =>
+                  setForm({ ...form, venue_type: "party_plot", hall_id: "" })
+                }
+                sx={{
+                  borderRadius: 2,
+                  fontWeight: 700,
+                  background:
+                    form.venue_type === "party_plot"
+                      ? "#7c3aed"
+                      : "transparent",
+                  borderColor: "#7c3aed",
+                  color: form.venue_type === "party_plot" ? "#fff" : "#7c3aed",
+                }}
+              >
+                🎪 Party Plot
+              </Button>
+            </Stack>
+
+            {/* SHOW HALL OR PARTY PLOT BASED ON SELECTION */}
+            {form.venue_type === "hall" ? (
+              <CommonDropDown
+                label="Select Hall"
+                value={form.hall_id}
+                options={hallList}
+                onChange={(e) => setForm({ ...form, hall_id: e.target.value })}
+                required
+              />
+            ) : (
+              <CommonDropDown
+                label="Select Party Plot"
+                value={form.party_plot_id}
+                options={partyPlots.map((p) => ({ id: p.id, name: p.name }))}
+                onChange={(e) =>
+                  setForm({ ...form, party_plot_id: e.target.value })
+                }
+                required
+              />
+            )}
+            {/* <CommonDropDown
+              label="Select Party Plot (Optional)"
+              value={form.party_plot_id}
+              options={[
+                { id: "", name: "None" },
+                ...partyPlots.map((p) => ({ id: p.id, name: p.name })),
+              ]}
+              onChange={(e) =>
+                setForm({ ...form, party_plot_id: e.target.value })
+              }
+              required={false}
+            /> */}
             <CommonDropDown
               label="Select Category "
               // type="number"
@@ -1333,51 +1431,60 @@ export default function Events({ user }) {
               )}
             </Box>
             {/* ── Section Prices ── */}
-            <Box>
-              <Typography
-                sx={{ color: "#94a3b8", fontSize: 12, mb: 1, fontWeight: 600 }}
-              >
-                SECTION PRICES (per seat)
-              </Typography>
-              <Grid container spacing={1.5}>
-                {SECTION_LABELS.map((sec) => (
-                  <Grid item xs={6} key={sec.label}>
-                    <TextField
-                      label={sec.label}
-                      type="number"
-                      size="small"
-                      fullWidth
-                      value={form.section_prices[sec.label]}
-                      inputProps={{ min: 0 }}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          section_prices: {
-                            ...form.section_prices,
-                            [sec.label]: e.target.value,
+            {form.venue_type === "hall" ? (
+              <Box>
+                <Typography
+                  sx={{
+                    color: "#94a3b8",
+                    fontSize: 12,
+                    mb: 1,
+                    fontWeight: 600,
+                  }}
+                >
+                  SECTION PRICES (per seat)
+                </Typography>
+                <Grid container spacing={1.5}>
+                  {SECTION_LABELS.map((sec) => (
+                    <Grid item xs={6} key={sec.label}>
+                      <TextField
+                        label={sec.label}
+                        type="number"
+                        size="small"
+                        fullWidth
+                        value={form.section_prices[sec.label]}
+                        inputProps={{ min: 0 }}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            section_prices: {
+                              ...form.section_prices,
+                              [sec.label]: e.target.value,
+                            },
+                          })
+                        }
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <span
+                                style={{ color: sec.color, fontWeight: 700 }}
+                              >
+                                ₹
+                              </span>
+                            </InputAdornment>
+                          ),
+                        }}
+                        sx={{
+                          "& .MuiOutlinedInput-root": {
+                            "& fieldset": { borderColor: sec.color + "55" },
+                            "&:hover fieldset": { borderColor: sec.color },
                           },
-                        })
-                      }
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <span style={{ color: sec.color, fontWeight: 700 }}>
-                              ₹
-                            </span>
-                          </InputAdornment>
-                        ),
-                      }}
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          "& fieldset": { borderColor: sec.color + "55" },
-                          "&:hover fieldset": { borderColor: sec.color },
-                        },
-                      }}
-                    />
-                  </Grid>
-                ))}
-              </Grid>
-            </Box>
+                        }}
+                      />
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
+            ) : null}
           </Stack>
         </DialogContent>
 

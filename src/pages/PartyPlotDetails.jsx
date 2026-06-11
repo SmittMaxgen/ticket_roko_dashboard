@@ -50,6 +50,7 @@ import {
   updatePartyPlotThunk,
   createTicketsThunk,
   bookTicketsThunk,
+  bookEventTicketsThunk,
   scanTicketThunk,
 } from "../features/partyPlot/partyPlotThunks";
 
@@ -531,33 +532,273 @@ function OperationsTab({
 }
 
 // ── Booked Tickets Tab ────────────────────────────────────────────────────────
-function BookingsTab({ tickets }) {
-  const booked = tickets.filter(
-    (t) => t.status === "booked" || t.status === "used",
-  );
-
-  if (booked.length === 0) {
-    return (
-      <Box sx={{ textAlign: "center", py: 8 }}>
-        <Typography sx={{ fontSize: 40, mb: 2 }}>🎫</Typography>
-        <Typography sx={{ color: "#64748B" }}>
-          No booked tickets yet.
-        </Typography>
-      </Box>
-    );
-  }
+function BookingExpandCard({ booking }) {
+  const [expanded, setExpanded] = useState(false);
+  const isUsed = booking.status === "used";
 
   return (
     <Box
       sx={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))",
-        gap: 2,
+        background: "#0F172A",
+        border: "1px solid rgba(30,41,59,1)",
+        borderRadius: 2.5,
+        overflow: "hidden",
       }}
     >
-      {booked.map((ticket) => (
-        <BookingCard key={ticket.id} ticket={ticket} />
-      ))}
+      {/* ── Header Row ── */}
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        sx={{ p: 2, cursor: "pointer" }}
+        onClick={() => setExpanded((v) => !v)}
+      >
+        <Box>
+          <Typography sx={{ color: "#F1F5F9", fontWeight: 700, fontSize: 13 }}>
+            {booking.user?.name || "—"}
+          </Typography>
+          <Typography sx={{ color: "#64748B", fontSize: 11 }}>
+            {booking.user?.email}
+          </Typography>
+          {booking.event && (
+            <Typography sx={{ color: "#94A3B8", fontSize: 11, mt: 0.3 }}>
+              Event: {booking.event?.title}
+            </Typography>
+          )}
+        </Box>
+        <Box sx={{ textAlign: "right" }}>
+          <Typography sx={{ color: "#F59E0B", fontWeight: 700, fontSize: 12 }}>
+            {booking.booking_ref}
+          </Typography>
+          <Typography sx={{ color: "#94A3B8", fontSize: 11 }}>
+            Tickets: {booking.total_tickets}
+          </Typography>
+          <Typography sx={{ color: "#22C55E", fontSize: 11, fontWeight: 700 }}>
+            ₹{booking.total_amount}
+          </Typography>
+          <Stack direction="row" gap={1} justifyContent="flex-end" mt={0.5}>
+            <Chip
+              label={booking.status}
+              size="small"
+              sx={{
+                background:
+                  booking.status === "confirmed"
+                    ? "rgba(34,197,94,0.15)"
+                    : "rgba(100,116,139,0.15)",
+                color: booking.status === "confirmed" ? "#22C55E" : "#94A3B8",
+                fontSize: 10,
+                fontWeight: 700,
+              }}
+            />
+            <Chip
+              label={expanded ? "▲ Hide QR" : "▼ Show QR"}
+              size="small"
+              sx={{
+                background: "rgba(245,158,11,0.1)",
+                color: "#F59E0B",
+                fontSize: 10,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            />
+          </Stack>
+        </Box>
+      </Stack>
+
+      {/* ── Expandable QR Grid ── */}
+      {expanded && (
+        <Box
+          sx={{
+            borderTop: "1px solid rgba(30,41,59,1)",
+            p: 2,
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
+            gap: 2,
+          }}
+        >
+          {(booking.tickets || []).map((ticket) => (
+            <Box
+              key={ticket.id}
+              sx={{
+                background: "#0a1120",
+                border: `1px solid ${ticket.status === "used" ? "#EF444440" : "#22C55E40"}`,
+                borderRadius: 2,
+                p: 1.5,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 1,
+              }}
+            >
+              <Chip
+                label={ticket.status}
+                size="small"
+                sx={{
+                  background:
+                    ticket.status === "used"
+                      ? "rgba(239,68,68,0.15)"
+                      : "rgba(34,197,94,0.15)",
+                  color: ticket.status === "used" ? "#EF4444" : "#22C55E",
+                  fontSize: 9,
+                  fontWeight: 700,
+                  height: 18,
+                }}
+              />
+              <QRCode
+                value={`${window.location.origin}/scan-ticket/${ticket.barcode}`}
+                size={100}
+                style={{ background: "#fff", padding: 6, borderRadius: 6 }}
+              />
+              <Typography
+                sx={{
+                  color: "#38BDF8",
+                  fontSize: 9,
+                  fontFamily: "monospace",
+                  textAlign: "center",
+                  wordBreak: "break-all",
+                }}
+              >
+                {ticket.ticket_number}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+function BookingsTab({ plotId, events }) {
+  const [filterEventId, setFilterEventId] = useState("all");
+  const [page, setPage] = useState(1);
+  const [bookings, setBookings] = useState([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const limit = 20;
+
+  const fetchBookings = async () => {
+    setLoading(true);
+    try {
+      const params = { party_plot_id: plotId, page, limit };
+      if (filterEventId === "pp_only") params.pp_only = "true";
+      else if (filterEventId !== "all") params.event_id = filterEventId;
+
+      const { data } = await api.get("/party-plot-bookings", { params });
+      setBookings(data.data || []);
+      setTotal(data.total || 0);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBookings();
+  }, [filterEventId, page]);
+
+  const totalPages = Math.ceil(total / limit);
+
+  const selectSx = {
+    "& .MuiOutlinedInput-root": {
+      color: "#F1F5F9",
+      "& fieldset": { borderColor: "rgba(100,116,139,0.25)" },
+      "&:hover fieldset": { borderColor: "rgba(245,158,11,0.4)" },
+      "&.Mui-focused fieldset": { borderColor: "#F59E0B" },
+    },
+    "& .MuiInputLabel-root": { color: "#64748B" },
+    "& .MuiInputLabel-root.Mui-focused": { color: "#F59E0B" },
+  };
+
+  return (
+    <Box>
+      {/* Filter Row */}
+      <Stack direction="row" gap={2} mb={3} alignItems="center" flexWrap="wrap">
+        <TextField
+          select
+          size="small"
+          label="Filter by Event"
+          value={filterEventId}
+          onChange={(e) => {
+            setFilterEventId(e.target.value);
+            setPage(1);
+          }}
+          sx={{ minWidth: 220, ...selectSx }}
+        >
+          <MenuItem value="all">All Bookings</MenuItem>
+          <MenuItem value="pp_only">Party Plot Only (no event)</MenuItem>
+          {(events || []).map((ev) => (
+            <MenuItem key={ev.id} value={String(ev.id)}>
+              {ev.title}
+            </MenuItem>
+          ))}
+        </TextField>
+        <Typography sx={{ color: "#64748B", fontSize: 12 }}>
+          {total} total booking{total !== 1 ? "s" : ""}
+        </Typography>
+      </Stack>
+
+      {/* Content */}
+      {loading ? (
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))",
+            gap: 2,
+          }}
+        >
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton
+              key={i}
+              variant="rounded"
+              height={200}
+              sx={{ bgcolor: "rgba(255,255,255,0.05)" }}
+            />
+          ))}
+        </Box>
+      ) : bookings.length === 0 ? (
+        <Box sx={{ textAlign: "center", py: 8 }}>
+          <Typography sx={{ fontSize: 40, mb: 2 }}>🎫</Typography>
+          <Typography sx={{ color: "#64748B" }}>No bookings found.</Typography>
+        </Box>
+      ) : (
+        <Stack spacing={1.5}>
+          {bookings.map((booking) => (
+            <BookingExpandCard key={booking.id} booking={booking} />
+          ))}
+        </Stack>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Stack
+          direction="row"
+          justifyContent="center"
+          alignItems="center"
+          gap={2}
+          mt={3}
+        >
+          <Button
+            size="small"
+            disabled={page === 1}
+            onClick={() => setPage((p) => p - 1)}
+            sx={{ color: "#F59E0B", textTransform: "none" }}
+          >
+            Prev
+          </Button>
+          <Typography sx={{ color: "#64748B", fontSize: 12 }}>
+            Page {page} of {totalPages}
+          </Typography>
+          <Button
+            size="small"
+            disabled={page === totalPages}
+            onClick={() => setPage((p) => p + 1)}
+            sx={{ color: "#F59E0B", textTransform: "none" }}
+          >
+            Next
+          </Button>
+        </Stack>
+      )}
     </Box>
   );
 }
@@ -585,6 +826,9 @@ export default function PartyPlotDetail() {
   const [selectedTicketCheckerId, setSelectedTicketCheckerId] = useState("");
   const [assignLoading, setAssignLoading] = useState(false);
   const [searchParams] = useSearchParams();
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [eventBookingCount, setEventBookingCount] = useState(1);
+  const [eventBookingLoading, setEventBookingLoading] = useState(false);
   // ── Fetch on mount / id change ────────────────────────────
   useEffect(() => {
     if (id) dispatch(fetchPartyPlotByIdThunk(id));
@@ -595,6 +839,17 @@ export default function PartyPlotDetail() {
   const available = tickets.filter((t) => t.status === "available");
   const booked = tickets.filter((t) => t.status === "booked");
   const used = tickets.filter((t) => t.status === "used");
+
+  // event bookings count
+  const eventBookingsCount = (plot?.partyPlotEvents || []).reduce(
+    (a, e) =>
+      a +
+      (e.eventTicketBookings?.reduce(
+        (b, b2) => b + (b2.total_tickets || 0),
+        0,
+      ) || 0),
+    0,
+  );
 
   // ── Handlers ─────────────────────────────────────────────
   const handleSave = (formData) => {
@@ -700,6 +955,29 @@ export default function PartyPlotDetail() {
       );
     } finally {
       setAssignLoading(false);
+    }
+  };
+
+  const handleBookEventTickets = async () => {
+    if (!selectedEvent || !eventBookingCount) return;
+    setEventBookingLoading(true);
+    try {
+      await api.post(`/party-plots/${selectedEvent.id}/book-tickets`, {
+        num_tickets: eventBookingCount,
+      });
+      enqueueSnackbar(
+        `${eventBookingCount} tickets booked for ${selectedEvent.title}!`,
+        { variant: "success" },
+      );
+      setSelectedEvent(null);
+      setEventBookingCount(1);
+      dispatch(fetchPartyPlotByIdThunk(id));
+    } catch (err) {
+      enqueueSnackbar(err.response?.data?.message || "Booking failed.", {
+        variant: "error",
+      });
+    } finally {
+      setEventBookingLoading(false);
     }
   };
 
@@ -968,8 +1246,14 @@ export default function PartyPlotDetail() {
         </DialogActions>
       </Dialog>
 
-      <Stack direction="row" flexWrap="wrap" gap={2} mb={4}>
-        <StatBox
+      <Stack
+        sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}
+        direction="row"
+        flexWrap="wrap"
+        gap={2}
+        mb={4}
+      >
+        {/* <StatBox
           icon={<ConfirmationNumberIcon />}
           title="TOTAL"
           value={total}
@@ -980,7 +1264,7 @@ export default function PartyPlotDetail() {
           title="AVAILABLE"
           value={available.length}
           color="#22C55E"
-        />
+        /> */}
         <StatBox
           icon={<LocalActivityIcon />}
           title="BOOKED"
@@ -992,6 +1276,12 @@ export default function PartyPlotDetail() {
           title="USED"
           value={used.length}
           color="#EF4444"
+        />
+        <StatBox
+          icon={<BookOnlineIcon />}
+          title="EVENT BOOKINGS"
+          value={eventBookingsCount}
+          color="#6366f1"
         />
       </Stack>
 
@@ -1016,7 +1306,15 @@ export default function PartyPlotDetail() {
         <Tab value="operations" label="Ticket Operations" />
         <Tab
           value="bookings"
-          label={`Bookings (${booked.length + used.length})`}
+          label={`PP Bookings (${booked.length + used.length})`}
+        />
+        <Tab
+          value="events"
+          label={`Events (${(plot?.partyPlotEvents || []).length})`}
+        />
+        <Tab
+          value="eventBookings"
+          label={`Event Bookings (${(plot?.partyPlotEvents || []).reduce((a, e) => a + (e.eventTicketBookings?.reduce((b, b2) => b + (b2.total_tickets || 0), 0) || 0), 0)} tickets)`}
         />
       </Tabs>
 
@@ -1041,7 +1339,319 @@ export default function PartyPlotDetail() {
         />
       )}
 
-      {tab === "bookings" && <BookingsTab tickets={tickets} />}
+      {/* {tab === "bookings" && <BookingsTab tickets={tickets} />} */}
+      {tab === "bookings" && (
+        <BookingsTab plotId={id} events={plot?.partyPlotEvents || []} />
+      )}
+
+      {tab === "events" && (
+        <Box>
+          {(plot?.partyPlotEvents || []).length === 0 ? (
+            <Box sx={{ textAlign: "center", py: 8 }}>
+              <Typography sx={{ fontSize: 40, mb: 2 }}>🎪</Typography>
+              <Typography sx={{ color: "#64748B" }}>No events yet.</Typography>
+            </Box>
+          ) : (
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))",
+                gap: 2,
+              }}
+            >
+              {(plot?.partyPlotEvents || []).map((event) => (
+                <Box
+                  key={event.id}
+                  sx={{
+                    background: "#0F172A",
+                    border: "1px solid rgba(30,41,59,1)",
+                    borderRadius: 2.5,
+                    p: 2,
+                  }}
+                >
+                  {event.banner_url && (
+                    <Box
+                      component="img"
+                      src={event.banner_url}
+                      sx={{
+                        width: "100%",
+                        height: 110,
+                        objectFit: "cover",
+                        borderRadius: 1.5,
+                        mb: 1.5,
+                      }}
+                    />
+                  )}
+                  <Typography
+                    sx={{ color: "#F1F5F9", fontWeight: 700, fontSize: 14 }}
+                  >
+                    {event.title}
+                  </Typography>
+                  <Typography sx={{ color: "#64748B", fontSize: 12, mt: 0.5 }}>
+                    📅{" "}
+                    {new Date(event.event_date).toLocaleDateString("en-IN", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                    {" • "}
+                    {event.start_time}
+                  </Typography>
+                  <Typography sx={{ color: "#64748B", fontSize: 12, mt: 0.3 }}>
+                    📍 {event.city || "—"}
+                  </Typography>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    mt={1.5}
+                  >
+                    <Chip
+                      label={event.status}
+                      size="small"
+                      sx={{
+                        background:
+                          event.status === "approved"
+                            ? "rgba(34,197,94,0.15)"
+                            : "rgba(100,116,139,0.15)",
+                        color:
+                          event.status === "approved" ? "#22C55E" : "#94A3B8",
+                        fontSize: 10,
+                        fontWeight: 700,
+                      }}
+                    />
+                    <Typography
+                      sx={{ color: "#F59E0B", fontWeight: 700, fontSize: 12 }}
+                    >
+                      {event.sold_tickets}/{event.total_tickets} sold
+                    </Typography>
+                  </Stack>
+                  <Stack direction="row" gap={1} mt={1.5}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      size="small"
+                      onClick={() => setSelectedEvent(event)}
+                      sx={{
+                        borderColor: "#22C55E40",
+                        color: "#22C55E",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        textTransform: "none",
+                        borderRadius: 1.5,
+                        "&:hover": {
+                          borderColor: "#22C55E",
+                          background: "rgba(34,197,94,0.08)",
+                        },
+                      }}
+                    >
+                      Book Tickets
+                    </Button>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      size="small"
+                      onClick={() => navigate(`/events/${event.id}`)}
+                      sx={{
+                        borderColor: "#38BDF840",
+                        color: "#38BDF8",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        textTransform: "none",
+                        borderRadius: 1.5,
+                        "&:hover": {
+                          borderColor: "#38BDF8",
+                          background: "rgba(56,189,248,0.08)",
+                        },
+                      }}
+                    >
+                      View Event
+                    </Button>
+                  </Stack>
+                </Box>
+              ))}
+            </Box>
+          )}
+        </Box>
+      )}
+
+      {tab === "eventBookings" && (
+        <Box>
+          {(plot?.partyPlotEvents || []).every(
+            (e) => !e.eventTicketBookings?.length,
+          ) ? (
+            <Box sx={{ textAlign: "center", py: 8 }}>
+              <Typography sx={{ fontSize: 40, mb: 2 }}>🎫</Typography>
+              <Typography sx={{ color: "#64748B" }}>
+                No event bookings yet.
+              </Typography>
+            </Box>
+          ) : (
+            <Stack spacing={1.5}>
+              {(plot?.partyPlotEvents || []).map((event) =>
+                (event.eventTicketBookings || []).map((booking) => (
+                  <Box
+                    key={booking.id}
+                    sx={{
+                      background: "#0F172A",
+                      border: "1px solid rgba(30,41,59,1)",
+                      borderRadius: 2.5,
+                      p: 2,
+                    }}
+                  >
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
+                      <Box>
+                        <Typography
+                          sx={{
+                            color: "#F1F5F9",
+                            fontWeight: 700,
+                            fontSize: 13,
+                          }}
+                        >
+                          {booking.user?.name || "—"}
+                        </Typography>
+                        <Typography sx={{ color: "#64748B", fontSize: 11 }}>
+                          {booking.user?.email}
+                        </Typography>
+                        <Typography
+                          sx={{ color: "#94A3B8", fontSize: 11, mt: 0.5 }}
+                        >
+                          Event: {event.title}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ textAlign: "right" }}>
+                        <Typography
+                          sx={{
+                            color: "#F59E0B",
+                            fontWeight: 700,
+                            fontSize: 12,
+                          }}
+                        >
+                          {booking.booking_ref}
+                        </Typography>
+                        <Typography sx={{ color: "#94A3B8", fontSize: 11 }}>
+                          Tickets: {booking.total_tickets}
+                        </Typography>
+                        <Typography
+                          sx={{
+                            color: "#22C55E",
+                            fontSize: 11,
+                            fontWeight: 700,
+                          }}
+                        >
+                          ₹{booking.total_amount}
+                        </Typography>
+                        <Chip
+                          label={booking.status}
+                          size="small"
+                          sx={{
+                            mt: 0.5,
+                            background:
+                              booking.status === "confirmed"
+                                ? "rgba(34,197,94,0.15)"
+                                : "rgba(100,116,139,0.15)",
+                            color:
+                              booking.status === "confirmed"
+                                ? "#22C55E"
+                                : "#94A3B8",
+                            fontSize: 10,
+                            fontWeight: 700,
+                          }}
+                        />
+                      </Box>
+                    </Stack>
+                  </Box>
+                )),
+              )}
+            </Stack>
+          )}
+        </Box>
+      )}
+      {/* Event Booking Dialog */}
+      <Dialog
+        open={!!selectedEvent}
+        onClose={() => setSelectedEvent(null)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            background: "#0F172A",
+            border: "1px solid #1E293B",
+            borderRadius: 3,
+            color: "#fff",
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, fontSize: "1.1rem" }}>
+          Book Tickets — {selectedEvent?.title}
+        </DialogTitle>
+        <DialogContent>
+          <Typography sx={{ color: "#64748B", fontSize: 12, mb: 2 }}>
+            Available:{" "}
+            {(selectedEvent?.total_tickets || 0) -
+              (selectedEvent?.sold_tickets || 0)}{" "}
+            tickets • ₹{selectedEvent?.ticket_price} each
+          </Typography>
+          <TextField
+            type="number"
+            label="Number of Tickets"
+            value={eventBookingCount}
+            onChange={(e) => setEventBookingCount(Number(e.target.value))}
+            fullWidth
+            inputProps={{
+              min: 1,
+              max:
+                (selectedEvent?.total_tickets || 0) -
+                (selectedEvent?.sold_tickets || 0),
+            }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                color: "#F1F5F9",
+                "& fieldset": { borderColor: "rgba(100,116,139,0.25)" },
+              },
+              "& .MuiInputLabel-root": { color: "#64748B" },
+            }}
+          />
+          <Typography
+            sx={{ color: "#22C55E", fontWeight: 700, fontSize: 13, mt: 1.5 }}
+          >
+            Total: ₹
+            {(
+              eventBookingCount * Number(selectedEvent?.ticket_price || 0)
+            ).toLocaleString("en-IN")}
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+          <Button
+            onClick={() => setSelectedEvent(null)}
+            sx={{ color: "#64748B", textTransform: "none" }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleBookEventTickets}
+            disabled={eventBookingLoading || eventBookingCount < 1}
+            sx={{
+              background: "linear-gradient(135deg,#22C55E,#16A34A)",
+              textTransform: "none",
+              fontWeight: 700,
+              px: 3,
+              borderRadius: 2,
+            }}
+          >
+            {eventBookingLoading ? (
+              <CircularProgress size={18} />
+            ) : (
+              "Confirm Booking"
+            )}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
