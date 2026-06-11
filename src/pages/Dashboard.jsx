@@ -4025,7 +4025,7 @@ export default function Dashboard() {
               onClick={() => navigate("/analytics")}
             />
           </Grid>
-          <Grid item xs={12} sm={6} xl={2.4}>
+          {/* <Grid item xs={12} sm={6} xl={2.4}>
             <StatCard
               title="ACTIVE HALLS"
               value={fmt(hallStats?.total_halls)}
@@ -4037,7 +4037,7 @@ export default function Dashboard() {
               loading={loading}
               onClick={() => navigate("/halls")}
             />
-          </Grid>
+          </Grid> */}
         </Grid>
       ) : (
         // USER / ORGANIZER KPI CARDS
