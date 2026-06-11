@@ -184,22 +184,6 @@ export default function Users() {
       ),
     },
     {
-      field: "kyc_status",
-      headerName: "KYC",
-      width: 110,
-      renderCell: ({ row }) =>
-        row.role === "organizer" ? (
-          <Chip
-            label={row.kyc_status}
-            size="small"
-            color={kycColor[row.kyc_status] || "default"}
-            sx={{ fontSize: 10, height: 20, textTransform: "capitalize" }}
-          />
-        ) : (
-          <Typography sx={{ color: "#475569", fontSize: 12 }}>N/A</Typography>
-        ),
-    },
-    {
       field: "is_active",
       headerName: "Status",
       width: 90,
@@ -328,7 +312,7 @@ export default function Users() {
               "& .MuiTabs-indicator": { background: "#2563EB" },
             }}
           >
-            {["all", "user", "organizer", "admin"].map((t) => (
+            {["all", "user", "vendor_organizer", "admin"].map((t) => (
               <Tab
                 key={t}
                 label={t.charAt(0).toUpperCase() + t.slice(1)}
