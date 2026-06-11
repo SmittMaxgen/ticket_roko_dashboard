@@ -428,7 +428,7 @@ function OperationsTab({
   return (
     <Stack spacing={3} sx={{ maxWidth: 600 }}>
       {/* Create Tickets */}
-      {isAdmin && (
+      {/* {isAdmin && (
         <Box sx={panelSx}>
           <Stack direction="row" alignItems="center" gap={1} mb={2}>
             <AddIcon sx={{ color: "#38BDF8", fontSize: 18 }} />
@@ -455,7 +455,7 @@ function OperationsTab({
             />
           </Stack>
         </Box>
-      )}
+      )} */}
 
       {/* Book Tickets */}
       <Box sx={panelSx}>
