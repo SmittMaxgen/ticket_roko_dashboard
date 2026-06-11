@@ -6,7 +6,7 @@ export const fetchDashboardOverviewThunk = createAsyncThunk(
   "dashboard/fetchOverview",
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await api.get("/dashboard/overview");
+      const { data } = await api.get("/admin/overview");
       return data.data;
     } catch (err) {
       return rejectWithValue(
@@ -21,7 +21,7 @@ export const fetchRevenueChartThunk = createAsyncThunk(
   async (period = 30, { rejectWithValue }) => {
     try {
       const { data } = await api.get(
-        `/dashboard/revenue-chart?period=${period}`,
+        `/admin/revenue-chart?period=${period}`,
       );
       return data.data;
     } catch (err) {
@@ -36,7 +36,7 @@ export const fetchTopEventsThunk = createAsyncThunk(
   "dashboard/fetchTopEvents",
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await api.get("/dashboard/top-events");
+      const { data } = await api.get("/admin/top-events");
       return data.data;
     } catch (err) {
       return rejectWithValue(
@@ -50,7 +50,7 @@ export const fetchRecentBookingsThunk = createAsyncThunk(
   "dashboard/fetchRecentBookings",
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await api.get("/dashboard/recent-bookings");
+      const { data } = await api.get("/admin/recent-bookings");
       return data.data;
     } catch (err) {
       return rejectWithValue(
@@ -64,7 +64,7 @@ export const fetchCategoryStatsThunk = createAsyncThunk(
   "dashboard/fetchCategoryStats",
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await api.get("/dashboard/category-stats");
+      const { data } = await api.get("/admin/category-stats");
       return data.data;
     } catch (err) {
       return rejectWithValue(
