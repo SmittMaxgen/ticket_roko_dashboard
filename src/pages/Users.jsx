@@ -171,6 +171,16 @@ export default function Users() {
       ),
     },
     {
+      field: "phone",
+      headerName: "Phone",
+      width: 140,
+      renderCell: ({ value }) => (
+        <Typography sx={{ fontSize: 12, color: "#64748B" }}>
+          {value || "-"}
+        </Typography>
+      ),
+    },
+    {
       field: "role",
       headerName: "Role",
       width: 120,
