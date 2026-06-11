@@ -3877,8 +3877,7 @@ export default function Dashboard() {
               {isAdmin ? (
                 <AdminPanelSettingsIcon sx={{ fontSize: 12 }} />
               ) : (
-                // <PersonOutline sx={{ fontSize: 12 }} />
-                <>ICON</>
+                <EventSeatIcon sx={{ fontSize: 12 }} />
               )}
               {roleLabel[role] || role}
             </Box>
@@ -4196,7 +4195,9 @@ export default function Dashboard() {
                 height: 360,
               }}
             >
-              <CardContent sx={{ height: "100%", pb: "16px !important" }}>
+              <CardContent
+                sx={{ height: "100%", width: "615px", pb: "16px !important" }}
+              >
                 <SectionHeader
                   title="Events by Category"
                   sub="Distribution of active events"
@@ -4519,7 +4520,8 @@ export default function Dashboard() {
               sx={{
                 background: "#1E293B",
                 border: "1px solid #334155",
-                height: "100%",
+                height: "65%",
+                width: "990px",
               }}
             >
               <CardContent>
@@ -4564,7 +4566,9 @@ export default function Dashboard() {
                           flexShrink: 0,
                         }}
                       >
-                        {b.user_name?.[0]?.toUpperCase()}
+                        {(b.user_name ||
+                          b.user?.name ||
+                          "?")?.[0]?.toUpperCase()}
                       </Avatar>
                       <Box sx={{ flex: 1, overflow: "hidden" }}>
                         <Typography
@@ -4577,7 +4581,7 @@ export default function Dashboard() {
                             textOverflow: "ellipsis",
                           }}
                         >
-                          {b.user_name}
+                          {b.user_name || b.user?.name || "Unknown"}
                         </Typography>
                         <Typography
                           sx={{
@@ -4588,7 +4592,7 @@ export default function Dashboard() {
                             textOverflow: "ellipsis",
                           }}
                         >
-                          {b.event_title}
+                          {b.event_title || b.event?.title || "—"}
                         </Typography>
                       </Box>
                       <Box sx={{ textAlign: "right", flexShrink: 0 }}>

@@ -726,7 +726,7 @@ function BookingsTab({ plotId, events }) {
           sx={{ minWidth: 220, ...selectSx }}
         >
           <MenuItem value="all">All Bookings</MenuItem>
-          <MenuItem value="pp_only">Party Plot Only (no event)</MenuItem>
+          {/* <MenuItem value="pp_only">Party Plot Only (no event)</MenuItem> */}
           {(events || []).map((ev) => (
             <MenuItem key={ev.id} value={String(ev.id)}>
               {ev.title}
