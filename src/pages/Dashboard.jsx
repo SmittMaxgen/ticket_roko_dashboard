@@ -4203,7 +4203,7 @@ export default function Dashboard() {
                   sub="Distribution of active events"
                 />
                 {catStats?.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={290}>
+                  <ResponsiveContainer  height={100}>
                     <PieChart>
                       <Pie
                         data={catStats}
