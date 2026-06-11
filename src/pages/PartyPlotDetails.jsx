@@ -458,7 +458,7 @@ function OperationsTab({
       )} */}
 
       {/* Book Tickets */}
-      <Box sx={panelSx}>
+      {/* <Box sx={panelSx}>
         <Stack direction="row" alignItems="center" gap={1} mb={2}>
           <BookOnlineIcon sx={{ color: "#22C55E", fontSize: 18 }} />
           <Typography sx={{ color: "#F1F5F9", fontWeight: 700 }}>
@@ -486,7 +486,7 @@ function OperationsTab({
         <Typography sx={{ mt: 1.5, color: "#475569", fontSize: 11 }}>
           Email + SMS confirmation sent automatically after booking.
         </Typography>
-      </Box>
+      </Box> */}
 
       {/* Scan Ticket */}
       <Box sx={panelSx}>
