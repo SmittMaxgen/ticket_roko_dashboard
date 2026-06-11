@@ -53,6 +53,7 @@ const TicketCheckerDashboard = lazy(
 const HallDesk = lazy(() => import("./pages/HallDesk"));
 const BookingManager = lazy(() => import("./pages/BookingManager"));
 const Advertisements = lazy(() => import("./pages/Advertisements"));
+const City = lazy(() => import("./pages/City"));
 const ScanTicketPage = lazy(() => import("./pages/ScanTicketPage"));
 
 // ─────────────────────────────────────────────
@@ -260,6 +261,7 @@ function AppRoutes() {
           <Route path="labels" element={<Labels />} />
           <Route path="categories" element={<Categories />} />
           <Route path="Advertisements" element={<Advertisements />} />
+          <Route path="City" element={<City />} />
 
           {/* Inner 404 */}
           <Route path="*" element={<NotFound />} />

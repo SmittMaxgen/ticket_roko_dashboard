@@ -29,6 +29,7 @@ import AddIcon from "@mui/icons-material/Add";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import ViewListIcon from "@mui/icons-material/ViewList";
 import EventCalendar from "../commonComponents/EventCalendar";
+import AccessTimeIcon from "@mui/icons-material/AccessTime"; // ← Add this
 import SearchIcon from "@mui/icons-material/Search";
 // import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
@@ -622,22 +623,22 @@ export default function Events({ user }) {
       ),
     },
 
-    {
-      field: "status",
-      headerName: "Status",
-      width: 150,
-      renderCell: ({ value }) => (
-        <Chip
-          size="small"
-          label={(value || "").replace("_", " ")}
-          color={STATUS_COLORS[value] || "default"}
-          sx={{
-            textTransform: "capitalize",
-            fontSize: 11,
-          }}
-        />
-      ),
-    },
+    // {
+    //   field: "status",
+    //   headerName: "Status",
+    //   width: 150,
+    //   renderCell: ({ value }) => (
+    //     <Chip
+    //       size="small"
+    //       label={(value || "").replace("_", " ")}
+    //       color={STATUS_COLORS[value] || "default"}
+    //       sx={{
+    //         textTransform: "capitalize",
+    //         fontSize: 11,
+    //       }}
+    //     />
+    //   ),
+    // },
 
     {
       field: "actions",
@@ -1170,13 +1171,25 @@ export default function Events({ user }) {
               </Button>
             </Stack>
 
-            {/* SHOW HALL OR PARTY PLOT BASED ON SELECTION */}
+            {/* SHOW HALL OR PARTY PLOT BASED ON SELECTION + AUTO FILL CITY & ADDRESS */}
             {form.venue_type === "hall" ? (
               <CommonDropDown
                 label="Select Hall"
                 value={form.hall_id}
                 options={hallList}
-                onChange={(e) => setForm({ ...form, hall_id: e.target.value })}
+                onChange={(e) => {
+                  const hallId = e.target.value;
+                  const selectedHall = hallList.find(
+                    (h) => String(h.id) === String(hallId),
+                  );
+
+                  setForm({
+                    ...form,
+                    hall_id: hallId,
+                    city: selectedHall?.city || form.city || "",
+                    address: selectedHall?.address || form.address || "",
+                  });
+                }}
                 required
               />
             ) : (
@@ -1184,9 +1197,19 @@ export default function Events({ user }) {
                 label="Select Party Plot"
                 value={form.party_plot_id}
                 options={partyPlots.map((p) => ({ id: p.id, name: p.name }))}
-                onChange={(e) =>
-                  setForm({ ...form, party_plot_id: e.target.value })
-                }
+                onChange={(e) => {
+                  const plotId = e.target.value;
+                  const selectedPlot = partyPlots.find(
+                    (p) => String(p.id) === String(plotId),
+                  );
+
+                  setForm({
+                    ...form,
+                    party_plot_id: plotId,
+                    city: selectedPlot?.city || form.city || "",
+                    address: selectedPlot?.address || form.address || "",
+                  });
+                }}
                 required
               />
             )}
@@ -1246,42 +1269,122 @@ export default function Events({ user }) {
               required
             />
 
-            <TextField
-              label="Event Date"
-              type="date"
-              InputLabelProps={{ shrink: true }}
-              value={form.event_date}
-              onChange={(e) => setForm({ ...form, event_date: e.target.value })}
-              fullWidth
-              required
-            />
+            {/* Date & Time Fields - Clean UI */}
+            {/* Event Date */}
+            {/* Event Date */}
+            <Box sx={{ mb: 2 }}>
+              <Typography
+                sx={{
+                  color: "#94a3b8",
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                  mb: 0.8,
+                }}
+              >
+                Event Date
+              </Typography>
+              <TextField
+                type="date"
+                placeholder="dd-mm-yyyy"
+                value={form.event_date}
+                onChange={(e) =>
+                  setForm({ ...form, event_date: e.target.value })
+                }
+                fullWidth
+                required
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    backgroundColor: "#1e2937",
+                    borderRadius: "8px",
+                    color: "#e2e8f0",
+                  },
+                }}
+              />
+            </Box>
 
-            <TextField
-              label="Start Time"
-              type="time"
-              InputLabelProps={{ shrink: true }}
-              value={form.start_time}
-              onChange={(e) => setForm({ ...form, start_time: e.target.value })}
-              fullWidth
-              required
-            />
+            {/* Start Time & End Time */}
+            <Box sx={{ mb: 2 }}>
+              <Typography
+                sx={{
+                  color: "#94a3b8",
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                  mb: 0.8,
+                }}
+              >
+                Event Time
+              </Typography>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                {/* Start Time */}
+                <Box sx={{ flex: 1 }}>
+                  <Typography
+                    sx={{
+                      color: "#94a3b8",
+                      fontSize: "0.8rem",
+                      mb: 0.6,
+                    }}
+                  >
+                    Start Time
+                  </Typography>
+                  <TextField
+                    type="time"
+                    placeholder="10:00"
+                    value={form.start_time}
+                    onChange={(e) =>
+                      setForm({ ...form, start_time: e.target.value })
+                    }
+                    fullWidth
+                    required
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        backgroundColor: "#1e2937",
+                        borderRadius: "8px",
+                        color: "#e2e8f0",
+                      },
+                    }}
+                  />
+                </Box>
 
-            <TextField
-              label="End Time"
-              type="time"
-              InputLabelProps={{ shrink: true }}
-              value={form.end_time}
-              onChange={(e) => setForm({ ...form, end_time: e.target.value })}
-              fullWidth
-              required
-            />
-
+                {/* End Time */}
+                <Box sx={{ flex: 1 }}>
+                  <Typography
+                    sx={{
+                      color: "#94a3b8",
+                      fontSize: "0.8rem",
+                      mb: 0.6,
+                    }}
+                  >
+                    End Time
+                  </Typography>
+                  <TextField
+                    type="time"
+                    placeholder="12:00"
+                    value={form.end_time}
+                    onChange={(e) =>
+                      setForm({ ...form, end_time: e.target.value })
+                    }
+                    fullWidth
+                    required
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        backgroundColor: "#1e2937",
+                        borderRadius: "8px",
+                        color: "#e2e8f0",
+                      },
+                    }}
+                  />
+                </Box>
+              </Stack>
+            </Box>
+            {/* City & Address - Auto filled and Disabled */}
             <TextField
               label="City"
               value={form.city}
               onChange={(e) => setForm({ ...form, city: e.target.value })}
               fullWidth
               required
+              disabled={!!(form.hall_id || form.party_plot_id)}
+              sx={{ mb: 1 }}
             />
 
             <TextField
@@ -1290,6 +1393,9 @@ export default function Events({ user }) {
               onChange={(e) => setForm({ ...form, address: e.target.value })}
               fullWidth
               required
+              disabled={!!(form.hall_id || form.party_plot_id)}
+              multiline
+              rows={2}
             />
             {/* ✅ Language Field */}
             <CommonDropDown

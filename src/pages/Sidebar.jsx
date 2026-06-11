@@ -446,13 +446,19 @@ const NAV = [
     label: "Labels",
     icon: <MeetingRoomIcon />,
     path: "/labels",
-    roles: ["super_admin", "admin", "user", "vendor_organizer"],
+    roles: ["super_admin", "admin"],
   },
   {
     label: "Advertisements",
     icon: <MeetingRoomIcon />,
     path: "/Advertisements",
-    roles: ["super_admin", "admin", "user", "vendor_organizer"],
+    roles: ["super_admin", "admin"],
+  },
+  {
+    label: "City",
+    icon: <MeetingRoomIcon />,
+    path: "/city",
+    roles: ["super_admin", "admin"],
   },
 ];
 

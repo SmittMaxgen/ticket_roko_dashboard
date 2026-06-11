@@ -15,6 +15,7 @@ import partyPlotBookingsReducer from "../features/partyPlot/partyPlotBookingSlic
 import labelReducer from "../features/labels/labelslice";
 import ticketCheckerReducer from "../features/ticketChecker/ticketCheckerSlice";
 import advertisementReducer from "../features/advertisement/advertisementSlice.js";
+import citiesReducer from "../features/city/citySlice.js";
 
 export const store = configureStore({
   reducer: {
@@ -32,5 +33,6 @@ export const store = configureStore({
     labels: labelReducer,
     ticketChecker: ticketCheckerReducer,
     advertisements: advertisementReducer,
+    cities: citiesReducer,
   },
 });
