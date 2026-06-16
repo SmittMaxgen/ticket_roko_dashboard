@@ -222,8 +222,8 @@ export default function BookingManager({ eventId }) {
   const getSeatFill = (seat) => {
     const color = validColor(seat.fill);
     if (labelSeatIds.includes(seat.id)) return color + "99";
-    if (selectedSeats.includes(seat.id)) return "#25eb6a";
-    if (seat.status === "sold") return "#808080";
+    if (selectedSeats.includes(seat.id)) return "#1fad3e";
+    if (seat.status === "sold") return "#e5e5e5";
     return color + "22";
   };
 
@@ -231,7 +231,7 @@ export default function BookingManager({ eventId }) {
     const color = validColor(seat.fill);
     if (labelSeatIds.includes(seat.id)) return "#fff";
     if (selectedSeats.includes(seat.id)) return "#60A5FA";
-    if (seat.status === "sold") return "#808080";
+    if (seat.status === "sold") return "#e5e5e5";
     return color;
   };
 
