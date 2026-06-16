@@ -17,7 +17,11 @@ import {
   CircularProgress,
   Divider,
   Stack,
+  TextField,
+  MenuItem,
+  InputAdornment,
 } from "@mui/material";
+import SearchIcon from "@mui/icons-material/Search";
 
 import { useDispatch, useSelector } from "react-redux";
 import { useSnackbar } from "notistack";
@@ -55,6 +59,8 @@ export default function TicketCheckerDashboard() {
   const [scanOpen, setScanOpen] = useState(false);
 
   const [scanContext, setScanContext] = useState(null);
+  const [filterHallId, setFilterHallId] = useState("");
+  const [filterPlotSearch, setFilterPlotSearch] = useState("");
 
   useEffect(() => {
     if (user?.role === "ticket_checker") {
@@ -99,6 +105,22 @@ export default function TicketCheckerDashboard() {
     }
   };
 
+  const uniqueHalls = Array.from(
+    new Map(
+      assignedEvents.filter((e) => e.hall).map((e) => [e.hall.id, e.hall]),
+    ).values(),
+  );
+
+  const filteredEvents = filterHallId
+    ? assignedEvents.filter((e) => String(e.hall?.id) === String(filterHallId))
+    : assignedEvents;
+
+  const filteredPartyPlots = filterPlotSearch
+    ? assignedPartyPlots.filter((p) =>
+        (p.name || "").toLowerCase().includes(filterPlotSearch.toLowerCase()),
+      )
+    : assignedPartyPlots;
+
   const renderEventsTable = () => (
     <TableContainer component={Paper} sx={{ background: "#111827" }}>
       <Table>
@@ -117,14 +139,16 @@ export default function TicketCheckerDashboard() {
         </TableHead>
 
         <TableBody>
-          {assignedEvents.length === 0 ? (
+          {filteredEvents.length === 0 ? (
             <TableRow>
               <TableCell colSpan={6} sx={{ color: "#94A3B8", py: 4 }}>
-                No assigned events yet.
+                {filterHallId
+                  ? "No events found for this hall."
+                  : "No assigned events yet."}
               </TableCell>
             </TableRow>
           ) : (
-            assignedEvents.map((event) => (
+            filteredEvents.map((event) => (
               <TableRow key={event.id}>
                 <TableCell sx={{ color: "#F8FAFC" }}>{event.title}</TableCell>
 
@@ -192,14 +216,16 @@ export default function TicketCheckerDashboard() {
         </TableHead>
 
         <TableBody>
-          {assignedPartyPlots.length === 0 ? (
+          {filteredPartyPlots.length === 0 ? (
             <TableRow>
               <TableCell colSpan={5} sx={{ color: "#94A3B8", py: 4 }}>
-                No assigned party plots yet.
+                {filterPlotSearch
+                  ? "No party plots match your search."
+                  : "No assigned party plots yet."}
               </TableCell>
             </TableRow>
           ) : (
-            assignedPartyPlots.map((plot) => (
+            filteredPartyPlots.map((plot) => (
               <TableRow key={plot.id}>
                 <TableCell sx={{ color: "#F8FAFC" }}>{plot.name}</TableCell>
 
@@ -227,11 +253,7 @@ export default function TicketCheckerDashboard() {
                     <Button
                       size="small"
                       variant="outlined"
-                      onClick={() =>
-                        navigate(
-                          `/bookings?bookingType=party_plot&party_plot_id=${plot.id}`,
-                        )
-                      }
+                      onClick={() => navigate(`/party-plot/${plot.id}`)}
                     >
                       View Bookings
                     </Button>
@@ -274,6 +296,36 @@ export default function TicketCheckerDashboard() {
               {assignedEvents.length} assigned event(s)
             </Typography>
 
+            <Stack
+              direction="row"
+              spacing={2}
+              sx={{ mb: 2, alignItems: "center" }}
+            >
+              <TextField
+                select
+                size="small"
+                label="Filter by Hall"
+                value={filterHallId}
+                onChange={(e) => setFilterHallId(e.target.value)}
+                sx={{ minWidth: 200 }}
+              >
+                <MenuItem value="">All Halls</MenuItem>
+                {uniqueHalls.map((hall) => (
+                  <MenuItem key={hall.id} value={String(hall.id)}>
+                    {hall.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+              {filterHallId && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => setFilterHallId("")}
+                >
+                  Clear
+                </Button>
+              )}
+            </Stack>
             {loading ? <CircularProgress /> : renderEventsTable()}
           </CardContent>
         </Card>
@@ -289,12 +341,39 @@ export default function TicketCheckerDashboard() {
             <Typography variant="h6" sx={{ color: "#fff", mb: 1 }}>
               Assigned Party Plots
             </Typography>
-
             <Typography sx={{ color: "#94A3B8", mb: 2 }}>
               {assignedPartyPlots.length} assigned party plot(s)
             </Typography>
-
-            {loading ? <CircularProgress /> : renderPartyPlotsTable()}
+            <Stack
+              direction="row"
+              spacing={2}
+              sx={{ mb: 2, alignItems: "center" }}
+            >
+              <TextField
+                size="small"
+                placeholder="Search party plot..."
+                value={filterPlotSearch}
+                onChange={(e) => setFilterPlotSearch(e.target.value)}
+                sx={{ minWidth: 220 }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: "#64748B", fontSize: 18 }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              {filterPlotSearch && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => setFilterPlotSearch("")}
+                >
+                  Clear
+                </Button>
+              )}
+            </Stack>
+            {loading ? <CircularProgress /> : renderPartyPlotsTable()}{" "}
           </CardContent>
         </Card>
       </Stack>

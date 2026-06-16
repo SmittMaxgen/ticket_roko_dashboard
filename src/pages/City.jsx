@@ -32,6 +32,7 @@ import {
 } from "@mui/material";
 
 import { createTheme, ThemeProvider } from "@mui/material/styles";
+import { API_BASE_URL } from "../api/axios";
 
 import AddIcon from "@mui/icons-material/Add";
 import VisibilityIcon from "@mui/icons-material/Visibility";
@@ -95,6 +96,8 @@ const EMPTY_FORM = {
   name: "",
   slug: "",
   state: "",
+  icon: "",
+  image_url: "",
   is_active: true,
 };
 
@@ -195,6 +198,8 @@ export default function City() {
         name: target.name || "",
         slug: target.slug || "",
         state: target.state || "",
+        icon: target.icon || "",
+        image_url: target.image_url || "",
         is_active: target.is_active ?? true,
       });
     }
@@ -359,7 +364,33 @@ export default function City() {
                     <TableRow key={city.id} hover>
                       <TableCell>
                         <Stack direction="row" spacing={2} alignItems="center">
-                          <LocationOnIcon sx={{ color: "#3b82f6" }} />
+                          {city.image_url ? (
+                            <Box
+                              component="img"
+                              src={`${API_BASE_URL}/${city.image_url}`}
+                              alt={city.name}
+                              sx={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: 1,
+                                objectFit: "cover",
+                              }}
+                            />
+                          ) : city.icon ? (
+                            <Box
+                              component="img"
+                              src={`${API_BASE_URL}/${city.icon}`}
+                              alt="icon"
+                              sx={{
+                                width: 36,
+                                height: 36,
+                                borderRadius: 1,
+                                objectFit: "cover",
+                              }}
+                            />
+                          ) : (
+                            <LocationOnIcon sx={{ color: "#3b82f6" }} />
+                          )}
                           <Typography fontWeight={600}>{city.name}</Typography>
                         </Stack>
                       </TableCell>
@@ -383,9 +414,7 @@ export default function City() {
                           variant="outlined"
                         />
                       </TableCell>
-                      <TableCell
-                        align="right"
-                      >
+                      <TableCell align="right">
                         <Stack
                           direction="row"
                           spacing={1}
@@ -462,6 +491,104 @@ export default function City() {
                   />
                 </Grid>
                 <Grid item xs={12}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 1 }}
+                  >
+                    City Icon
+                  </Typography>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        icon: e.target.files[0],
+                      }))
+                    }
+                    style={{ width: "100%" }}
+                  />
+                  {formData.icon && typeof formData.icon === "string" && (
+                    <Box
+                      component="img"
+                      src={`${import.meta.env.VITE_API_BASE_URL}/${formData.icon}`}
+                      alt="icon preview"
+                      sx={{
+                        mt: 1,
+                        width: 60,
+                        height: 60,
+                        objectFit: "cover",
+                        borderRadius: 1,
+                      }}
+                    />
+                  )}
+                  {formData.icon && typeof formData.icon === "object" && (
+                    <Box
+                      component="img"
+                      src={URL.createObjectURL(formData.icon)}
+                      alt="icon preview"
+                      sx={{
+                        mt: 1,
+                        width: 60,
+                        height: 60,
+                        objectFit: "cover",
+                        borderRadius: 1,
+                      }}
+                    />
+                  )}
+                </Grid>
+                <Grid item xs={12}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 1 }}
+                  >
+                    City Image
+                  </Typography>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        image_url: e.target.files[0],
+                      }))
+                    }
+                    style={{ width: "100%" }}
+                  />
+                  {formData.image_url &&
+                    typeof formData.image_url === "string" && (
+                      <Box
+                        component="img"
+                        src={`${import.meta.env.VITE_API_BASE_URL}/${formData.image_url}`}
+                        alt="image preview"
+                        sx={{
+                          mt: 1,
+                          width: "100%",
+                          height: 120,
+                          objectFit: "cover",
+                          borderRadius: 2,
+                        }}
+                      />
+                    )}
+                  {formData.image_url &&
+                    typeof formData.image_url === "object" && (
+                      <Box
+                        component="img"
+                        src={URL.createObjectURL(formData.image_url)}
+                        alt="image preview"
+                        sx={{
+                          mt: 1,
+                          width: "100%",
+                          height: 120,
+                          objectFit: "cover",
+                          borderRadius: 2,
+                        }}
+                      />
+                    )}
+                </Grid>
+                <Grid item xs={12}>
                   <Stack direction="row" alignItems="center" spacing={2}>
                     <Switch
                       name="is_active"
@@ -493,7 +620,23 @@ export default function City() {
           <DialogContent>
             {target && (
               <Stack spacing={3} alignItems="center" textAlign="center">
-                <LocationOnIcon sx={{ fontSize: 80, color: "#3b82f6" }} />
+                {target.image_url ? (
+                  <Box
+                    component="img"
+                    src={target.image_url}
+                    alt={target.name}
+                    sx={{
+                      width: "100%",
+                      height: 160,
+                      objectFit: "cover",
+                      borderRadius: 2,
+                    }}
+                  />
+                ) : target.icon ? (
+                  <Typography sx={{ fontSize: 64 }}>{target.icon}</Typography>
+                ) : (
+                  <LocationOnIcon sx={{ fontSize: 80, color: "#3b82f6" }} />
+                )}
                 <Box>
                   <Typography variant="h5">{target.name}</Typography>
                   <Typography color="text.secondary">/{target.slug}</Typography>

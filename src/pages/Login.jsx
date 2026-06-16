@@ -135,7 +135,7 @@ export default function Login() {
             variant="h5"
             sx={{ color: "#F8FAFC", fontWeight: 700, mb: 0.5 }}
           >
-            HallDesk
+            Ticket Roko
           </Typography>
           <Typography sx={{ color: "#64748B", fontSize: 13 }}>
             Admin Dashboard — Sign in to continue
@@ -263,9 +263,9 @@ export default function Login() {
               </Button>
             </form>
 
-            <Divider sx={{ my: 2.5, borderColor: "#334155" }} />
+            {/* <Divider sx={{ my: 2.5, borderColor: "#334155" }} /> */}
 
-            <Box
+            {/* <Box
               sx={{
                 background: "#0F172A",
                 borderRadius: "8px",
@@ -287,15 +287,15 @@ export default function Login() {
               >
                 admin@halldesk.com / Admin@123
               </Typography>
-            </Box>
+            </Box> */}
           </CardContent>
         </Card>
-
+{/* 
         <Typography
           sx={{ textAlign: "center", mt: 3, fontSize: 12, color: "#475569" }}
         >
           © 2025 HallDesk · All rights reserved
-        </Typography>
+        </Typography> */}
       </Box>
     </Box>
   );

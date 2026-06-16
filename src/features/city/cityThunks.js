@@ -35,7 +35,15 @@ export const createCity = createAsyncThunk(
   "cities/create",
   async (cityData, { rejectWithValue }) => {
     try {
-      const { data } = await api.post("/cities", cityData);
+      const formData = new FormData();
+      Object.entries(cityData).forEach(([key, value]) => {
+        if (value !== null && value !== undefined && value !== "") {
+          formData.append(key, value);
+        }
+      });
+      const { data } = await api.post("/cities", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       return data.data;
     } catch (err) {
       return rejectWithValue(
@@ -49,7 +57,15 @@ export const updateCity = createAsyncThunk(
   "cities/update",
   async ({ id, cityData }, { rejectWithValue }) => {
     try {
-      const { data } = await api.put(`/cities/${id}`, cityData);
+      const formData = new FormData();
+      Object.entries(cityData).forEach(([key, value]) => {
+        if (value !== null && value !== undefined && value !== "") {
+          formData.append(key, value);
+        }
+      });
+      const { data } = await api.put(`/cities/${id}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       return data.data;
     } catch (err) {
       return rejectWithValue(

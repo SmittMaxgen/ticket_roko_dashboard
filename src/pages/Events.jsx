@@ -266,7 +266,7 @@ export default function Events({ user }) {
   }, [dispatch]);
   // add state near other states
   const [partyPlots, setPartyPlots] = useState([]);
-
+  const [hallSections, setHallSections] = useState([]);
   // add this useEffect near other useEffects
   useEffect(() => {
     const fetchPartyPlots = async () => {
@@ -397,15 +397,22 @@ export default function Events({ user }) {
       !form.city.trim() ||
       !form.address.trim() ||
       // ← only validate price & tickets for hall events
-      (form.venue_type === "hall" && Number(form.ticket_price) <= 0) ||
-      (form.venue_type === "hall" && Number(form.total_tickets) <= 0)
+      (form.venue_type === "hall" && !form.hall_id) ||
+      (form.venue_type === "party_plot" && !form.party_plot_id) ||
+      !form.category_id ||
+      !form.title.trim() ||
+      !form.description.trim() ||
+      !form.event_date ||
+      !form.start_time ||
+      !form.end_time ||
+      !form.city.trim() ||
+      !form.address.trim()
     ) {
       enqueueSnackbar(
-        form.venue_type === "hall"
-          ? "All fields required. Price & Total Tickets must be greater than 0"
-          : "All fields required. Please fill in all event details.",
+        "All fields required. Please fill in all event details.",
         { variant: "error" },
       );
+
       return;
     }
 
@@ -576,6 +583,46 @@ export default function Events({ user }) {
           variant="outlined"
         />
       ),
+    },
+    {
+      field: "ticketCheckerAssignments",
+      headerName: "Ticket Checkers",
+      width: 200,
+      sortable: false,
+      renderCell: ({ row }) => {
+        const assignments = row.ticketCheckerAssignments || [];
+        if (!assignments.length) {
+          return (
+            <Typography sx={{ color: "#475569", fontSize: 11 }}>
+              None assigned
+            </Typography>
+          );
+        }
+        return (
+          <Stack
+            sx={{ marginTop: "5px" }}
+            direction="row"
+            spacing={0.5}
+            flexWrap="wrap"
+          >
+            {assignments.map((a) => (
+              <Tooltip key={a.id} title={a.ticketChecker?.email || ""}>
+                <Chip
+                  label={a.ticketChecker?.name || "—"}
+                  size="small"
+                  sx={{
+                    fontSize: 10,
+                    height: 20,
+                    background: "#1e3a5f",
+                    color: "#60a5fa",
+                    border: "1px solid #2563eb55",
+                  }}
+                />
+              </Tooltip>
+            ))}
+          </Stack>
+        );
+      },
     },
     {
       field: "is_trending",
@@ -1183,11 +1230,21 @@ export default function Events({ user }) {
                     (h) => String(h.id) === String(hallId),
                   );
 
+                  const sections = selectedHall?.sections || [];
+                  setHallSections(sections);
+
+                  // Pre-fill section prices from hall defaults
+                  const newSectionPrices = {};
+                  sections.forEach((s) => {
+                    newSectionPrices[s.section_label] = s.default_price || 0;
+                  });
+
                   setForm({
                     ...form,
                     hall_id: hallId,
                     city: selectedHall?.city || form.city || "",
                     address: selectedHall?.address || form.address || "",
+                    section_prices: newSectionPrices,
                   });
                 }}
                 required
@@ -1434,35 +1491,33 @@ export default function Events({ user }) {
               onChange={(e) => setForm({ ...form, event_type: e.target.value })}
               required
             />
-            <TextField
-              label="Ticket Price"
-              type="number"
-              value={form.ticket_price}
-              inputProps={{ min: 1 }}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  ticket_price: e.target.value,
-                })
-              }
-              fullWidth
-              required
-            />
+            {form.venue_type === "party_plot" && (
+              <>
+                <TextField
+                  label="Ticket Price"
+                  type="number"
+                  value={form.ticket_price}
+                  inputProps={{ min: 1 }}
+                  onChange={(e) =>
+                    setForm({ ...form, ticket_price: e.target.value })
+                  }
+                  fullWidth
+                  required
+                />
 
-            <TextField
-              label="Total Tickets"
-              type="number"
-              value={form.total_tickets}
-              inputProps={{ min: 1 }}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  total_tickets: e.target.value,
-                })
-              }
-              fullWidth
-              required
-            />
+                <TextField
+                  label="Total Tickets"
+                  type="number"
+                  value={form.total_tickets}
+                  inputProps={{ min: 1 }}
+                  onChange={(e) =>
+                    setForm({ ...form, total_tickets: e.target.value })
+                  }
+                  fullWidth
+                  required
+                />
+              </>
+            )}
             {/* ✅ NEW: Is Trending Toggle */}
             <FormControlLabel
               control={
@@ -1537,7 +1592,7 @@ export default function Events({ user }) {
               )}
             </Box>
             {/* ── Section Prices ── */}
-            {form.venue_type === "hall" ? (
+            {form.venue_type === "hall" && hallSections.length > 0 ? (
               <Box>
                 <Typography
                   sx={{
@@ -1550,21 +1605,25 @@ export default function Events({ user }) {
                   SECTION PRICES (per seat)
                 </Typography>
                 <Grid container spacing={1.5}>
-                  {SECTION_LABELS.map((sec) => (
-                    <Grid item xs={6} key={sec.label}>
+                  {hallSections.map((sec) => (
+                    <Grid item xs={6} key={sec.section_label}>
                       <TextField
-                        label={sec.label}
+                        label={sec.section_label}
                         type="number"
                         size="small"
                         fullWidth
-                        value={form.section_prices[sec.label]}
+                        value={
+                          form.section_prices[sec.section_label] ??
+                          sec.default_price ??
+                          0
+                        }
                         inputProps={{ min: 0 }}
                         onChange={(e) =>
                           setForm({
                             ...form,
                             section_prices: {
                               ...form.section_prices,
-                              [sec.label]: e.target.value,
+                              [sec.section_label]: e.target.value,
                             },
                           })
                         }
@@ -1572,7 +1631,7 @@ export default function Events({ user }) {
                           startAdornment: (
                             <InputAdornment position="start">
                               <span
-                                style={{ color: sec.color, fontWeight: 700 }}
+                                style={{ color: "#f59e0b", fontWeight: 700 }}
                               >
                                 ₹
                               </span>
@@ -1581,8 +1640,8 @@ export default function Events({ user }) {
                         }}
                         sx={{
                           "& .MuiOutlinedInput-root": {
-                            "& fieldset": { borderColor: sec.color + "55" },
-                            "&:hover fieldset": { borderColor: sec.color },
+                            "& fieldset": { borderColor: "#f59e0b55" },
+                            "&:hover fieldset": { borderColor: "#f59e0b" },
                           },
                         }}
                       />
@@ -1590,6 +1649,12 @@ export default function Events({ user }) {
                   ))}
                 </Grid>
               </Box>
+            ) : form.venue_type === "hall" &&
+              !hallSections.length &&
+              form.hall_id ? (
+              <Typography sx={{ color: "#475569", fontSize: 12 }}>
+                No sections found for this hall.
+              </Typography>
             ) : null}
           </Stack>
         </DialogContent>
