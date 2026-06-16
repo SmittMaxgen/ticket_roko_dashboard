@@ -834,15 +834,53 @@ export default function Events({ user }) {
           <Tooltip title="Edit">
             <IconButton
               size="small"
-              onClick={() => {
-                const spMap = {
-                  Premium: 0,
-                  Executive: 0,
-                  General: 0,
-                  VIP: 0,
-                  Standard: 0,
-                };
+              // onClick={() => {
+              //   const spMap = {
+              //     Premium: 0,
+              //     Executive: 0,
+              //     General: 0,
+              //     VIP: 0,
+              //     Standard: 0,
+              //   };
 
+              //   (row.sectionPrices || row.EventSectionPrices || []).forEach(
+              //     (sp) => {
+              //       if (sp.section_label) {
+              //         spMap[sp.section_label] = Number(sp.price || 0);
+              //       }
+              //     },
+              //   );
+
+              //   setForm({
+              //     hall_id: row.hall_id || "",
+              //     party_plot_id: row.party_plot_id || "",
+              //     category_id: row.category_id || "",
+              //     title: row.title || "",
+              //     description: row.description || "",
+              //     event_date: row.event_date || "",
+              //     start_time: row.start_time || "",
+              //     end_time: row.end_time || "",
+              //     city: row.city || "",
+              //     address: row.address || "",
+              //     ticket_price: row.ticket_price || 0,
+              //     total_tickets: row.total_tickets || 0,
+              //     is_free: row.is_free || false,
+              //     is_trending: !!row.is_trending,
+              //     language: row.language || "English",
+              //     event_type: row.event_type || "Other",
+              //     status: row.status || "draft",
+              //     organizer_id: row.organizer?.id || row.organizer_id || "",
+              //     banner_url: row.banner_url || "",
+              //     banner_preview: "",
+              //     section_prices: spMap,
+              //   });
+
+              //   setEditing(row.id); // ← THIS WAS THE MAIN PROBLEM
+              //   setOpen(true);
+              // }}
+              onClick={() => {
+                // Build section prices map from existing event section prices
+                const spMap = {};
                 (row.sectionPrices || row.EventSectionPrices || []).forEach(
                   (sp) => {
                     if (sp.section_label) {
@@ -851,9 +889,28 @@ export default function Events({ user }) {
                   },
                 );
 
+                // Populate hall sections from hallList for dynamic section fields
+                if (row.hall_id) {
+                  const selectedHall = hallList.find(
+                    (h) => String(h.id) === String(row.hall_id),
+                  );
+                  const sections = selectedHall?.sections || [];
+                  setHallSections(sections);
+
+                  // If no existing section prices, pre-fill from hall defaults
+                  if (Object.keys(spMap).length === 0) {
+                    sections.forEach((s) => {
+                      spMap[s.section_label] = s.default_price || 0;
+                    });
+                  }
+                } else {
+                  setHallSections([]);
+                }
+
                 setForm({
                   hall_id: row.hall_id || "",
                   party_plot_id: row.party_plot_id || "",
+                  venue_type: row.hall_id ? "hall" : "party_plot",
                   category_id: row.category_id || "",
                   title: row.title || "",
                   description: row.description || "",
@@ -875,7 +932,7 @@ export default function Events({ user }) {
                   section_prices: spMap,
                 });
 
-                setEditing(row.id); // ← THIS WAS THE MAIN PROBLEM
+                setEditing(row.id);
                 setOpen(true);
               }}
               sx={{ color: "#60a5fa" }}
