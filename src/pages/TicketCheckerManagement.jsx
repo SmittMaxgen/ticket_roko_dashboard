@@ -430,7 +430,8 @@ export default function TicketCheckerManagement() {
               "& .MuiTab-root": { textTransform: "none", fontWeight: 500 },
             }}
           >
-            <Tab label="Events" />
+            <Tab label="Upcoming Events" />
+            <Tab label="Past Events" />
             <Tab label="Party Plots" />
           </Tabs>
         </Box>
@@ -457,7 +458,7 @@ export default function TicketCheckerManagement() {
             ))}
           </TextField>
 
-          {activeTab === 0 && (
+          {(activeTab === 0 || activeTab === 1) && (
             <TextField
               select
               label="Filter by Hall"
@@ -500,12 +501,11 @@ export default function TicketCheckerManagement() {
             </Button>
           )}
         </Stack>
-
         {filterLoading ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
             <CircularProgress />
           </Box>
-        ) : activeTab === 0 ? (
+        ) : activeTab === 0 || activeTab === 1 ? (
           /* Events Table */
           <TableContainer component={Paper} sx={{ background: "#1E293B" }}>
             <Table>
@@ -519,8 +519,25 @@ export default function TicketCheckerManagement() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {displayedEvents.length > 0 ? (
-                  displayedEvents.map((event) => (
+                {(() => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const filtered = displayedEvents.filter((event) => {
+                    if (!event.event_date) return false;
+                    const d = new Date(event.event_date);
+                    return activeTab === 0 ? d >= today : d < today;
+                  });
+                  return filtered;
+                })().length > 0 ? (
+                  (() => {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    return displayedEvents.filter((event) => {
+                      if (!event.event_date) return false;
+                      const d = new Date(event.event_date);
+                      return activeTab === 0 ? d >= today : d < today;
+                    });
+                  })().map((event) => (
                     <TableRow key={event.id} hover>
                       <TableCell sx={{ fontWeight: 600 }}>
                         {event.title}
@@ -569,15 +586,16 @@ export default function TicketCheckerManagement() {
                       align="center"
                       sx={{ py: 6, color: "#94A3B8" }}
                     >
-                      No events found for the selected filters.
+                      {activeTab === 0
+                        ? "No upcoming events found for the selected filters."
+                        : "No past events found for the selected filters."}
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
           </TableContainer>
-        ) : (
-          /* Party Plots Table */
+        ) : activeTab === 2 ? (
           <TableContainer component={Paper} sx={{ background: "#1E293B" }}>
             <Table>
               <TableHead>
@@ -626,7 +644,7 @@ export default function TicketCheckerManagement() {
               </TableBody>
             </Table>
           </TableContainer>
-        )}
+        ) : null}
       </Paper>
 
       {/* Event Detail Dialog */}
