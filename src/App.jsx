@@ -167,17 +167,17 @@ function AppRoutes() {
           }
         >
           {/* Dashboard */}
-          {/* <Route
+          <Route
             index
             element={
-              user?.role === "vendor_organizer" &&
-              (!user?.vendorProfile || !user?.vendorProfile?.is_completed) ? (
-                <Navigate to="/vendor-registration" replace />
-              ) : (
+              // user?.role === "vendor_organizer" &&
+              // (!user?.vendorProfile || !user?.vendorProfile?.is_completed) ? (
+              //   <Navigate to="/vendor-registration" replace />
+              // ) : (
                 <Dashboard />
-              )
+              // )
             }
-          /> */}
+          />
 
           {/* Users */}
           <Route
