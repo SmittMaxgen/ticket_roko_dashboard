@@ -49,7 +49,7 @@ export default function Settings() {
     setSaving(true);
 
     try {
-      await api.post("/auth/change-password", {
+      await api.put("/auth/change-password", {
         currentPassword: pw.currentPassword,
         newPassword: pw.newPassword,
       });
@@ -200,52 +200,58 @@ export default function Settings() {
         </Grid>
 
         {/* SYSTEM INFO */}
-        <Grid item xs={12}>
-          <Card sx={{ background: "#1E293B" }}>
-            <CardContent>
-              <Typography
-                sx={{
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: "#F8FAFC",
-                  mb: 1.5,
-                }}
-              >
-                System Info
-              </Typography>
+        {!user.role === "ticket_checer" ? (
+          <Grid item xs={12}>
+            <Card sx={{ background: "#1E293B" }}>
+              <CardContent>
+                <Typography
+                  sx={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: "#F8FAFC",
+                    mb: 1.5,
+                  }}
+                >
+                  System Info
+                </Typography>
 
-              <Grid container spacing={2}>
-                {[
-                  ["API Version", "v1.0.0"],
-                  ["Database", "MySQL 8.0"],
-                  ["Node.js", "v20.x"],
-                  ["Environment", "Development"],
-                ].map(([k, v]) => (
-                  <Grid key={k} item xs={6} sm={3}>
-                    <Box
-                      sx={{
-                        background: "#0F172A",
-                        borderRadius: "8px",
-                        p: "12px 14px",
-                      }}
-                    >
-                      <Typography
-                        sx={{ fontSize: 10, color: "#64748B", mb: 0.5 }}
+                <Grid container spacing={2}>
+                  {[
+                    ["API Version", "v1.0.0"],
+                    ["Database", "MySQL 8.0"],
+                    ["Node.js", "v20.x"],
+                    ["Environment", "Development"],
+                  ].map(([k, v]) => (
+                    <Grid key={k} item xs={6} sm={3}>
+                      <Box
+                        sx={{
+                          background: "#0F172A",
+                          borderRadius: "8px",
+                          p: "12px 14px",
+                        }}
                       >
-                        {k.toUpperCase()}
-                      </Typography>
-                      <Typography
-                        sx={{ fontSize: 13, fontWeight: 600, color: "#2563EB" }}
-                      >
-                        {v}
-                      </Typography>
-                    </Box>
-                  </Grid>
-                ))}
-              </Grid>
-            </CardContent>
-          </Card>
-        </Grid>
+                        <Typography
+                          sx={{ fontSize: 10, color: "#64748B", mb: 0.5 }}
+                        >
+                          {k.toUpperCase()}
+                        </Typography>
+                        <Typography
+                          sx={{
+                            fontSize: 13,
+                            fontWeight: 600,
+                            color: "#2563EB",
+                          }}
+                        >
+                          {v}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  ))}
+                </Grid>
+              </CardContent>
+            </Card>
+          </Grid>
+        ) : null}
       </Grid>
     </Box>
   );

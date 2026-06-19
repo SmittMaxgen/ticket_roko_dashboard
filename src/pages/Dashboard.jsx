@@ -3892,55 +3892,56 @@ export default function Dashboard() {
             {" · "}Here's what's happening with your events.
           </Typography>
         </Box>
-
-        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-          <Tooltip title="Refresh dashboard">
-            <IconButton
-              size="small"
-              onClick={load}
-              disabled={loading}
-              sx={{
-                color: "#64748B",
-                border: "1px solid #334155",
-                borderRadius: "8px",
-                "&:hover": {
-                  color: "#2563EB",
-                  borderColor: "#2563EB44",
-                  background: "#2563EB10",
-                },
-              }}
-            >
-              <RefreshIcon
-                fontSize="small"
+        {!user.role === "ticket_checker" ? (
+          <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+            <Tooltip title="Refresh dashboard">
+              <IconButton
+                size="small"
+                onClick={load}
+                disabled={loading}
                 sx={{
-                  animation: loading ? "spin 1s linear infinite" : "none",
-                  "@keyframes spin": {
-                    "100%": { transform: "rotate(360deg)" },
+                  color: "#64748B",
+                  border: "1px solid #334155",
+                  borderRadius: "8px",
+                  "&:hover": {
+                    color: "#2563EB",
+                    borderColor: "#2563EB44",
+                    background: "#2563EB10",
                   },
                 }}
-              />
-            </IconButton>
-          </Tooltip>
-          {isAdmin && (
-            <>
-              <Button
-                variant="contained"
-                size="small"
-                startIcon={<EventOutlinedIcon />}
-                onClick={() => navigate("/events")}
-                sx={{
-                  fontSize: 12,
-                  borderRadius: "8px",
-                  background: "linear-gradient(135deg,#2563EB,#1D4ED8)",
-                  boxShadow: "0 4px 12px rgba(37,99,235,0.3)",
-                  "&:hover": { boxShadow: "0 6px 18px rgba(37,99,235,0.45)" },
-                }}
               >
-                Manage Events
-              </Button>
-            </>
-          )}
-        </Box>
+                <RefreshIcon
+                  fontSize="small"
+                  sx={{
+                    animation: loading ? "spin 1s linear infinite" : "none",
+                    "@keyframes spin": {
+                      "100%": { transform: "rotate(360deg)" },
+                    },
+                  }}
+                />
+              </IconButton>
+            </Tooltip>
+            {isAdmin && (
+              <>
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<EventOutlinedIcon />}
+                  onClick={() => navigate("/events")}
+                  sx={{
+                    fontSize: 12,
+                    borderRadius: "8px",
+                    background: "linear-gradient(135deg,#2563EB,#1D4ED8)",
+                    boxShadow: "0 4px 12px rgba(37,99,235,0.3)",
+                    "&:hover": { boxShadow: "0 6px 18px rgba(37,99,235,0.45)" },
+                  }}
+                >
+                  Manage Events
+                </Button>
+              </>
+            )}
+          </Box>
+        ) : null}
       </Box>
 
       {/* ── ACTION ALERTS (admin only) ──────────────────────── */}
@@ -4041,48 +4042,53 @@ export default function Dashboard() {
         </Grid>
       ) : (
         // USER / ORGANIZER KPI CARDS
+
         <Grid container spacing={2.5} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} lg={3}>
-            <StatCard
-              title="MY BOOKINGS"
-              value={fmt(overview?.bookings?.total)}
-              sub="All time"
-              icon={<ConfirmationNumberOutlinedIcon />}
-              color="#2563EB"
-              loading={loading}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} lg={3}>
-            <StatCard
-              title="CONFIRMED"
-              value={fmt(overview?.bookings?.confirmed)}
-              sub="Active bookings"
-              // icon={<CheckCircleOutlineIcon />}
-              color="#22c55e"
-              loading={loading}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} lg={3}>
-            <StatCard
-              title="UPCOMING EVENTS"
-              value={fmt(overview?.events?.approved)}
-              sub="Available to book"
-              icon={<EventOutlinedIcon />}
-              color="#f59e0b"
-              loading={loading}
-              onClick={() => navigate("/events")}
-            />
-          </Grid>
-          <Grid item xs={12} sm={6} lg={3}>
-            <StatCard
-              title="TOTAL SPENT"
-              value={fmtRs(overview?.bookings?.revenue)}
-              sub="Across all bookings"
-              icon={<CurrencyRupeeOutlinedIcon />}
-              color="#a78bfa"
-              loading={loading}
-            />
-          </Grid>
+          {true ? (
+            <>
+              <Grid item xs={12} sm={6} lg={3}>
+                <StatCard
+                  title="MY BOOKINGS"
+                  value={fmt(overview?.bookings?.total)}
+                  sub="All time"
+                  icon={<ConfirmationNumberOutlinedIcon />}
+                  color="#2563EB"
+                  loading={loading}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} lg={3}>
+                <StatCard
+                  title="CONFIRMED"
+                  value={fmt(overview?.bookings?.confirmed)}
+                  sub="Active bookings"
+                  // icon={<CheckCircleOutlineIcon />}
+                  color="#22c55e"
+                  loading={loading}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} lg={3}>
+                <StatCard
+                  title="UPCOMING EVENTS"
+                  value={fmt(overview?.events?.approved)}
+                  sub="Available to book"
+                  icon={<EventOutlinedIcon />}
+                  color="#f59e0b"
+                  loading={loading}
+                  onClick={() => navigate("/events")}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} lg={3}>
+                <StatCard
+                  title="TOTAL SPENT"
+                  value={fmtRs(overview?.bookings?.revenue)}
+                  sub="Across all bookings"
+                  icon={<CurrencyRupeeOutlinedIcon />}
+                  color="#a78bfa"
+                  loading={loading}
+                />
+              </Grid>
+            </>
+          ) : null}
         </Grid>
       )}
 
@@ -4203,7 +4209,7 @@ export default function Dashboard() {
                   sub="Distribution of active events"
                 />
                 {catStats?.length > 0 ? (
-                  <ResponsiveContainer  height={100}>
+                  <ResponsiveContainer height={100}>
                     <PieChart>
                       <Pie
                         data={catStats}
@@ -4265,253 +4271,258 @@ export default function Dashboard() {
       {/* ── TABLES ROW ──────────────────────────────────────── */}
       <Grid container spacing={2.5} sx={{ mb: 3 }}>
         {/* Top events (admin) or Upcoming events (user) */}
-        <Grid item xs={12} lg={isAdmin ? 7 : 12}>
-          <Card sx={{ background: "#1E293B", border: "1px solid #334155" }}>
-            <CardContent>
-              <SectionHeader
-                title={isAdmin ? "Top Events by Revenue" : "Upcoming Events"}
-                sub={
-                  isAdmin
-                    ? "Best performing events this period"
-                    : "Events available to book"
-                }
-                action="View All"
-                onAction={() => navigate("/events")}
-              />
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell
-                      sx={{
-                        color: "#64748B",
-                        fontSize: 10,
-                        fontWeight: 700,
-                        borderBottom: "1px solid #334155",
-                        pb: 1,
-                        letterSpacing: 0.5,
-                      }}
-                    >
-                      EVENT
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        color: "#64748B",
-                        fontSize: 10,
-                        fontWeight: 700,
-                        borderBottom: "1px solid #334155",
-                        pb: 1,
-                        letterSpacing: 0.5,
-                      }}
-                    >
-                      DATE
-                    </TableCell>
-                    {isAdmin && (
-                      <>
-                        <TableCell
-                          sx={{
-                            color: "#64748B",
-                            fontSize: 10,
-                            fontWeight: 700,
-                            borderBottom: "1px solid #334155",
-                            pb: 1,
-                          }}
-                        >
-                          OCCUPANCY
-                        </TableCell>
-                        <TableCell
-                          sx={{
-                            color: "#64748B",
-                            fontSize: 10,
-                            fontWeight: 700,
-                            borderBottom: "1px solid #334155",
-                            pb: 1,
-                          }}
-                        >
-                          REVENUE
-                        </TableCell>
-                      </>
-                    )}
-                    <TableCell
-                      sx={{
-                        color: "#64748B",
-                        fontSize: 10,
-                        fontWeight: 700,
-                        borderBottom: "1px solid #334155",
-                        pb: 1,
-                      }}
-                    >
-                      STATUS
-                    </TableCell>
-                    <TableCell sx={{ borderBottom: "1px solid #334155" }} />
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {(topEvents || []).slice(0, 7).map((e) => {
-                    const occ =
-                      e.total_tickets > 0
-                        ? Math.round((e.sold_tickets / e.total_tickets) * 100)
-                        : 0;
-                    return (
-                      <TableRow
-                        key={e.id}
-                        sx={{
-                          "&:last-child td": { border: 0 },
-                          "&:hover td": { background: "#0F172A" },
-                        }}
-                      >
-                        <TableCell
-                          sx={{ borderBottom: "1px solid #1E293B", py: 1.2 }}
-                        >
-                          <Typography
-                            sx={{
-                              fontSize: 12,
-                              fontWeight: 600,
-                              color: "#F8FAFC",
-                              maxWidth: 200,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {e.title}
-                          </Typography>
-                          {e.organizer_name && (
-                            <Typography sx={{ fontSize: 10, color: "#64748B" }}>
-                              {e.organizer_name}
-                            </Typography>
-                          )}
-                        </TableCell>
-                        <TableCell sx={{ borderBottom: "1px solid #1E293B" }}>
-                          <Typography
-                            sx={{
-                              fontSize: 11,
-                              color: "#94A3B8",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {e.event_date
-                              ? new Date(e.event_date).toLocaleDateString(
-                                  "en-IN",
-                                  { day: "numeric", month: "short" },
-                                )
-                              : "—"}
-                          </Typography>
-                        </TableCell>
-                        {isAdmin && (
-                          <>
-                            <TableCell
-                              sx={{
-                                borderBottom: "1px solid #1E293B",
-                                minWidth: 100,
-                              }}
-                            >
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 1,
-                                }}
-                              >
-                                <LinearProgress
-                                  variant="determinate"
-                                  value={occ}
-                                  sx={{
-                                    flex: 1,
-                                    height: 4,
-                                    borderRadius: 2,
-                                    background: "#334155",
-                                    "& .MuiLinearProgress-bar": {
-                                      borderRadius: 2,
-                                      background:
-                                        occ > 80
-                                          ? "#22c55e"
-                                          : occ > 50
-                                            ? "#f59e0b"
-                                            : "#2563EB",
-                                    },
-                                  }}
-                                />
-                                <Typography
-                                  sx={{
-                                    fontSize: 10,
-                                    color: "#64748B",
-                                    minWidth: 28,
-                                  }}
-                                >
-                                  {occ}%
-                                </Typography>
-                              </Box>
-                            </TableCell>
-                            <TableCell
-                              sx={{ borderBottom: "1px solid #1E293B" }}
-                            >
-                              <Typography
-                                sx={{
-                                  fontSize: 12,
-                                  fontWeight: 700,
-                                  color: "#22c55e",
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                {fmtRs(
-                                  e.revenue || e.sold_tickets * e.ticket_price,
-                                )}
-                              </Typography>
-                            </TableCell>
-                          </>
-                        )}
-                        <TableCell sx={{ borderBottom: "1px solid #1E293B" }}>
-                          <StatusChip status={e.status} />
-                        </TableCell>
-                        <TableCell sx={{ borderBottom: "1px solid #1E293B" }}>
-                          <Tooltip title="View event">
-                            <IconButton
-                              size="small"
-                              onClick={() => navigate("/events")}
-                              sx={{
-                                color: "#64748B",
-                                width: 24,
-                                height: 24,
-                                "&:hover": { color: "#2563EB" },
-                              }}
-                            >
-                              <OpenInNewIcon sx={{ fontSize: 13 }} />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                  {(!topEvents || topEvents.length === 0) && (
+        {!user.role === "ticket_checker" ? (
+          <Grid item xs={12} lg={isAdmin ? 7 : 12}>
+            <Card sx={{ background: "#1E293B", border: "1px solid #334155" }}>
+              <CardContent>
+                <SectionHeader
+                  title={isAdmin ? "Top Events by Revenue" : "Upcoming Events"}
+                  sub={
+                    isAdmin
+                      ? "Best performing events this period"
+                      : "Events available to book"
+                  }
+                  action="View All"
+                  onAction={() => navigate("/events")}
+                />
+                <Table size="small">
+                  <TableHead>
                     <TableRow>
                       <TableCell
-                        colSpan={6}
                         sx={{
-                          textAlign: "center",
-                          py: 4,
-                          color: "#475569",
-                          border: 0,
+                          color: "#64748B",
+                          fontSize: 10,
+                          fontWeight: 700,
+                          borderBottom: "1px solid #334155",
+                          pb: 1,
+                          letterSpacing: 0.5,
                         }}
                       >
-                        <EventOutlinedIcon
-                          sx={{
-                            fontSize: 36,
-                            mb: 1,
-                            display: "block",
-                            mx: "auto",
-                          }}
-                        />
-                        <Typography sx={{ fontSize: 13 }}>
-                          No events yet
-                        </Typography>
+                        EVENT
                       </TableCell>
+                      <TableCell
+                        sx={{
+                          color: "#64748B",
+                          fontSize: 10,
+                          fontWeight: 700,
+                          borderBottom: "1px solid #334155",
+                          pb: 1,
+                          letterSpacing: 0.5,
+                        }}
+                      >
+                        DATE
+                      </TableCell>
+                      {isAdmin && (
+                        <>
+                          <TableCell
+                            sx={{
+                              color: "#64748B",
+                              fontSize: 10,
+                              fontWeight: 700,
+                              borderBottom: "1px solid #334155",
+                              pb: 1,
+                            }}
+                          >
+                            OCCUPANCY
+                          </TableCell>
+                          <TableCell
+                            sx={{
+                              color: "#64748B",
+                              fontSize: 10,
+                              fontWeight: 700,
+                              borderBottom: "1px solid #334155",
+                              pb: 1,
+                            }}
+                          >
+                            REVENUE
+                          </TableCell>
+                        </>
+                      )}
+                      <TableCell
+                        sx={{
+                          color: "#64748B",
+                          fontSize: 10,
+                          fontWeight: 700,
+                          borderBottom: "1px solid #334155",
+                          pb: 1,
+                        }}
+                      >
+                        STATUS
+                      </TableCell>
+                      <TableCell sx={{ borderBottom: "1px solid #334155" }} />
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </Grid>
+                  </TableHead>
+                  <TableBody>
+                    {(topEvents || []).slice(0, 7).map((e) => {
+                      const occ =
+                        e.total_tickets > 0
+                          ? Math.round((e.sold_tickets / e.total_tickets) * 100)
+                          : 0;
+                      return (
+                        <TableRow
+                          key={e.id}
+                          sx={{
+                            "&:last-child td": { border: 0 },
+                            "&:hover td": { background: "#0F172A" },
+                          }}
+                        >
+                          <TableCell
+                            sx={{ borderBottom: "1px solid #1E293B", py: 1.2 }}
+                          >
+                            <Typography
+                              sx={{
+                                fontSize: 12,
+                                fontWeight: 600,
+                                color: "#F8FAFC",
+                                maxWidth: 200,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {e.title}
+                            </Typography>
+                            {e.organizer_name && (
+                              <Typography
+                                sx={{ fontSize: 10, color: "#64748B" }}
+                              >
+                                {e.organizer_name}
+                              </Typography>
+                            )}
+                          </TableCell>
+                          <TableCell sx={{ borderBottom: "1px solid #1E293B" }}>
+                            <Typography
+                              sx={{
+                                fontSize: 11,
+                                color: "#94A3B8",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {e.event_date
+                                ? new Date(e.event_date).toLocaleDateString(
+                                    "en-IN",
+                                    { day: "numeric", month: "short" },
+                                  )
+                                : "—"}
+                            </Typography>
+                          </TableCell>
+                          {isAdmin && (
+                            <>
+                              <TableCell
+                                sx={{
+                                  borderBottom: "1px solid #1E293B",
+                                  minWidth: 100,
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 1,
+                                  }}
+                                >
+                                  <LinearProgress
+                                    variant="determinate"
+                                    value={occ}
+                                    sx={{
+                                      flex: 1,
+                                      height: 4,
+                                      borderRadius: 2,
+                                      background: "#334155",
+                                      "& .MuiLinearProgress-bar": {
+                                        borderRadius: 2,
+                                        background:
+                                          occ > 80
+                                            ? "#22c55e"
+                                            : occ > 50
+                                              ? "#f59e0b"
+                                              : "#2563EB",
+                                      },
+                                    }}
+                                  />
+                                  <Typography
+                                    sx={{
+                                      fontSize: 10,
+                                      color: "#64748B",
+                                      minWidth: 28,
+                                    }}
+                                  >
+                                    {occ}%
+                                  </Typography>
+                                </Box>
+                              </TableCell>
+                              <TableCell
+                                sx={{ borderBottom: "1px solid #1E293B" }}
+                              >
+                                <Typography
+                                  sx={{
+                                    fontSize: 12,
+                                    fontWeight: 700,
+                                    color: "#22c55e",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {fmtRs(
+                                    e.revenue ||
+                                      e.sold_tickets * e.ticket_price,
+                                  )}
+                                </Typography>
+                              </TableCell>
+                            </>
+                          )}
+                          <TableCell sx={{ borderBottom: "1px solid #1E293B" }}>
+                            <StatusChip status={e.status} />
+                          </TableCell>
+                          <TableCell sx={{ borderBottom: "1px solid #1E293B" }}>
+                            <Tooltip title="View event">
+                              <IconButton
+                                size="small"
+                                onClick={() => navigate("/events")}
+                                sx={{
+                                  color: "#64748B",
+                                  width: 24,
+                                  height: 24,
+                                  "&:hover": { color: "#2563EB" },
+                                }}
+                              >
+                                <OpenInNewIcon sx={{ fontSize: 13 }} />
+                              </IconButton>
+                            </Tooltip>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {(!topEvents || topEvents.length === 0) && (
+                      <TableRow>
+                        <TableCell
+                          colSpan={6}
+                          sx={{
+                            textAlign: "center",
+                            py: 4,
+                            color: "#475569",
+                            border: 0,
+                          }}
+                        >
+                          <EventOutlinedIcon
+                            sx={{
+                              fontSize: 36,
+                              mb: 1,
+                              display: "block",
+                              mx: "auto",
+                            }}
+                          />
+                          <Typography sx={{ fontSize: 13 }}>
+                            No events yet
+                          </Typography>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </Grid>
+        ) : null}
 
         {/* Recent bookings (admin only) */}
         {isAdmin && (
@@ -4737,99 +4748,103 @@ export default function Dashboard() {
       )}
 
       {/* ── USER: QUICK ACTIONS ─────────────────────────────── */}
-      {!isAdmin && (
-        <Card sx={{ background: "#1E293B", border: "1px solid #334155" }}>
-          <CardContent>
-            <SectionHeader
-              title="Quick Actions"
-              sub="What would you like to do?"
-            />
-            <Grid container spacing={2}>
-              {[
-                {
-                  label: "Browse Events",
-                  icon: <EventOutlinedIcon />,
-                  color: "#2563EB",
-                  path: "/events",
-                  desc: "Discover upcoming events",
-                },
-                {
-                  label: "My Bookings",
-                  icon: <ConfirmationNumberOutlinedIcon />,
-                  color: "#22c55e",
-                  path: "/bookings",
-                  desc: "View your booking history",
-                },
-                {
-                  label: "Saved Events",
-                  icon: <TaskAltIcon />,
-                  color: "#f59e0b",
-                  path: "/events",
-                  desc: "Events in your wishlist",
-                },
-                {
-                  label: "Account",
-                  // icon: <PersonOutline />,
-                  color: "#a78bfa",
-                  path: "/settings",
-                  desc: "Update profile & password",
-                },
-              ].map((action) => (
-                <Grid key={action.label} item xs={12} sm={6} lg={3}>
-                  <Box
-                    onClick={() => navigate(action.path)}
-                    sx={{
-                      p: 2,
-                      borderRadius: "12px",
-                      background: "#0F172A",
-                      border: "1px solid #1E293B",
-                      cursor: "pointer",
-                      transition: "all 0.15s",
-                      "&:hover": {
-                        border: `1px solid ${action.color}44`,
-                        background: `${action.color}08`,
-                        transform: "translateY(-2px)",
-                      },
-                    }}
-                  >
+      {!isAdmin ||
+        (!user.role === "ticket_checker" && (
+          <Card sx={{ background: "#1E293B", border: "1px solid #334155" }}>
+            <CardContent>
+              <SectionHeader
+                title="Quick Actions"
+                sub="What would you like to do?"
+              />
+              <Grid container spacing={2}>
+                {[
+                  {
+                    label: "Browse Events",
+                    icon: <EventOutlinedIcon />,
+                    color: "#2563EB",
+                    path: "/events",
+                    desc: "Discover upcoming events",
+                  },
+                  {
+                    label: "My Bookings",
+                    icon: <ConfirmationNumberOutlinedIcon />,
+                    color: "#22c55e",
+                    path: "/bookings",
+                    desc: "View your booking history",
+                  },
+                  {
+                    label: "Saved Events",
+                    icon: <TaskAltIcon />,
+                    color: "#f59e0b",
+                    path: "/events",
+                    desc: "Events in your wishlist",
+                  },
+                  {
+                    label: "Account",
+                    // icon: <PersonOutline />,
+                    color: "#a78bfa",
+                    path: "/settings",
+                    desc: "Update profile & password",
+                  },
+                ].map((action) => (
+                  <Grid key={action.label} item xs={12} sm={6} lg={3}>
                     <Box
+                      onClick={() => navigate(action.path)}
                       sx={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: "10px",
-                        background: `${action.color}18`,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        mb: 1.5,
+                        p: 2,
+                        borderRadius: "12px",
+                        background: "#0F172A",
+                        border: "1px solid #1E293B",
+                        cursor: "pointer",
+                        transition: "all 0.15s",
+                        "&:hover": {
+                          border: `1px solid ${action.color}44`,
+                          background: `${action.color}08`,
+                          transform: "translateY(-2px)",
+                        },
                       }}
                     >
                       <Box
-                        sx={{ color: action.color, "& svg": { fontSize: 20 } }}
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: "10px",
+                          background: `${action.color}18`,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          mb: 1.5,
+                        }}
                       >
-                        {action.icon}
+                        <Box
+                          sx={{
+                            color: action.color,
+                            "& svg": { fontSize: 20 },
+                          }}
+                        >
+                          {action.icon}
+                        </Box>
                       </Box>
+                      <Typography
+                        sx={{
+                          fontSize: 13,
+                          fontWeight: 700,
+                          color: "#F8FAFC",
+                          mb: 0.3,
+                        }}
+                      >
+                        {action.label}
+                      </Typography>
+                      <Typography sx={{ fontSize: 11, color: "#64748B" }}>
+                        {action.desc}
+                      </Typography>
                     </Box>
-                    <Typography
-                      sx={{
-                        fontSize: 13,
-                        fontWeight: 700,
-                        color: "#F8FAFC",
-                        mb: 0.3,
-                      }}
-                    >
-                      {action.label}
-                    </Typography>
-                    <Typography sx={{ fontSize: 11, color: "#64748B" }}>
-                      {action.desc}
-                    </Typography>
-                  </Box>
-                </Grid>
-              ))}
-            </Grid>
-          </CardContent>
-        </Card>
-      )}
+                  </Grid>
+                ))}
+              </Grid>
+            </CardContent>
+          </Card>
+        ))}
     </Box>
   );
 }
