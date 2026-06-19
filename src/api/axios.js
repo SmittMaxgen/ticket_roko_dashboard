@@ -1,7 +1,7 @@
 // src/api/axios.js
 import axios from "axios";
 
-export const API_BASE_URL = "api.ticketroko.retailian.in";
+export const API_BASE_URL = "https://api.ticketroko.retailian.in";
 
 const api = axios.create({
   baseURL: "/api", // ✅ remove the full domain
