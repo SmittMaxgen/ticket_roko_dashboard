@@ -167,7 +167,7 @@ function AppRoutes() {
           }
         >
           {/* Dashboard */}
-          <Route
+          {/* <Route
             index
             element={
               user?.role === "vendor_organizer" &&
@@ -177,7 +177,7 @@ function AppRoutes() {
                 <Dashboard />
               )
             }
-          />
+          /> */}
 
           {/* Users */}
           <Route
@@ -234,7 +234,7 @@ function AppRoutes() {
             }
           />
 
-          <Route path="vendor-registration" element={<VendorRegistration />} />
+          {/* <Route path="vendor-registration" element={<VendorRegistration />} /> */}
 
           <Route path="party-plots" element={<PartyPlotsAll />} />
           <Route path="party-plot" element={<Partyplote />} />
