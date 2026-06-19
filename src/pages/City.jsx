@@ -110,6 +110,7 @@ export default function City() {
 
   const [modal, setModal] = useState(null); // 'create' | 'edit' | 'view' | 'delete'
   const [target, setTarget] = useState(null);
+  console.log("target===>>>", target);
   const [search, setSearch] = useState("");
   const [filterActive, setFilterActive] = useState("");
   const [formData, setFormData] = useState(EMPTY_FORM);
@@ -623,7 +624,7 @@ export default function City() {
                 {target.image_url ? (
                   <Box
                     component="img"
-                    src={target.image_url}
+                    src={`${API_BASE_URL}/${target.image_url}`}
                     alt={target.name}
                     sx={{
                       width: "100%",
@@ -633,13 +634,15 @@ export default function City() {
                     }}
                   />
                 ) : target.icon ? (
-                  <Typography sx={{ fontSize: 64 }}>{target.icon}</Typography>
+                  <Typography sx={{ fontSize: 64 }}>
+                    `${API_BASE_URL}/${target.icon}`
+                  </Typography>
                 ) : (
                   <LocationOnIcon sx={{ fontSize: 80, color: "#3b82f6" }} />
                 )}
                 <Box>
                   <Typography variant="h5">{target.name}</Typography>
-                  <Typography color="text.secondary">/{target.slug}</Typography>
+                  {/* <Typography color="text.secondary">/{target.slug}</Typography> */}
                 </Box>
                 {target.state && <Typography>State: {target.state}</Typography>}
                 <Chip
