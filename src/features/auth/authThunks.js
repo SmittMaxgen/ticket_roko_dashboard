@@ -6,7 +6,11 @@ export const loginThunk = createAsyncThunk(
   "auth/login",
   async ({ email, password }, { rejectWithValue }) => {
     try {
-      const { data } = await api.post("/auth/login", { email, password });
+      const { data } = await api.post("/auth/login", {
+        email,
+        password,
+        loginType: "admin_panel",
+      });
       // data.data = { accessToken, refreshToken, user }
       return data.data;
     } catch (err) {

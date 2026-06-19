@@ -132,6 +132,30 @@ export default function Users() {
     load();
   };
 
+  const handleToggleActive = async (row) => {
+    try {
+      await api.put(`/users/${row.id}`, {
+        name: row.name,
+        phone: row.phone,
+        role: row.role,
+        role_id: row.role_id,
+        is_active: !row.is_active,
+        is_verified: row.is_verified,
+      });
+      enqueueSnackbar(`User ${row.is_active ? "deactivated" : "activated"}`, {
+        variant: "success",
+      });
+      load();
+    } catch (err) {
+      enqueueSnackbar(
+        err.response?.data?.message || "Failed to update status",
+        {
+          variant: "error",
+        },
+      );
+    }
+  };
+
   const handleKyc = async (id, status) => {
     await api.patch(`/users/${id}/kyc`, { kyc_status: status });
     enqueueSnackbar(`KYC ${status}`, { variant: "success" });
@@ -197,13 +221,16 @@ export default function Users() {
       field: "is_active",
       headerName: "Status",
       width: 90,
-      renderCell: ({ value }) => (
-        <Chip
-          label={value ? "Active" : "Inactive"}
-          size="small"
-          color={value ? "success" : "error"}
-          sx={{ fontSize: 10, height: 20 }}
-        />
+      renderCell: ({ value, row }) => (
+        <Tooltip title={value ? "Click to deactivate" : "Click to activate"}>
+          <Chip
+            label={value ? "Active" : "Inactive"}
+            size="small"
+            color={value ? "success" : "error"}
+            onClick={() => handleToggleActive(row)}
+            sx={{ fontSize: 10, height: 20, cursor: "pointer" }}
+          />
+        </Tooltip>
       ),
     },
     {
