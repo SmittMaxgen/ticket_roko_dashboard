@@ -21,6 +21,10 @@ import {
   InputAdornment,
   CircularProgress,
   FormControlLabel,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
   Switch,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
@@ -55,6 +59,9 @@ import {
   createEventThunk,
   fetchEventsThunk,
   updateEventThunk,
+  approveEventThunk,
+  rejectEventThunk,
+  deleteEventThunk,
 } from "../features/events/eventThunks";
 
 import { selectHallList } from "../features/halls/hallSelectors";
@@ -205,7 +212,6 @@ function StatCard({ title, value, icon, color }) {
 }
 
 export default function Events({ user }) {
-  console.log("user:::::>>>>>", user);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
@@ -217,7 +223,12 @@ export default function Events({ user }) {
 
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState("all");
+  const [filterHall, setFilterHall] = useState("");
+  const [filterDate, setFilterDate] = useState("");
+  // const [tab, setTab] = useState("all");
+  const [tab, setTab] = useState(
+    user?.role === "ticket_checker" ? "upcoming" : "all",
+  );
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -253,12 +264,21 @@ export default function Events({ user }) {
       params.organizer_id = user.id;
     }
 
+    if (filterHall) {
+      params.hall_id = filterHall;
+    }
+
+    if (filterDate) {
+      params.startDate = filterDate;
+      params.endDate = filterDate;
+    }
+
     dispatch(fetchEventsThunk(params));
   };
 
   useEffect(() => {
     load();
-  }, [page, search, tab]);
+  }, [page, search, tab, filterHall, filterDate]);
 
   useEffect(() => {
     dispatch(fetchHallsThunk());
@@ -528,26 +548,66 @@ export default function Events({ user }) {
       minWidth: 230,
       renderCell: ({ row }) => (
         <Box py={0.7}>
-          <Typography
-            sx={{
-              color: "#fff",
-              fontWeight: 700,
-              fontSize: 13,
-            }}
-          >
+          <Typography sx={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>
             {row.title}
           </Typography>
-
-          <Typography
-            sx={{
-              color: "#64748b",
-              fontSize: 11,
-            }}
-          >
+          <Typography sx={{ color: "#64748b", fontSize: 11 }}>
             {row.organizer_name || "Organizer"} • {row.city || "—"}
           </Typography>
         </Box>
       ),
+    },
+    {
+      field: "category",
+      headerName: "Category",
+      width: 140,
+      renderCell: ({ row }) => (
+        <Chip
+          label={
+            row.Category?.name || row.category?.name || row.category_name || "—"
+          }
+          size="small"
+          sx={{
+            fontSize: 11,
+            background: "#1e293b",
+            color: "#94a3b8",
+            border: "1px solid #334155",
+          }}
+        />
+      ),
+    },
+    {
+      field: "hall",
+      headerName: "Venue",
+      width: 150,
+      renderCell: ({ row }) => {
+        const venueName =
+          row.Hall?.name ||
+          row.hall?.name ||
+          row.hall_name ||
+          row.PartyPlot?.name ||
+          row.party_plot?.name ||
+          row.partyPlot?.name ||
+          "—";
+        const venueType =
+          row.Hall || row.hall
+            ? "Hall"
+            : row.PartyPlot || row.party_plot || row.partyPlot
+              ? "Party Plot"
+              : "";
+        return (
+          <Box>
+            <Typography
+              sx={{ color: "#e2e8f0", fontSize: 12, fontWeight: 600 }}
+            >
+              {venueName}
+            </Typography>
+            <Typography sx={{ color: "#64748b", fontSize: 10 }}>
+              {venueType}
+            </Typography>
+          </Box>
+        );
+      },
     },
     {
       field: "event_date",
@@ -687,271 +747,409 @@ export default function Events({ user }) {
     //   ),
     // },
 
-    {
-      field: "actions",
-      headerName: "Actions",
-      width: 180,
-      sortable: false,
-      renderCell: ({ row }) => (
-        <Stack direction="row" spacing={0.3}>
-          {row.status === "pending_approval" && (
-            <>
-              <Tooltip title="Approve">
-                <IconButton
-                  size="small"
-                  onClick={() => approve(row.id)}
-                  sx={{ color: "#22c55e" }}
-                >
-                  <CheckCircleIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
+    // {
+    //   field: "actions",
+    //   headerName: "Actions",
+    //   width: 180,
+    //   sortable: false,
+    //   renderCell: ({ row }) => (
+    //     <Stack direction="row" spacing={0.3}>
+    //       {row.status === "pending_approval" && (
+    //         <>
+    //           <Tooltip title="Approve">
+    //             <IconButton
+    //               size="small"
+    //               onClick={() => approve(row.id)}
+    //               sx={{ color: "#22c55e" }}
+    //             >
+    //               <CheckCircleIcon fontSize="small" />
+    //             </IconButton>
+    //           </Tooltip>
 
-              <Tooltip title="Reject">
-                <IconButton
-                  size="small"
-                  onClick={() => setRejectDlg(row.id)}
-                  sx={{ color: "#ef4444" }}
-                >
-                  <CancelOutlinedIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            </>
-          )}
+    //           <Tooltip title="Reject">
+    //             <IconButton
+    //               size="small"
+    //               onClick={() => setRejectDlg(row.id)}
+    //               sx={{ color: "#ef4444" }}
+    //             >
+    //               <CancelOutlinedIcon fontSize="small" />
+    //             </IconButton>
+    //           </Tooltip>
+    //         </>
+    //       )}
 
-          {user.role === "super_admin" || user.role === "admin" ? (
-            <Tooltip title="Assign Ticket Checker">
-              <IconButton
-                size="small"
-                onClick={() => openAssignDialog(row)}
-                sx={{ color: "#60a5fa" }}
-              >
-                {/* <PeopleIcon fontSize="small" /> */}
-              </IconButton>
-            </Tooltip>
-          ) : null}
+    //       {user.role === "super_admin" || user.role === "admin" ? (
+    //         <Tooltip title="Assign Ticket Checker">
+    //           <IconButton
+    //             size="small"
+    //             onClick={() => openAssignDialog(row)}
+    //             sx={{ color: "#60a5fa" }}
+    //           >
+    //             {/* <PeopleIcon fontSize="small" /> */}
+    //           </IconButton>
+    //         </Tooltip>
+    //       ) : null}
 
-          <Tooltip title="Edit">
-            <IconButton
-              size="small"
-              // onClick={() => handleNavigateToEventHall(row)}
+    //       <Tooltip title="Edit">
+    //         <IconButton
+    //           size="small"
+    //           // onClick={() => handleNavigateToEventHall(row)}
 
-              onClick={() => {
-                // setEditing(row.id);
-                handleNavigateToEventHall(row);
-                // setForm({
-                //   title: row.title || "",
-                //   city: row.city || "",
-                //   address: row.address || "",
-                //   description: row.description || "",
-                //   ticket_price: row.ticket_price || 0,
-                //   total_tickets: row.total_tickets || 0,
-                //   status: row.status || "draft",
-                // });
-                // setOpen(true);
-              }}
-              sx={{ color: "#60a5fa" }}
-            >
-              <StadiumIcon
-                // onClick={() => handleNavigateToEventHall(row)}
-                fontSize="small"
-              />
-            </IconButton>
-          </Tooltip>
-          {/* <Tooltip title="Edit">
-            <IconButton
-              size="small"
-              // onClick={() => handleNavigateToEventHall(row)}
+    //           onClick={() => {
+    //             // setEditing(row.id);
+    //             handleNavigateToEventHall(row);
+    //             // setForm({
+    //             //   title: row.title || "",
+    //             //   city: row.city || "",
+    //             //   address: row.address || "",
+    //             //   description: row.description || "",
+    //             //   ticket_price: row.ticket_price || 0,
+    //             //   total_tickets: row.total_tickets || 0,
+    //             //   status: row.status || "draft",
+    //             // });
+    //             // setOpen(true);
+    //           }}
+    //           sx={{ color: "#60a5fa" }}
+    //         >
+    //           <StadiumIcon
+    //             // onClick={() => handleNavigateToEventHall(row)}
+    //             fontSize="small"
+    //           />
+    //         </IconButton>
+    //       </Tooltip>
+    //       {/* <Tooltip title="Edit">
+    //         <IconButton
+    //           size="small"
+    //           // onClick={() => handleNavigateToEventHall(row)}
 
-              onClick={() => {
-                // setEditing(row.id);
-                // handleNavigateToEventHall(row);
-                // Build section_prices map from API array
-                const spMap = { Premium: 0, Executive: 0, General: 0, VIP: 0 };
-                (row.sectionPrices || []).forEach((sp) => {
-                  spMap[sp.section_label] = Number(sp.price);
-                });
-                setForm({
-                  hall_id: row.hall_id || "",
-                  category_id: row.category_id || "",
-                  title: row.title || "",
-                  city: row.city || "",
-                  is_trending: row.is_trending || false,
-                  address: row.address || "",
-                  description: row.description || "",
-                  event_date: row.event_date || "",
-                  start_time: row.start_time || "",
-                  end_time: row.end_time || "",
-                  ticket_price: row.ticket_price || 0,
-                  total_tickets: row.total_tickets || 0,
-                  status: row.status || "draft",
-                  section_prices: spMap,
-                });
-                setOpen(true);
-              }}
-              sx={{ color: "#60a5fa" }}
-            >
-              <EditOutlinedIcon
-                // onClick={() => handleNavigateToEventHall(row)}
-                fontSize="small"
-              />
-            </IconButton>
-          </Tooltip> */}
+    //           onClick={() => {
+    //             // setEditing(row.id);
+    //             // handleNavigateToEventHall(row);
+    //             // Build section_prices map from API array
+    //             const spMap = { Premium: 0, Executive: 0, General: 0, VIP: 0 };
+    //             (row.sectionPrices || []).forEach((sp) => {
+    //               spMap[sp.section_label] = Number(sp.price);
+    //             });
+    //             setForm({
+    //               hall_id: row.hall_id || "",
+    //               category_id: row.category_id || "",
+    //               title: row.title || "",
+    //               city: row.city || "",
+    //               is_trending: row.is_trending || false,
+    //               address: row.address || "",
+    //               description: row.description || "",
+    //               event_date: row.event_date || "",
+    //               start_time: row.start_time || "",
+    //               end_time: row.end_time || "",
+    //               ticket_price: row.ticket_price || 0,
+    //               total_tickets: row.total_tickets || 0,
+    //               status: row.status || "draft",
+    //               section_prices: spMap,
+    //             });
+    //             setOpen(true);
+    //           }}
+    //           sx={{ color: "#60a5fa" }}
+    //         >
+    //           <EditOutlinedIcon
+    //             // onClick={() => handleNavigateToEventHall(row)}
+    //             fontSize="small"
+    //           />
+    //         </IconButton>
+    //       </Tooltip> */}
 
-          {/* <Tooltip title="Edit">
-            <IconButton
-              size="small"
-              onClick={() => {
-                // setEditing(row.id);
-                // handleNavigateToEventHall(row);
-                // Build section_prices map from API array
-                const spMap = { Premium: 0, Executive: 0, General: 0, VIP: 0 };
-                (row.sectionPrices || []).forEach((sp) => {
-                  spMap[sp.section_label] = Number(sp.price);
-                });
-                setForm({
-                  hall_id: row.hall_id || "",
-                  category_id: row.category_id || "",
-                  title: row.title || "",
-                  city: row.city || "",
-                  is_trending: row.is_trending || false,
-                  address: row.address || "",
-                  description: row.description || "",
-                  event_date: row.event_date || "",
-                  start_time: row.start_time || "",
-                  end_time: row.end_time || "",
-                  ticket_price: row.ticket_price || 0,
-                  total_tickets: row.total_tickets || 0,
-                  status: row.status || "draft",
-                  section_prices: spMap,
-                });
-                setOpen(true);
-              }}
-              sx={{ color: "#60a5fa" }}
-            >
-              <EditOutlinedIcon fontSize="small" />
-            </IconButton>
-          </Tooltip> */}
-          <Tooltip title="Edit">
-            <IconButton
-              size="small"
-              // onClick={() => {
-              //   const spMap = {
-              //     Premium: 0,
-              //     Executive: 0,
-              //     General: 0,
-              //     VIP: 0,
-              //     Standard: 0,
-              //   };
+    //       {/* <Tooltip title="Edit">
+    //         <IconButton
+    //           size="small"
+    //           onClick={() => {
+    //             // setEditing(row.id);
+    //             // handleNavigateToEventHall(row);
+    //             // Build section_prices map from API array
+    //             const spMap = { Premium: 0, Executive: 0, General: 0, VIP: 0 };
+    //             (row.sectionPrices || []).forEach((sp) => {
+    //               spMap[sp.section_label] = Number(sp.price);
+    //             });
+    //             setForm({
+    //               hall_id: row.hall_id || "",
+    //               category_id: row.category_id || "",
+    //               title: row.title || "",
+    //               city: row.city || "",
+    //               is_trending: row.is_trending || false,
+    //               address: row.address || "",
+    //               description: row.description || "",
+    //               event_date: row.event_date || "",
+    //               start_time: row.start_time || "",
+    //               end_time: row.end_time || "",
+    //               ticket_price: row.ticket_price || 0,
+    //               total_tickets: row.total_tickets || 0,
+    //               status: row.status || "draft",
+    //               section_prices: spMap,
+    //             });
+    //             setOpen(true);
+    //           }}
+    //           sx={{ color: "#60a5fa" }}
+    //         >
+    //           <EditOutlinedIcon fontSize="small" />
+    //         </IconButton>
+    //       </Tooltip> */}
+    //       <Tooltip title="Edit">
+    //         <IconButton
+    //           size="small"
+    //           // onClick={() => {
+    //           //   const spMap = {
+    //           //     Premium: 0,
+    //           //     Executive: 0,
+    //           //     General: 0,
+    //           //     VIP: 0,
+    //           //     Standard: 0,
+    //           //   };
 
-              //   (row.sectionPrices || row.EventSectionPrices || []).forEach(
-              //     (sp) => {
-              //       if (sp.section_label) {
-              //         spMap[sp.section_label] = Number(sp.price || 0);
-              //       }
-              //     },
-              //   );
+    //           //   (row.sectionPrices || row.EventSectionPrices || []).forEach(
+    //           //     (sp) => {
+    //           //       if (sp.section_label) {
+    //           //         spMap[sp.section_label] = Number(sp.price || 0);
+    //           //       }
+    //           //     },
+    //           //   );
 
-              //   setForm({
-              //     hall_id: row.hall_id || "",
-              //     party_plot_id: row.party_plot_id || "",
-              //     category_id: row.category_id || "",
-              //     title: row.title || "",
-              //     description: row.description || "",
-              //     event_date: row.event_date || "",
-              //     start_time: row.start_time || "",
-              //     end_time: row.end_time || "",
-              //     city: row.city || "",
-              //     address: row.address || "",
-              //     ticket_price: row.ticket_price || 0,
-              //     total_tickets: row.total_tickets || 0,
-              //     is_free: row.is_free || false,
-              //     is_trending: !!row.is_trending,
-              //     language: row.language || "English",
-              //     event_type: row.event_type || "Other",
-              //     status: row.status || "draft",
-              //     organizer_id: row.organizer?.id || row.organizer_id || "",
-              //     banner_url: row.banner_url || "",
-              //     banner_preview: "",
-              //     section_prices: spMap,
-              //   });
+    //           //   setForm({
+    //           //     hall_id: row.hall_id || "",
+    //           //     party_plot_id: row.party_plot_id || "",
+    //           //     category_id: row.category_id || "",
+    //           //     title: row.title || "",
+    //           //     description: row.description || "",
+    //           //     event_date: row.event_date || "",
+    //           //     start_time: row.start_time || "",
+    //           //     end_time: row.end_time || "",
+    //           //     city: row.city || "",
+    //           //     address: row.address || "",
+    //           //     ticket_price: row.ticket_price || 0,
+    //           //     total_tickets: row.total_tickets || 0,
+    //           //     is_free: row.is_free || false,
+    //           //     is_trending: !!row.is_trending,
+    //           //     language: row.language || "English",
+    //           //     event_type: row.event_type || "Other",
+    //           //     status: row.status || "draft",
+    //           //     organizer_id: row.organizer?.id || row.organizer_id || "",
+    //           //     banner_url: row.banner_url || "",
+    //           //     banner_preview: "",
+    //           //     section_prices: spMap,
+    //           //   });
 
-              //   setEditing(row.id); // ← THIS WAS THE MAIN PROBLEM
-              //   setOpen(true);
-              // }}
-              onClick={() => {
-                // Build section prices map from existing event section prices
-                const spMap = {};
-                (row.sectionPrices || row.EventSectionPrices || []).forEach(
-                  (sp) => {
-                    if (sp.section_label) {
-                      spMap[sp.section_label] = Number(sp.price || 0);
-                    }
-                  },
-                );
+    //           //   setEditing(row.id); // ← THIS WAS THE MAIN PROBLEM
+    //           //   setOpen(true);
+    //           // }}
+    //           onClick={() => {
+    //             // Build section prices map from existing event section prices
+    //             const spMap = {};
+    //             (row.sectionPrices || row.EventSectionPrices || []).forEach(
+    //               (sp) => {
+    //                 if (sp.section_label) {
+    //                   spMap[sp.section_label] = Number(sp.price || 0);
+    //                 }
+    //               },
+    //             );
 
-                // Populate hall sections from hallList for dynamic section fields
-                if (row.hall_id) {
-                  const selectedHall = hallList.find(
-                    (h) => String(h.id) === String(row.hall_id),
-                  );
-                  const sections = selectedHall?.sections || [];
-                  setHallSections(sections);
+    //             // Populate hall sections from hallList for dynamic section fields
+    //             if (row.hall_id) {
+    //               const selectedHall = hallList.find(
+    //                 (h) => String(h.id) === String(row.hall_id),
+    //               );
+    //               const sections = selectedHall?.sections || [];
+    //               setHallSections(sections);
 
-                  // If no existing section prices, pre-fill from hall defaults
-                  if (Object.keys(spMap).length === 0) {
-                    sections.forEach((s) => {
-                      spMap[s.section_label] = s.default_price || 0;
-                    });
-                  }
-                } else {
-                  setHallSections([]);
-                }
+    //               // If no existing section prices, pre-fill from hall defaults
+    //               if (Object.keys(spMap).length === 0) {
+    //                 sections.forEach((s) => {
+    //                   spMap[s.section_label] = s.default_price || 0;
+    //                 });
+    //               }
+    //             } else {
+    //               setHallSections([]);
+    //             }
 
-                setForm({
-                  hall_id: row.hall_id || "",
-                  party_plot_id: row.party_plot_id || "",
-                  venue_type: row.hall_id ? "hall" : "party_plot",
-                  category_id: row.category_id || "",
-                  title: row.title || "",
-                  description: row.description || "",
-                  event_date: row.event_date || "",
-                  start_time: row.start_time || "",
-                  end_time: row.end_time || "",
-                  city: row.city || "",
-                  address: row.address || "",
-                  ticket_price: row.ticket_price || 0,
-                  total_tickets: row.total_tickets || 0,
-                  is_free: row.is_free || false,
-                  is_trending: !!row.is_trending,
-                  language: row.language || "English",
-                  event_type: row.event_type || "Other",
-                  status: row.status || "draft",
-                  organizer_id: row.organizer?.id || row.organizer_id || "",
-                  banner_url: row.banner_url || "",
-                  banner_preview: "",
-                  section_prices: spMap,
-                });
+    //             setForm({
+    //               hall_id: row.hall_id || "",
+    //               party_plot_id: row.party_plot_id || "",
+    //               venue_type: row.hall_id ? "hall" : "party_plot",
+    //               category_id: row.category_id || "",
+    //               title: row.title || "",
+    //               description: row.description || "",
+    //               event_date: row.event_date || "",
+    //               start_time: row.start_time || "",
+    //               end_time: row.end_time || "",
+    //               city: row.city || "",
+    //               address: row.address || "",
+    //               ticket_price: row.ticket_price || 0,
+    //               total_tickets: row.total_tickets || 0,
+    //               is_free: row.is_free || false,
+    //               is_trending: !!row.is_trending,
+    //               language: row.language || "English",
+    //               event_type: row.event_type || "Other",
+    //               status: row.status || "draft",
+    //               organizer_id: row.organizer?.id || row.organizer_id || "",
+    //               banner_url: row.banner_url || "",
+    //               banner_preview: "",
+    //               section_prices: spMap,
+    //             });
 
-                setEditing(row.id);
-                setOpen(true);
-              }}
-              sx={{ color: "#60a5fa" }}
-            >
-              <EditOutlinedIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Delete">
-            <IconButton
-              size="small"
-              onClick={() => remove(row.id)}
-              sx={{ color: "#f87171" }}
-            >
-              <DeleteIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        </Stack>
-      ),
-    },
+    //             setEditing(row.id);
+    //             setOpen(true);
+    //           }}
+    //           sx={{ color: "#60a5fa" }}
+    //         >
+    //           <EditOutlinedIcon fontSize="small" />
+    //         </IconButton>
+    //       </Tooltip>
+    //       <Tooltip title="Delete">
+    //         <IconButton
+    //           size="small"
+    //           onClick={() => remove(row.id)}
+    //           sx={{ color: "#f87171" }}
+    //         >
+    //           <DeleteIcon fontSize="small" />
+    //         </IconButton>
+    //       </Tooltip>
+    //     </Stack>
+    //   ),
+    // },
+    ...(user.role !== "vendor_organizer"
+      ? [
+          {
+            field: "actions",
+            headerName: "Actions",
+            width: 180,
+            sortable: false,
+            renderCell: ({ row }) => (
+              <Stack direction="row" spacing={0.3}>
+                {row.status === "pending_approval" && (
+                  <>
+                    <Tooltip title="Approve">
+                      <IconButton
+                        size="small"
+                        onClick={() => approve(row.id)}
+                        sx={{ color: "#22c55e" }}
+                      >
+                        <CheckCircleIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+
+                    <Tooltip title="Reject">
+                      <IconButton
+                        size="small"
+                        onClick={() => setRejectDlg(row.id)}
+                        sx={{ color: "#ef4444" }}
+                      >
+                        <CancelOutlinedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </>
+                )}
+
+                {(user.role === "super_admin" || user.role === "admin") && (
+                  <Tooltip title="Assign Ticket Checker">
+                    <IconButton
+                      size="small"
+                      onClick={() => openAssignDialog(row)}
+                      sx={{ color: "#60a5fa" }}
+                    >
+                      {/* <PeopleIcon fontSize="small" /> */}
+                    </IconButton>
+                  </Tooltip>
+                )}
+
+                <Tooltip title="Edit Venue">
+                  <IconButton
+                    size="small"
+                    onClick={() => handleNavigateToEventHall(row)}
+                    sx={{ color: "#60a5fa" }}
+                  >
+                    <StadiumIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+
+                <Tooltip title="Edit">
+                  <IconButton
+                    size="small"
+                    onClick={() => {
+                      const spMap = {};
+
+                      (
+                        row.sectionPrices ||
+                        row.EventSectionPrices ||
+                        []
+                      ).forEach((sp) => {
+                        if (sp.section_label) {
+                          spMap[sp.section_label] = Number(sp.price || 0);
+                        }
+                      });
+
+                      if (row.hall_id) {
+                        const selectedHall = hallList.find(
+                          (h) => String(h.id) === String(row.hall_id),
+                        );
+
+                        const sections = selectedHall?.sections || [];
+
+                        setHallSections(sections);
+
+                        if (Object.keys(spMap).length === 0) {
+                          sections.forEach((s) => {
+                            spMap[s.section_label] = s.default_price || 0;
+                          });
+                        }
+                      } else {
+                        setHallSections([]);
+                      }
+
+                      setForm({
+                        hall_id: row.hall_id || "",
+                        party_plot_id: row.party_plot_id || "",
+                        venue_type: row.hall_id ? "hall" : "party_plot",
+                        category_id: row.category_id || "",
+                        title: row.title || "",
+                        description: row.description || "",
+                        event_date: row.event_date || "",
+                        start_time: row.start_time || "",
+                        end_time: row.end_time || "",
+                        city: row.city || "",
+                        address: row.address || "",
+                        ticket_price: row.ticket_price || 0,
+                        total_tickets: row.total_tickets || 0,
+                        is_free: row.is_free || false,
+                        is_trending: !!row.is_trending,
+                        language: row.language || "English",
+                        event_type: row.event_type || "Other",
+                        status: row.status || "draft",
+                        organizer_id:
+                          row.organizer?.id || row.organizer_id || "",
+                        banner_url: row.banner_url || "",
+                        banner_preview: "",
+                        section_prices: spMap,
+                      });
+
+                      setEditing(row.id);
+                      setOpen(true);
+                    }}
+                    sx={{ color: "#60a5fa" }}
+                  >
+                    <EditOutlinedIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+
+                <Tooltip title="Delete">
+                  <IconButton
+                    size="small"
+                    onClick={() => remove(row.id)}
+                    sx={{ color: "#f87171" }}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
+            ),
+          },
+        ]
+      : []),
   ];
 
   const handleNavigateToEventHall = (row) => {
@@ -1111,24 +1309,115 @@ export default function Events({ user }) {
             gap={2}
             mb={2}
           >
-            <TextField
-              size="small"
-              placeholder="Search events..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              sx={{ width: 320 }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon sx={{ color: "#64748b" }} />
-                  </InputAdornment>
-                ),
-              }}
-            />
+            <Stack direction="row" spacing={1} flexWrap="wrap">
+              <TextField
+                size="small"
+                placeholder="Search events..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                sx={{ width: 220 }}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: "#64748b" }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+
+              <FormControl size="small" sx={{ width: 180 }}>
+                <InputLabel sx={{ color: "#64748b" }}>
+                  Filter by Hall
+                </InputLabel>
+                <Select
+                  label="Filter by Hall"
+                  value={filterHall}
+                  onChange={(e) => {
+                    setFilterHall(e.target.value);
+                    setPage(0);
+                  }}
+                  sx={{
+                    color: "#fff",
+                    "& fieldset": { borderColor: "#334155" },
+                    "& .MuiSvgIcon-root": { color: "#94a3b8" },
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        background: "#0f172a",
+                        border: "1px solid #334155",
+                        borderRadius: 2,
+                        maxHeight: 260,
+                        "& .MuiMenuItem-root": {
+                          color: "#F8FAFC",
+                          fontSize: 13,
+                          "&:hover": { background: "#1e293b" },
+                          "&.Mui-selected": { background: "#1D4ED8" },
+                        },
+                      },
+                    },
+                  }}
+                >
+                  <MenuItem value="">All Halls</MenuItem>
+                  {hallList.map((h) => (
+                    <MenuItem key={h.id} value={h.id}>
+                      {h.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <TextField
+                size="small"
+                type="date"
+                label="Filter by Date"
+                value={filterDate}
+                onChange={(e) => {
+                  setFilterDate(e.target.value);
+                  setPage(0);
+                }}
+                sx={{
+                  width: 180,
+                  "& .MuiOutlinedInput-root": {
+                    color: "#fff",
+                    "& fieldset": { borderColor: "#334155" },
+                  },
+                  "& .MuiInputLabel-root": { color: "#64748b" },
+                  "& ::-webkit-calendar-picker-indicator": {
+                    filter: "invert(1)",
+                  },
+                }}
+                InputLabelProps={{ shrink: true }}
+              />
+              {(filterHall || filterDate) && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => {
+                    setFilterHall("");
+                    setFilterDate("");
+                    setPage(0);
+                  }}
+                  sx={{
+                    borderColor: "#334155",
+                    color: "#94a3b8",
+                    fontSize: 12,
+                  }}
+                >
+                  Clear Filters
+                </Button>
+              )}
+            </Stack>
 
             <Tabs
               value={tab}
-              onChange={(_, value) => setTab(value)}
+              onChange={(_, value) => {
+                if (user?.role === "ticket_checker") {
+                  setTab("upcoming");
+                } else {
+                  setTab(value);
+                }
+              }}
               sx={{
                 "& .MuiTab-root": {
                   color: "#64748b",
@@ -1139,19 +1428,23 @@ export default function Events({ user }) {
                 },
               }}
             >
-              <Tab value="all" label="All" />
+              {user?.role !== "ticket_checker" && (
+                <Tab value="all" label="All" />
+              )}
               <Tab value="upcoming" label="Upcoming Events" />
-              <Tab value="past" label="Past Events" />
+              {user?.role !== "ticket_checker" && (
+                <Tab value="past" label="Past Events" />
+              )}
             </Tabs>
           </Stack>
 
           <Divider sx={{ borderColor: "#1e293b", mb: 2 }} />
 
           <Typography sx={{ color: "#94a3b8", fontWeight: 600, mb: 2 }}>
-            {tab === "all"
-              ? "Showing all events"
-              : tab === "upcoming"
-                ? "Showing upcoming events"
+            {user?.role === "ticket_checker" || tab === "upcoming"
+              ? "Showing upcoming events"
+              : tab === "all"
+                ? "Showing all events"
                 : "Showing past events"}
           </Typography>
 
@@ -1339,16 +1632,23 @@ export default function Events({ user }) {
               }
               required={false}
             /> */}
-            <CommonDropDown
-              label="Select Category "
-              // type="number"
-              options={categoryList}
-              value={form.category_id}
-              onChange={(e) =>
-                setForm({ ...form, category_id: e.target.value })
-              }
-              required
-            />
+            {categoryList.length === 0 ? (
+              <Typography
+                sx={{ color: "#ef4444", fontSize: 13, fontWeight: 600 }}
+              >
+                No active categories found. Please add a category first.
+              </Typography>
+            ) : (
+              <CommonDropDown
+                label="Select Category"
+                options={categoryList}
+                value={form.category_id}
+                onChange={(e) =>
+                  setForm({ ...form, category_id: e.target.value })
+                }
+                required
+              />
+            )}
 
             <CommonDropDown
               label="Assign Event Organizer"

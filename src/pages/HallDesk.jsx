@@ -207,7 +207,7 @@ const HallDesk = () => {
                                 fontWeight: 600,
                               }}
                             >
-                              {hall.capacity || "N/A"} seats
+                              {hall.total_bookable_seats || "N/A"} seats
                             </span>
                           </Typography>
 

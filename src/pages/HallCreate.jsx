@@ -62,6 +62,11 @@ import { useParams } from "react-router-dom";
 import BookingManager from "./BookingManager";
 import Partyplote from "../components/Partyplote";
 import { clearCurrentHall } from "../features/halls/hallSlice";
+import { fetchCities } from "../features/city/cityThunks";
+import {
+  selectAllCities,
+  selectActiveCities,
+} from "../features/city/citySelectors";
 import PartyPlotPanel from "../components/Partyplote";
 import { io as socketIO } from "socket.io-client";
 import { API_BASE_URL } from "../api/axios";
@@ -164,6 +169,13 @@ const seatBorder = (seat) => {
 //     address: "",
 //   });
 function SaveHallDialog({ open, onClose, onSave, saving, initialData = null }) {
+  const dispatch = useDispatch();
+  const cities = useSelector(selectActiveCities);
+
+  useEffect(() => {
+    dispatch(fetchCities());
+  }, [dispatch]);
+
   const [form, setForm] = useState({
     name: initialData?.name || "",
     description: initialData?.description || "",
@@ -190,7 +202,7 @@ function SaveHallDialog({ open, onClose, onSave, saving, initialData = null }) {
       setErr("Hall name is required");
       return;
     }
-    if (!form.city.trim()) {
+    if (!form.city) {
       setErr("City is required");
       return;
     }
@@ -220,7 +232,7 @@ function SaveHallDialog({ open, onClose, onSave, saving, initialData = null }) {
         Save Hall Layout
       </DialogTitle>
       <DialogContent sx={{ pt: 1, pb: 2, background: "#0c1220" }}>
-        <Grid container spacing={2}>
+        <Grid container spacing={2} sx={{ mt: 3 }}>
           {err && (
             <Grid item xs={12}>
               <Alert
@@ -272,21 +284,40 @@ function SaveHallDialog({ open, onClose, onSave, saving, initialData = null }) {
             </FormControl>
           </Grid>
           <Grid item xs={12} sm={6}>
-            <TextField
-              label="City"
-              size="small"
-              fullWidth
-              value={form.city}
-              onChange={(e) => setForm({ ...form, city: e.target.value })}
-              sx={{
-                "& .MuiOutlinedInput-root fieldset": { borderColor: "#334155" },
-                "& .MuiOutlinedInput-root": {
+            <FormControl size="small" sx={{ width: 200 }}>
+              <InputLabel sx={{ color: "#94A3B8" }}>City</InputLabel>
+
+              <Select
+                label="City"
+                value={form.city}
+                onChange={(e) => setForm({ ...form, city: e.target.value })}
+                sx={{
+                  "& fieldset": { borderColor: "#334155" },
                   color: "#F8FAFC",
                   background: "#0b1323",
-                },
-                "& .MuiInputLabel-root": { color: "#94A3B8" },
-              }}
-            />
+                  "& .MuiSvgIcon-root": { color: "#94A3B8" },
+                }}
+                MenuProps={{
+                  PaperProps: {
+                    sx: {
+                      background: "#0f172a",
+                      border: "1px solid #334155",
+                      "& .MuiMenuItem-root": {
+                        color: "#F8FAFC",
+                        "&:hover": { background: "#1e293b" },
+                        "&.Mui-selected": { background: "#1D4ED8" },
+                      },
+                    },
+                  },
+                }}
+              >
+                {cities.map((city) => (
+                  <MenuItem key={city.id} value={city.id}>
+                    {city.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Grid>
           <Grid item xs={12}>
             <TextField
@@ -357,7 +388,14 @@ function SaveHallDialog({ open, onClose, onSave, saving, initialData = null }) {
 
 function BookingView({ hallId }) {
   const { id } = useParams();
+  // const dispatch = useDispatch();
   const dispatch = useDispatch();
+
+  const cities = useSelector(selectActiveCities);
+
+  useEffect(() => {
+    dispatch(fetchCities());
+  }, [dispatch]);
 
   const hall = useSelector(selectCurrentHall);
   const loading = useSelector(selectHallLoading);
@@ -1106,6 +1144,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
   const hall = useSelector(selectCurrentHall);
   const saving = useSelector(selectHallActionLoading);
   const loading = useSelector(selectHallLoading);
+  const cities = useSelector(selectActiveCities);
 
   // Safe defaults (prevents "find is not a function")
   const rawSections = useSelector(selectSections);
@@ -1875,7 +1914,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
               </div>
             </div>
           ))}
-
+          {/* 
           <button
             onClick={() => openSectionDialog()}
             style={{
@@ -1892,7 +1931,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
             }}
           >
             + Add Section
-          </button>
+          </button> */}
 
           <Dialog
             open={sectionDialogOpen}
@@ -1973,9 +2012,17 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
                 fullWidth
                 type="number"
                 value={sectionForm.price}
-                onChange={(e) =>
-                  setSectionForm({ ...sectionForm, price: e.target.value })
-                }
+                inputProps={{ min: 0 }}
+                onChange={(e) => {
+                  const value = e.target.value;
+
+                  if (value === "" || Number(value) >= 0) {
+                    setSectionForm({
+                      ...sectionForm,
+                      price: value,
+                    });
+                  }
+                }}
                 sx={{
                   mb: 2,
                   "& .MuiOutlinedInput-root fieldset": {
@@ -2676,6 +2723,7 @@ function DrawMode({ hallId, is_edit = false, is_add = false }) {
         onSave={handleSave}
         saving={saving}
         initialData={is_edit ? hall : null}
+        cities={DRAW_SECTIONS.length >= 0 ? cities : []}
       />
     </>
   );

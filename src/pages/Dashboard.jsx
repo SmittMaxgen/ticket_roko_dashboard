@@ -3744,6 +3744,7 @@ export default function Dashboard() {
   const isAdmin = useSelector(selectIsAdmin);
   const role = useSelector(selectUserRole);
   const isSuperAdmin = role === "super_admin";
+  const isTicketChecker = role === "ticket_checker";
 
   // Dashboard data
   const overview = useSelector(selectDashboardOverview);
