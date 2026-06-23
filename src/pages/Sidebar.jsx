@@ -437,7 +437,6 @@ const NAV = [
       "super_admin",
       "admin",
       "user",
-      "vendor_organizer",
       "ticket_checker",
     ],
   },
