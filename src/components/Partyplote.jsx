@@ -1681,6 +1681,7 @@ export default function Partyplote({ skipInitialFetch = false }) {
   const user = useSelector((state) => state.auth.user);
 
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
+  const isVendorOrganizer = user?.role === "vendor_organizer";
 
   const [activeTab, setActiveTab] = useState("all");
   const [createOpen, setCreateOpen] = useState(false);
@@ -1701,6 +1702,9 @@ export default function Partyplote({ skipInitialFetch = false }) {
   const handleBook = (plot) => {
     navigate(`/party-plot/${plot.id}`);
   };
+
+  // vendor_organizer only sees their assigned plots (backend filters them)
+  // no extra frontend filter needed — plots from Redux already scoped by API
 
   // ── When user switches to Booking tab, ensure booking-oriented list is loaded
   useEffect(() => {
@@ -1969,6 +1973,8 @@ export default function Partyplote({ skipInitialFetch = false }) {
                 isAdmin={isAdmin}
                 onEdit={handleEdit}
                 onDelete={(p) => setDeleteTarget(p)}
+                showBookAction={isVendorOrganizer}
+                onBook={handleBook}
               />
             ))}
           </Box>
@@ -1998,7 +2004,7 @@ export default function Partyplote({ skipInitialFetch = false }) {
           <Typography sx={{ color: "#64748B", fontSize: "0.875rem", mb: 3 }}>
             Create a party plot first, then book tickets from the listing.
           </Typography>
-          {isAdmin && (
+          {isAdmin && !isVendorOrganizer && (
             <Button
               variant="contained"
               startIcon={<AddIcon />}

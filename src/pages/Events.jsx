@@ -408,25 +408,25 @@ export default function Events({ user }) {
     if (
       (form.venue_type === "hall" && !form.hall_id) ||
       (form.venue_type === "party_plot" && !form.party_plot_id) ||
-      !form.category_id ||
+      // !form.category_id ||
       !form.title.trim() ||
       !form.description.trim() ||
       !form.event_date ||
       !form.start_time ||
       !form.end_time ||
-      !form.city.trim() ||
-      !form.address.trim() ||
+      // !form.city.trim() ||
+      // !form.address.trim() ||
       // ← only validate price & tickets for hall events
       (form.venue_type === "hall" && !form.hall_id) ||
       (form.venue_type === "party_plot" && !form.party_plot_id) ||
-      !form.category_id ||
+      // !form.category_id ||
       !form.title.trim() ||
       !form.description.trim() ||
       !form.event_date ||
       !form.start_time ||
-      !form.end_time ||
-      !form.city.trim() ||
-      !form.address.trim()
+      !form.end_time
+      // !form.city.trim() ||
+      // !form.address.trim()
     ) {
       enqueueSnackbar(
         "All fields required. Please fill in all event details.",
