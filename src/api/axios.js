@@ -5,7 +5,7 @@ import axios from "axios";
 export const API_BASE_URL = "https://api.ticketroko.com";
 
 const api = axios.create({
-  baseURL: "/api", // ✅ remove the full domain
+  baseURL: `${API_BASE_URL}/api`, // ✅ remove the full domain
 });
 
 // attach token
